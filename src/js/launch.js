@@ -1,0 +1,614 @@
+// RADAR — launch.js
+// Audience toggles and RADAR launch
+
+function toggleLocalFn() {
+  audLocal = !audLocal;
+  var t = document.getElementById('toggleLocal');
+  if (audLocal) t.classList.add('on'); else t.classList.remove('on');
+  updateReach();
+}
+
+function toggleTravelerFn() {
+  audTraveler = !audTraveler;
+  var t = document.getElementById('toggleTraveler');
+  if (audTraveler) t.classList.add('on'); else t.classList.remove('on');
+  updateReach();
+}
+
+function showLaunchModal() {
+  var hasAsset    = !!uploadedDataURL;
+  var hasAudience = audLocal || audTraveler;
+  var hasChannel  = typeof activeChannel !== 'undefined' && !!activeChannel;
+
+  var chLabels = { instagram:'Instagram', meta:'Facebook', tiktok:'TikTok', youtube:'YouTube' };
+  var fmtLabels = { post:'Post', reel:'Reel', story:'Story' };
+  var chText = hasChannel
+    ? 'Channel: ' + (chLabels[activeChannel] || activeChannel) + (activeFormat ? ' · ' + (fmtLabels[activeFormat] || activeFormat) : '')
+    : 'Pilih channel publish';
+
+  var checks = [
+    { ok: hasAsset,    text: 'Upload foto atau video kreasi kamu' },
+    { ok: hasAudience, text: 'Pilih target audiens (Lokal dan/atau Traveler)' },
+    { ok: hasChannel,  text: chText }
+  ];
+
+  var okSVG   = '<svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var failSVG = '<svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke-linecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke-linecap="round"/></svg>';
+
+  var html = '';
+  checks.forEach(function(c) {
+    html +=
+      '<div class="lm-check-item">'
+      + '<div class="lm-check-icon ' + (c.ok ? 'ok' : 'fail') + '">' + (c.ok ? okSVG : failSVG) + '</div>'
+      + '<div class="lm-check-text' + (c.ok ? '' : ' fail') + '">' + c.text + '</div>'
+      + '</div>';
+  });
+
+  document.getElementById('lmChecklist').innerHTML = html;
+  document.getElementById('launchModal').style.display = 'flex';
+}
+
+function closeLaunchModal(e) {
+  if (e && e.target !== document.getElementById('launchModal')) return;
+  document.getElementById('launchModal').style.display = 'none';
+}
+
+/* ─────────────────────────────────────────
+   P2 — Toast Notifikasi Posisi ATAS
+   Copy spesifik per platform+format
+   ───────────────────────────────────────── */
+function showTopToast(message, type) {
+  // Hapus toast lama kalau masih ada
+  var existing = document.getElementById('radarTopToast');
+  if (existing) existing.remove();
+
+  var toast = document.createElement('div');
+  toast.id = 'radarTopToast';
+
+  var bgColor  = type === 'error'   ? '#ef4444'
+               : type === 'warning' ? '#f59e0b'
+               : '#10b981'; // success default
+
+  toast.style.cssText =
+    'position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);' +
+    'background:' + bgColor + ';color:#fff;' +
+    'padding:12px 20px;border-radius:12px;' +
+    'font-size:14px;font-weight:600;font-family:var(--font,sans-serif);' +
+    'box-shadow:0 4px 20px rgba(0,0,0,0.25);' +
+    'z-index:99999;white-space:nowrap;' +
+    'transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1),opacity 0.35s ease;' +
+    'opacity:0;pointer-events:none;';
+
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  // Slide in
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      toast.style.transform = 'translateX(-50%) translateY(0)';
+      toast.style.opacity   = '1';
+    });
+  });
+
+  // Slide out setelah 3.5 detik
+  setTimeout(function() {
+    toast.style.transform = 'translateX(-50%) translateY(-80px)';
+    toast.style.opacity   = '0';
+    setTimeout(function() { toast.remove(); }, 400);
+  }, 3500);
+}
+
+/**
+ * Bangun copy toast yang spesifik berdasarkan channel + format
+ * Contoh: "✓ Story Instagram berhasil dipublish!"
+ */
+function _buildPublishToastCopy(channel, format) {
+  var chLabels  = { instagram: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
+  var fmtLabels = { post: 'Post', reel: 'Reel', story: 'Story' };
+
+  var chName  = chLabels[channel]   || channel   || 'Konten';
+  var fmtName = fmtLabels[format]   || '';
+
+  // YouTube special case (formatnya "Shorts")
+  if (channel === 'youtube') fmtName = 'Shorts';
+
+  var label = fmtName ? fmtName + ' ' + chName : chName;
+  return '✓ ' + label + ' berhasil dipublish!';
+}
+
+/* ─────────────────────────────────────────
+   P1 — Modal Konfirmasi Launch + Nama Campaign
+   ───────────────────────────────────────── */
+
+/**
+ * _buildConfirmModal()
+ * Inject HTML modal konfirmasi ke DOM (sekali saja).
+ */
+function _ensureConfirmModal() {
+  if (document.getElementById('launchConfirmModal')) return;
+
+  var chLabels  = { instagram: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
+  var fmtLabels = { post: 'Post', reel: 'Reel', story: 'Story' };
+
+  // Platform icon map (emoji fallback, bisa ganti img)
+  var chIcons = {
+    instagram: '📸',
+    meta:      '📘',
+    tiktok:    '🎵',
+    youtube:   '▶️'
+  };
+
+  var modal = document.createElement('div');
+  modal.id = 'launchConfirmModal';
+  modal.style.cssText =
+    'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);' +
+    'z-index:9900;align-items:center;justify-content:center;' +
+    'font-family:var(--font,sans-serif);backdrop-filter:blur(4px);';
+
+  modal.innerHTML = `
+    <div id="lcmCard" style="
+      background:#fff;border-radius:20px;padding:28px 28px 24px;
+      width:360px;max-width:calc(100vw - 40px);
+      box-shadow:0 20px 60px rgba(0,0,0,0.2);
+      display:flex;flex-direction:column;gap:20px;
+    ">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="
+          width:40px;height:40px;border-radius:12px;
+          background:linear-gradient(135deg,#791ADB,#a855f7);
+          display:flex;align-items:center;justify-content:center;
+          font-size:20px;flex-shrink:0;">🚀</div>
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#111;">Konfirmasi Launch</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:1px;">Periksa sebelum publish</div>
+        </div>
+        <button id="lcmClose" onclick="closeLaunchConfirmModal()"
+          style="margin-left:auto;background:none;border:none;cursor:pointer;
+          color:#9ca3af;font-size:20px;line-height:1;padding:4px;">✕</button>
+      </div>
+
+      <!-- Input nama campaign -->
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:12px;font-weight:600;color:#374151;letter-spacing:0.02em;">
+          NAMA CAMPAIGN
+        </label>
+        <input id="lcmCampName" type="text"
+          style="border:1.5px solid #e5e7eb;border-radius:10px;
+          padding:10px 14px;font-size:14px;font-weight:500;color:#111;
+          font-family:var(--font,sans-serif);outline:none;
+          transition:border-color 0.2s;"
+          onfocus="this.style.borderColor='#791ADB'"
+          onblur="this.style.borderColor='#e5e7eb'"
+          placeholder="Nama campaign..." />
+        <div style="font-size:11px;color:#9ca3af;">Pre-filled dari persona + lokasi kamu</div>
+      </div>
+
+      <!-- Ringkasan publish -->
+      <div style="background:#f9fafb;border-radius:12px;padding:14px 16px;
+        display:flex;flex-direction:column;gap:10px;">
+        <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.05em;">
+          AKAN DIPUBLISH KE
+        </div>
+        <div id="lcmPlatformSummary" style="display:flex;align-items:center;gap:10px;">
+          <!-- Diisi JS -->
+        </div>
+        <div id="lcmFormatSummary" style="font-size:12px;color:#6b7280;">
+          <!-- Format info -->
+        </div>
+      </div>
+
+      <!-- Tombol -->
+      <div style="display:flex;gap:10px;">
+        <button onclick="closeLaunchConfirmModal()"
+          style="flex:1;padding:12px;border-radius:12px;border:1.5px solid #e5e7eb;
+          background:#fff;color:#374151;font-size:14px;font-weight:600;
+          cursor:pointer;font-family:var(--font,sans-serif);
+          transition:background 0.15s;"
+          onmouseover="this.style.background='#f3f4f6'"
+          onmouseout="this.style.background='#fff'">
+          Batal
+        </button>
+        <button id="lcmLaunchBtn" onclick="_confirmAndLaunch()"
+          style="flex:2;padding:12px;border-radius:12px;border:none;
+          background:linear-gradient(135deg,#791ADB,#a855f7);
+          color:#fff;font-size:14px;font-weight:700;
+          cursor:pointer;font-family:var(--font,sans-serif);
+          display:flex;align-items:center;justify-content:center;gap:8px;
+          transition:opacity 0.15s;"
+          onmouseover="this.style.opacity='0.9'"
+          onmouseout="this.style.opacity='1'">
+          🚀 Launch Sekarang →
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Tutup saat klik backdrop
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) closeLaunchConfirmModal();
+  });
+}
+
+function openLaunchConfirmModal(campName, channel, format) {
+  _ensureConfirmModal();
+
+  var chLabels  = { instagram: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
+  var fmtLabels = { post: 'Post', reel: 'Reel', story: 'Story' };
+  var chColors  = { instagram: '#e1306c', meta: '#1877f2', tiktok: '#010101', youtube: '#ff0000' };
+  var chIcons   = { instagram: '📸', meta: '📘', tiktok: '🎵', youtube: '▶️' };
+
+  // Pre-fill nama campaign
+  var input = document.getElementById('lcmCampName');
+  if (input) input.value = campName;
+
+  // Platform summary
+  var chName  = chLabels[channel]  || channel  || 'Platform';
+  var fmtName = fmtLabels[format]  || format   || '';
+  if (channel === 'youtube') fmtName = 'Shorts';
+
+  var summaryEl = document.getElementById('lcmPlatformSummary');
+  if (summaryEl) {
+    var color = chColors[channel] || '#791ADB';
+    var icon  = chIcons[channel]  || '📡';
+    summaryEl.innerHTML =
+      '<div style="' +
+        'background:' + color + '15;border:1.5px solid ' + color + '40;' +
+        'border-radius:10px;padding:8px 14px;' +
+        'display:flex;align-items:center;gap:8px;' +
+      '">' +
+        '<span style="font-size:18px;">' + icon + '</span>' +
+        '<span style="font-size:13px;font-weight:700;color:' + color + ';">' + chName + '</span>' +
+      '</div>';
+  }
+
+  var fmtEl = document.getElementById('lcmFormatSummary');
+  if (fmtEl) {
+    fmtEl.innerHTML = fmtName
+      ? '<span style="' +
+          'display:inline-flex;align-items:center;gap:4px;' +
+          'background:#791ADB15;color:#791ADB;' +
+          'border-radius:6px;padding:3px 10px;font-size:12px;font-weight:600;' +
+        '">📐 Format: ' + fmtName + '</span>'
+      : '';
+  }
+
+  var modal = document.getElementById('launchConfirmModal');
+  modal.style.display = 'flex';
+  // Focus input nama
+  setTimeout(function() { if (input) { input.focus(); input.select(); } }, 80);
+}
+
+function closeLaunchConfirmModal() {
+  var modal = document.getElementById('launchConfirmModal');
+  if (modal) modal.style.display = 'none';
+}
+
+/**
+ * Dipanggil tombol "Launch Sekarang →" di modal konfirmasi
+ * Ambil nama campaign dari input, lalu lanjut ke proceedToLaunch
+ */
+function _confirmAndLaunch() {
+  var input = document.getElementById('lcmCampName');
+  var overrideName = input ? input.value.trim() : '';
+  closeLaunchConfirmModal();
+  // Panggil launch dengan nama override dari user
+  _doLaunch(overrideName);
+}
+
+/* ─────────────────────────────────────────
+   Rate Limiting
+   ───────────────────────────────────────── */
+function checkLaunchRateLimit() {
+  var cooldown = (typeof RADAR_CONFIG !== 'undefined')
+    ? RADAR_CONFIG.LAUNCH_COOLDOWN_MS
+    : 30000;
+
+  var last = localStorage.getItem('radar_last_launch');
+  if (!last) return true;
+
+  var elapsed = Date.now() - parseInt(last);
+  if (elapsed < cooldown) {
+    var sisa = Math.ceil((cooldown - elapsed) / 1000);
+    showTopToast('⏳ Tunggu ' + sisa + ' detik sebelum launch lagi', 'warning');
+    return false;
+  }
+  return true;
+}
+
+/* ─────────────────────────────────────────
+   launchRadar()
+   Sekarang hanya validasi + buka modal konfirmasi
+   Actual launch → _doLaunch(campNameOverride)
+   ───────────────────────────────────────── */
+async function launchRadar() {
+  // ── Validasi awal ──
+  var hasAsset    = !!uploadedDataURL;
+  var hasAudience = audLocal || audTraveler;
+  var hasChannel  = typeof activeChannel !== 'undefined' && !!activeChannel;
+  if (!hasAsset || !hasAudience || !hasChannel) { showLaunchModal(); return; }
+
+  // ── Rate limiting ──
+  if (!checkLaunchRateLimit()) return;
+
+  // ── Build nama campaign pre-filled ──
+  var personaEl = document.getElementById('personaName');
+  var locEl     = document.querySelector('.popup-loc');
+  var personaName = personaEl ? personaEl.textContent.trim() : 'Campaign Baru';
+  var locFull     = locEl ? locEl.textContent.trim() : '';
+  var locShort    = locFull ? locFull.split(',')[0].trim() : '';
+  var campName    = personaName + (locShort ? ' · ' + locShort : '');
+
+  // ── Cek akun sosial — kalau belum konek, warning dulu ──
+  var socialConnected = typeof isBufferConnected === 'function' && isBufferConnected();
+  if (!socialConnected) {
+    _showSocialWarning();
+    return;
+  }
+
+  // ── Buka modal konfirmasi (P1) ──
+  openLaunchConfirmModal(campName, activeChannel, activeFormat);
+}
+
+/* ─────────────────────────────────────────
+   _doLaunch(campNameOverride)
+   Dipanggil setelah user klik "Launch Sekarang →"
+   5-step flow: collect → export → save → buffer → animate
+   ───────────────────────────────────────── */
+async function _doLaunch(campNameOverride) {
+  // ── Capture state dari Menu 1 ──
+  var personaEl   = document.getElementById('personaName');
+  var locEl       = document.querySelector('.popup-loc');
+  var reachEl     = document.getElementById('reachNum');
+
+  var personaName = personaEl ? personaEl.textContent.trim() : 'Campaign Baru';
+  var locFull     = locEl ? locEl.textContent.trim() : '';
+  var locShort    = locFull ? locFull.split(',')[0].trim() : '';
+
+  // Gunakan nama dari input modal jika ada
+  var campName = (campNameOverride && campNameOverride.length > 0)
+    ? campNameOverride
+    : personaName + (locShort ? ' · ' + locShort : '');
+
+  // Active platform dari cycler "Publish ke Channel"
+  var platMap   = { instagram: 'ig', tiktok: 'tiktok', youtube: 'youtube', meta: 'meta' };
+  var activePlats = activeChannel && platMap[activeChannel] ? [platMap[activeChannel]] : ['ig'];
+
+  // Parse reach
+  var reachText      = reachEl ? reachEl.textContent.trim() : '10K';
+  var reachTextClean = reachText.replace(/,/g, '');
+  var reachLow   = 10000;
+  var reachHigh  = 50000;
+  var matchLow   = reachTextClean.match(/^(\d+(?:\.\d+)?)(K|M)?/i);
+  var matchHigh  = reachTextClean.match(/[–\-]\s*(\d+(?:\.\d+)?)(K|M)?/i);
+  function parseReach(val, unit) {
+    var n = parseFloat(val);
+    return Math.round(unit && unit.toUpperCase() === 'M' ? n * 1000000 : (unit && unit.toUpperCase() === 'K' ? n * 1000 : n));
+  }
+  if (matchLow)  reachLow  = parseReach(matchLow[1],  matchLow[2]);
+  if (matchHigh) reachHigh = parseReach(matchHigh[1], matchHigh[2]);
+  else           reachHigh = reachLow * 2;
+
+  var platLabel = activePlats.map(function(p) { return p.toUpperCase(); }).join(', ');
+
+  // ── STEP 1: Kumpulkan campaignData ──
+  var captionEl    = document.getElementById('captionArea');
+  var stitchEl     = document.getElementById('phoneStitch');
+  var campaignData = {
+    nama:        campName,
+    kecamatan:   locShort,
+    radius:      (typeof currentRadius !== 'undefined') ? currentRadius : 1,
+    kategori:    (typeof currentPersona !== 'undefined' && currentPersona) ? currentPersona : 'General',
+    platforms:   activePlats,
+    format:      (typeof activeFormat !== 'undefined') ? activeFormat : 'post',
+    personaName: personaName,
+    personaTags: [],
+    reachMin:    reachLow,
+    reachMax:    reachHigh,
+    caption:     captionEl ? captionEl.value : '',
+    stitchText:  stitchEl  ? stitchEl.innerText : '',
+    budget:      null
+  };
+
+  console.log('[launch] DEBUG state saat launch:', {
+    activeChannel:  activeChannel,
+    activeFormat:   activeFormat,
+    activePlatform: activePlatform,
+    campaignFormat: campaignData.format,
+    campaignPlats:  campaignData.platforms,
+    campName:       campName
+  });
+
+  // Campaign object untuk CAMPAIGNS array (Monitor)
+  var newCamp = {
+    id:           Date.now(),
+    name:         campName,
+    status:       'running',
+    platforms:    activePlats,
+    format:       (typeof activeFormat !== 'undefined') ? activeFormat : 'post',
+    post_id:      null,
+    reach:        0,
+    reachTarget:  reachHigh,
+    budget:       0,
+    budgetUsed:   0,
+    sparkData:    [0, 0, 0, 0, 0, 0],
+    thumbColor:   '#791ADB',
+    thumbUrl:     uploadedDataURL,
+    launchTime:   'Baru saja',
+    aiOpening:    'Campaign <strong>' + campName + '</strong> sudah live!\n\nAudiens tersedia: <strong>' + reachText + '</strong> di area kamu — jangkauan mulai dihitung begitu iklan ditayangkan.\n\nSaya pantau tren di <strong>' + (locShort || 'area target') + '</strong> via <strong>' + platLabel + '</strong> dan akan notify kamu kalau ada yang perlu dioptimalkan.',
+    aiChips:      ['Lihat proyeksi', 'Optimalkan targeting', 'Bagikan ke tim'],
+    aiChipResponses: {
+      'Lihat proyeksi': 'Berdasarkan setting campaign kamu:\n\nTarget reach: <strong>' + reachText + '</strong>\nEstimasi waktu: 24–48 jam dengan burn rate optimal\nPlatform: <strong>' + platLabel + '</strong>\n\nRekomendasi: pantau 2 jam pertama untuk validasi performa awal. Saya akan highlight anomali kalau ada.',
+      'Optimalkan targeting': 'Untuk area <strong>' + (locShort || 'target kamu') + '</strong>, langkah optimasi:\n\n1. Buka platform ads (' + platLabel + ')\n2. Cek Audience Insights setelah 200+ impressi pertama\n3. Narrow ke usia & interest dengan CTR tertinggi\n\nBegitu akun terhubung ke RADAR, saya bisa rekomendasikan otomatis.',
+      'Bagikan ke tim': 'Untuk bagikan status campaign ke tim:\n\n1. Screenshot halaman monitor ini\n2. Kirim via WhatsApp grup tim kamu\n\nMau saya siapkan ringkasan performa singkat untuk di-share?'
+    }
+  };
+
+  // ── Decrement free count ──
+  freeCount = Math.max(0, freeCount - 1);
+  document.getElementById('freeCount').textContent = freeCount;
+
+  // ── Export canvas di background ──
+  var canvasPromise = (typeof exportCreativeCanvas === 'function')
+    ? exportCreativeCanvas().catch(function(e) {
+        console.warn('[launch] exportCreativeCanvas error (lanjut):', e.message);
+        return null;
+      })
+    : Promise.resolve(null);
+
+  // ── Push ke CAMPAIGNS + animasi launch ──
+  CAMPAIGNS.unshift(newCamp);
+  localStorage.setItem('radar_last_launch', Date.now().toString());
+
+  // ── P2: Toast spesifik platform SEBELUM modal launching ──
+  var toastCopy = _buildPublishToastCopy(activeChannel, activeFormat);
+  showTopToast(toastCopy, 'success');
+
+  // ── Launching modal → pindah ke Monitor ──
+  showLaunchingModal(campName, function() {
+    switchMenu('monitor');
+  });
+
+  // ── Save ke Supabase + Publish via PostForMe (paralel, publish tunggu supabase_id) ──
+  var savePromise = (typeof saveCampaign === 'function')
+    ? saveCampaign(campaignData).catch(function(e) {
+        console.warn('[launch] saveCampaign error (lanjut):', e);
+        return null;
+      })
+    : Promise.resolve(null);
+
+  Promise.all([canvasPromise, savePromise]).then(function(results) {
+    var canvas     = results[0];
+    var saveResult = results[1];
+
+    // Simpan supabase_id ke KEDUA object (newCamp untuk Monitor, campaignData untuk updateCampaignPostId)
+    if (saveResult && saveResult.success && saveResult.id) {
+      newCamp.supabase_id      = saveResult.id;
+      campaignData.supabase_id = saveResult.id;
+      console.log('[launch] supabase_id ready:', saveResult.id);
+      // Simpan thumbnail ke localStorage agar tetap ada setelah page refresh
+      if (uploadedDataURL) {
+        try {
+          localStorage.setItem('radar_thumb_' + saveResult.id, uploadedDataURL);
+          console.log('[launch] thumbUrl saved to localStorage for', saveResult.id);
+        } catch(e) {
+          console.warn('[launch] localStorage thumb save failed (mungkin terlalu besar):', e.message);
+        }
+      }
+    }
+
+    if (typeof publishViaBuffer === 'function') {
+      publishViaBuffer(canvas, campaignData).then(function(result) {
+        if (result && result.postId) {
+          // Simpan post_id ke newCamp → chip langsung aktif di Monitor
+          newCamp.post_id  = result.postId;
+          newCamp.post_url = result.postUrl || null;
+          console.log('[launch] post_id saved:', result.postId, '| post_url:', result.postUrl || '—');
+
+          // Update chip di DOM card yang sudah dirender
+          var cardEl = document.getElementById('campaign-card-' + newCamp.id);
+          if (cardEl) {
+            var chip = cardEl.querySelector('.cc-ts-chip');
+            if (chip) {
+              // Prioritas: postUrl langsung dari PostForMe (URL asli IG/TikTok/dll)
+              var href = result.postUrl || null;
+
+              // Fallback: construct dari postId (hanya reliable untuk TikTok/YouTube/Meta)
+              if (!href) {
+                var plat = (newCamp.platforms || [])[0] || 'ig';
+                var fmt2 = newCamp.format || 'post';
+                var pid  = result.postId;
+                var accs = (typeof _getStoredAccounts === 'function') ? _getStoredAccounts() : [];
+                var matchAcc = accs.find(function(a) {
+                  var pm = { ig:'instagram', tiktok:'tiktok', meta:'facebook', youtube:'youtube' };
+                  return a.platform === (pm[plat] || plat);
+                });
+                var uname = matchAcc ? (matchAcc.username || '') : '';
+
+                if (plat === 'tiktok' && uname) {
+                  href = 'https://www.tiktok.com/@' + uname + '/video/' + pid;
+                } else if (plat === 'meta') {
+                  href = 'https://www.facebook.com/permalink.php?story_fbid=' + pid;
+                } else if (plat === 'youtube') {
+                  href = 'https://www.youtube.com/shorts/' + pid;
+                }
+                // IG: TIDAK construct dari postId — PostForMe ID bukan shortcode IG
+              }
+
+              if (href) {
+                chip.href = href;
+                chip.style.pointerEvents = 'auto';
+                console.log('[launch] chip updated:', href);
+              }
+            }
+          }
+        }
+      }).catch(function(e) {
+        console.warn('[launch] publishViaBuffer error:', e);
+      });
+    }
+  });
+}
+
+/* ─── Inline Social Warning ──────────────────────────────────── */
+function _showSocialWarning() {
+  var old = document.getElementById('socialWarning');
+  if (old) { old.remove(); }
+
+  var warning = document.createElement('div');
+  warning.id = 'socialWarning';
+  warning.style.cssText =
+    'background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;' +
+    'padding:12px 16px;margin:8px 0 0;display:flex;flex-direction:column;gap:10px;' +
+    'font-size:13px;font-family:var(--font,sans-serif);';
+  warning.innerHTML =
+    '<div style="display:flex;align-items:center;gap:8px;">' +
+    '<span style="font-size:15px;">⚠</span>' +
+    '<span style="flex:1;color:#92400e;font-weight:600;">Belum ada akun sosial terhubung</span>' +
+    '<span onclick="this.closest(\'#socialWarning\').remove()" ' +
+    'style="cursor:pointer;color:#b45309;font-size:16px;line-height:1;padding:0 2px;">✕</span>' +
+    '</div>' +
+    '<div style="display:flex;gap:8px;">' +
+    '<span style="flex:1;color:#78350f;font-size:12px;line-height:1.5;">Hubungkan minimal 1 akun untuk bisa publish otomatis ke Instagram, TikTok, Facebook, atau YouTube.</span>' +
+    '<button onclick="showConnectAccountsFlow()" ' +
+    'style="background:#f59e0b;color:white;border:none;padding:8px 16px;' +
+    'border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;' +
+    'align-self:flex-end;font-family:var(--font,sans-serif);">Hubungkan →</button>' +
+    '</div>';
+
+  var launchBtn = document.querySelector('.launch-btn') ||
+                  document.querySelector('[onclick*="launchRadar"]') ||
+                  document.getElementById('view-command');
+  if (launchBtn) {
+    launchBtn.insertAdjacentElement('beforebegin', warning);
+  } else {
+    document.body.appendChild(warning);
+  }
+}
+
+function showLaunchingModal(campName, onDone) {
+  var modal   = document.getElementById('launchingModal');
+  var loading = document.getElementById('llLoading');
+  var success = document.getElementById('llSuccess');
+
+  document.getElementById('llCampName').textContent = campName;
+  document.getElementById('llSuccessCampName').textContent = campName;
+
+  loading.style.display = 'flex';
+  success.style.display = 'none';
+  modal.style.display   = 'flex';
+
+  // Phase 1: loading (1.6s) → Phase 2: success
+  setTimeout(function() {
+    loading.style.display = 'none';
+    success.style.display = 'flex';
+
+    // Phase 2: success (2s) → redirect
+    setTimeout(function() {
+      modal.style.display = 'none';
+      onDone();
+    }, 2000);
+  }, 1600);
+}

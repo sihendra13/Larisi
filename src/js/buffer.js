@@ -1,0 +1,910 @@
+// RADAR — buffer.js
+// Social Media Integration via PostForMe.dev API v1
+// Semua call ke PostForMe lewat Supabase Edge Function (tidak ada API key di browser)
+
+/* ─── Platform SVG Logos ──────────────────────────────────── */
+var _PFM_LOGOS = {
+  instagram: '<svg viewBox="0 0 24 24" width="28" height="28" fill="#E1306C"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>',
+  tiktok:    '<svg viewBox="0 0 24 24" width="28" height="28" fill="#010101"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.79 1.54V6.78a4.85 4.85 0 01-1.02-.09z"/></svg>',
+  facebook:  '<svg viewBox="0 0 24 24" width="28" height="28" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>',
+  youtube:   '<svg viewBox="0 0 24 24" width="28" height="28" fill="#FF0000"><path d="M23.5 6.19a3 3 0 00-2.12-2.13C19.54 3.5 12 3.5 12 3.5s-7.54 0-9.38.56A3 3 0 00.5 6.19C0 8.03 0 12 0 12s0 3.97.5 5.81a3 3 0 002.12 2.12C4.46 20.5 12 20.5 12 20.5s7.54 0 9.38-.57a3 3 0 002.12-2.12C24 15.97 24 12 24 12s0-3.97-.5-5.81zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/></svg>'
+};
+
+var _PFM_COLORS = {
+  instagram: '#E1306C',
+  tiktok:    '#010101',
+  facebook:  '#1877F2',
+  youtube:   '#FF0000'
+};
+
+/* ─── User Identity ────────────────────────────────────────── */
+
+function getUserExternalId() {
+  // TODO: setelah login page + Supabase Auth selesai, ganti dengan:
+  //   const { data: { user } } = await supabase.auth.getUser()
+  //   return user.id
+  // Saat ini: pakai session ID per-browser dari localStorage
+  var key = 'radar_session_id';
+  var id  = localStorage.getItem(key);
+  if (!id) {
+    id = 'radar_user_' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
+/* ─── Supabase Proxy Helper ────────────────────────────────── */
+// Semua call ke PostForMe melewati Edge Function ini
+// API key PostForMe TIDAK ada di browser
+
+async function _pfmProxy(endpoint, method, body) {
+  var supabaseUrl = (typeof RADAR_CONFIG !== 'undefined') ? RADAR_CONFIG.SUPABASE_URL : '';
+  var supabaseKey = (typeof RADAR_CONFIG !== 'undefined') ? RADAR_CONFIG.SUPABASE_ANON_KEY : '';
+
+  var resp = await fetch(supabaseUrl + '/functions/v1/postforme-proxy', {
+    method:  'POST',
+    headers: {
+      'Authorization': 'Bearer ' + supabaseKey,
+      'Content-Type':  'application/json'
+    },
+    body: JSON.stringify({ endpoint: endpoint, method: method || 'GET', body: body })
+  });
+
+  if (!resp.ok) {
+    var errText = await resp.text();
+    throw new Error('Proxy ' + resp.status + ': ' + errText);
+  }
+  return resp.json();
+}
+
+/* ─── localStorage Helpers ─────────────────────────────────── */
+
+function _getStoredAccounts() {
+  try { return JSON.parse(localStorage.getItem('radar_social_accounts') || '[]'); }
+  catch(e) { return []; }
+}
+
+/* ─── Status Check ─────────────────────────────────────────── */
+
+function isBufferConnected() {
+  return _getStoredAccounts().length > 0;
+}
+window.isBufferConnected = isBufferConnected;
+
+/* ─── Header Indicator ─────────────────────────────────────── */
+
+function updateBufferIndicator() {
+  renderConnectChannels();
+  var el = document.getElementById('bufferIndicator');
+  if (el) el.innerHTML = '';
+}
+
+/* ─── Channel Chip Usernames ───────────────────────────────── */
+
+function updateChannelChipsWithUsername() {
+  var accounts = _getStoredAccounts();
+  var platMap  = { instagram: 'ig', tiktok: 'tiktok', facebook: 'meta', youtube: 'youtube' };
+  document.querySelectorAll('.chip-channel').forEach(function(chip) {
+    var chipPlat = chip.getAttribute('data-platform') || '';
+    var match = null;
+    accounts.forEach(function(a) {
+      if (platMap[a.platform] === chipPlat || a.platform === chipPlat) match = a;
+    });
+    var existing = chip.querySelector('.ch-username');
+    if (match) {
+      if (!existing) {
+        existing = document.createElement('div');
+        existing.className = 'ch-username';
+        existing.style.cssText = 'font-size:9px;color:#9ca3af;margin-top:2px;text-align:center;';
+        var label = chip.querySelector('.ch-label');
+        if (label) label.insertAdjacentElement('afterend', existing);
+        else chip.appendChild(existing);
+      }
+      existing.textContent = '@' + (match.username || match.id);
+    } else if (existing) {
+      existing.remove();
+    }
+  });
+}
+
+/* ─── Fetch Username dari PostForMe (background) ──────────── */
+
+async function _fetchConnectedAccounts() {
+  try {
+    var externalId = getUserExternalId();
+    var data = await _pfmProxy('/v1/social-accounts?external_id=' + encodeURIComponent(externalId), 'GET', null);
+
+    var list = data.data || data.accounts || (Array.isArray(data) ? data : []);
+    if (!list.length) return;
+
+    // Hanya update username untuk akun yang SUDAH ada di localStorage user ini
+    // (jangan tambah akun dari user lain)
+    var existing = _getStoredAccounts();
+    var changed  = false;
+
+    list.forEach(function(a) {
+      var apiPlatform = (a.platform || '').toLowerCase();
+      var apiUsername = a.username || a.handle || a.name || '';
+      var apiId       = a.id || '';
+
+      // Cari akun yang cocok by platform atau by id
+      var idx = -1;
+      for (var i = 0; i < existing.length; i++) {
+        if (existing[i].platform === apiPlatform || existing[i].id === apiId) {
+          idx = i; break;
+        }
+      }
+      if (idx === -1) return; // bukan akun user ini, skip
+
+      if (apiUsername && existing[idx].username !== apiUsername) {
+        existing[idx].username = apiUsername;
+        existing[idx].id       = apiId || existing[idx].id;
+        changed = true;
+
+        // Update badge di modal kalau masih terbuka
+        var btn = document.getElementById('pfm-btn-' + apiPlatform);
+        if (btn) {
+          var badge = btn.querySelector('span:last-child');
+          if (badge) { badge.textContent = '✓ @' + apiUsername; }
+        }
+      }
+
+      // Debug: log full object untuk lihat field yang tersedia
+      console.log('[postforme] raw account data:', JSON.stringify(a));
+
+      // Field yang benar dari PostForMe API: profile_photo_url
+      var apiAvatarUrl = a.profile_photo_url
+                       || a.profile_picture_url || a.picture || a.avatar
+                       || a.profile_image_url   || a.photo_url || a.image_url
+                       || a.profile_photo       || a.profile_pic
+                       || (a.user && (a.user.profile_picture_url || a.user.picture))
+                       || '';
+      if (apiAvatarUrl && !existing[idx].avatar_url) {
+        existing[idx].avatar_url = apiAvatarUrl;
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      localStorage.setItem('radar_social_accounts', JSON.stringify(existing));
+      updateBufferIndicator();
+      updateChannelChipsWithUsername();
+    }
+  } catch(e) {
+    console.warn('[postforme] _fetchConnectedAccounts error:', e.message);
+  }
+}
+
+/* ─── Simpan akun & update UI seketika ────────────────────── */
+
+function _saveAndUpdateUI(platform, accountId, username, avatarUrl) {
+  var accounts = _getStoredAccounts();
+  accounts = accounts.filter(function(a) { return a.platform !== platform; });
+  accounts.push({ id: accountId, platform: platform, username: username || '', avatar_url: avatarUrl || '' });
+  localStorage.setItem('radar_social_accounts', JSON.stringify(accounts));
+
+  // Update tombol di modal
+  var btn = document.getElementById('pfm-btn-' + platform);
+  if (btn) {
+    var badge = btn.querySelector('span:last-child');
+    if (badge) {
+      badge.textContent    = username ? '✓ @' + username : '✓ Terhubung';
+      badge.style.background = 'rgba(34,197,94,0.12)';
+      badge.style.color    = '#15803d';
+    }
+    btn.style.border     = '1.5px solid rgba(34,197,94,0.5)';
+    btn.style.background = 'rgba(34,197,94,0.05)';
+    btn.disabled = false;
+    btn.onclick  = function() { _disconnectAccount(platform); };
+  }
+
+  // Update header pill & channel chips
+  updateBufferIndicator();
+  updateChannelChipsWithUsername();
+
+  // Hapus warning bar bawah kalau ada
+  var warn = document.getElementById('socialWarning');
+  if (warn) warn.remove();
+
+  // Tutup modal otomatis setelah 1.8 detik
+  setTimeout(function() { _closePfmModal(); }, 1800);
+
+  if (typeof showAnToast === 'function') showAnToast('✓ Akun ' + platform + ' berhasil terhubung!');
+}
+
+/* ─── Connect via OAuth ────────────────────────────────────── */
+
+async function connectPostForMe(platform) {
+  var btn = document.getElementById('pfm-btn-' + platform);
+  if (btn) {
+    btn.querySelector('span:last-child').textContent = 'Memproses...';
+    btn.disabled = true;
+  }
+
+  try {
+    var supabaseUrl = (typeof RADAR_CONFIG !== 'undefined') ? RADAR_CONFIG.SUPABASE_URL : '';
+    var supabaseKey = (typeof RADAR_CONFIG !== 'undefined') ? RADAR_CONFIG.SUPABASE_ANON_KEY : '';
+    var redirectUri = window.location.origin + '/postforme-callback';
+    var externalId  = getUserExternalId();
+
+    // Buka popup SEBELUM await — browser hanya izinkan window.open() dari user gesture langsung
+    // Jika dibuka setelah await, browser anggap bukan user gesture → popup diblokir
+    var popup = window.open('about:blank', 'postforme_oauth', 'width=600,height=700,left=200,top=80');
+
+    var resp = await fetch(supabaseUrl + '/functions/v1/postforme-auth', {
+      method:  'POST',
+      headers: {
+        'Authorization': 'Bearer ' + supabaseKey,
+        'Content-Type':  'application/json'
+      },
+      body: JSON.stringify({
+        platform: platform,
+        redirect_uri: redirectUri,
+        external_id: externalId,
+        scopes: platform === 'instagram'
+          ? ['instagram_basic', 'instagram_content_publish', 'instagram_manage_insights', 'instagram_manage_comments', 'pages_read_engagement']
+          : undefined
+      })
+    });
+
+    if (!resp.ok) {
+      var errText = await resp.text();
+      if (popup) popup.close();
+      throw new Error('Edge Function error ' + resp.status + ': ' + errText);
+    }
+
+    var data    = await resp.json();
+    var authUrl = data.url || data.auth_url || data.redirect_url || data.authorization_url;
+    if (!authUrl) {
+      if (popup) popup.close();
+      throw new Error('Tidak ada URL OAuth dari PostForMe');
+    }
+
+    // Navigate popup ke auth URL yang sudah dapat
+    if (popup) {
+      popup.location.href = authUrl;
+    } else {
+      // Popup sudah diblokir saat about:blank pun — fallback
+      window.open(authUrl, 'postforme_oauth', 'width=600,height=700,left=200,top=80');
+    }
+
+    // Listen postMessage dari callback page
+    var msgHandler = function(event) {
+      if (event.origin !== window.location.origin) return;
+      if (!event.data || event.data.type !== 'postforme_oauth_success') return;
+      window.removeEventListener('message', msgHandler);
+      clearInterval(poll);
+
+      // Simpan seketika dari postMessage data (accountId + platform diketahui)
+      var accountId = (event.data.accountIds || [])[0] || ('pfm_' + platform + '_' + Date.now());
+      _saveAndUpdateUI(platform, accountId, null);
+
+      // Fetch username real di background
+      _fetchConnectedAccounts();
+    };
+    window.addEventListener('message', msgHandler);
+
+    // Fallback poll — jika popup ditutup manual
+    var poll = setInterval(function() {
+      if (!popup || popup.closed) {
+        clearInterval(poll);
+        window.removeEventListener('message', msgHandler);
+        _fetchConnectedAccounts();
+      }
+    }, 800);
+    setTimeout(function() { clearInterval(poll); window.removeEventListener('message', msgHandler); }, 600000);
+
+  } catch(e) {
+    console.error('[postforme] connectPostForMe error:', e.message);
+    if (typeof showAnToast === 'function') showAnToast('⚠ Gagal konek: ' + e.message);
+    if (btn) {
+      btn.querySelector('span:last-child').textContent = 'Hubungkan';
+      btn.disabled = false;
+    }
+  }
+}
+
+/* ─── Render Connect Channels section ─────────────────────── */
+
+function renderConnectChannels() {
+  var row        = document.getElementById('connectedAvatarsRow');
+  var settingsBtn= document.getElementById('connectSettingsBtn');
+  if (!row) return;
+
+  var accounts = _getStoredAccounts();
+
+  // Hapus avatar lama (bukan tombol +)
+  row.querySelectorAll('.connected-avatar-wrap').forEach(function(el) { el.remove(); });
+
+  var colors = { instagram:'#E1306C', tiktok:'#010101', facebook:'#1877F2', youtube:'#FF0000' };
+  var badgeSVG = {
+    instagram: '<svg viewBox="0 0 24 24" fill="white" width="12" height="12"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>',
+    tiktok: '<svg viewBox="0 0 24 24" fill="white" width="12" height="12"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.79 1.54V6.78a4.85 4.85 0 01-1.02-.09z"/></svg>',
+    facebook: '<svg viewBox="0 0 24 24" fill="white" width="12" height="12"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>',
+    youtube: '<svg viewBox="0 0 24 24" fill="white" width="12" height="12"><path d="M23.5 6.19a3 3 0 00-2.12-2.13C19.54 3.5 12 3.5 12 3.5s-7.54 0-9.38.56A3 3 0 00.5 6.19C0 8.03 0 12 0 12s0 3.97.5 5.81a3 3 0 002.12 2.12C4.46 20.5 12 20.5 12 20.5s7.54 0 9.38-.57a3 3 0 002.12-2.12C24 15.97 24 12 24 12s0-3.97-.5-5.81zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/></svg>'
+  };
+
+  // Set row style DULU sebelum loop
+  if (row) row.style.cssText = 'display:flex;gap:12px;align-items:center;flex-wrap:wrap;';
+
+  accounts.forEach(function(acc) {
+    var color = colors[acc.platform] || '#791ADB';
+    var wrap = document.createElement('div');
+    wrap.className = 'connected-avatar-wrap';
+    wrap.title = '@' + (acc.username || acc.platform);
+    wrap.style.cssText = 'position:relative;flex-shrink:0;cursor:pointer;width:56px;height:56px;';
+    var box = document.createElement('div');
+    box.style.cssText = 'width:56px;height:56px;border-radius:14px;' +
+      'border:2.5px solid ' + color + ';background:white;' +
+      'display:flex;align-items:center;justify-content:center;overflow:hidden;';
+    if (acc.avatar_url) {
+      var img = document.createElement('img');
+      img.src = acc.avatar_url;
+      img.alt = acc.username || acc.platform;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+      img.onerror = function() {
+        box.removeChild(img);
+        box.style.background = color + '18';
+        box.style.fontSize = '20px';
+        box.style.fontWeight = '700';
+        box.style.color = color;
+        box.textContent = (acc.username || acc.platform).charAt(0).toUpperCase();
+      };
+      box.appendChild(img);
+    } else {
+      box.style.background = color + '18';
+      box.style.fontSize = '20px';
+      box.style.fontWeight = '700';
+      box.style.color = color;
+      box.textContent = (acc.username || acc.platform).charAt(0).toUpperCase();
+    }
+    wrap.appendChild(box);
+    var badge = document.createElement('div');
+    badge.style.cssText = 'position:absolute;bottom:-3px;right:-3px;' +
+      'width:20px;height:20px;border-radius:50%;background:' + color + ';' +
+      'display:flex;align-items:center;justify-content:center;border:2px solid white;';
+    badge.innerHTML = badgeSVG[acc.platform] || '';
+    wrap.appendChild(badge);
+    var addBtn = document.getElementById('addChannelBtn');
+    row.insertBefore(wrap, addBtn);
+  });
+
+  var addBtn = document.getElementById('addChannelBtn');
+  if (addBtn) {
+    addBtn.style.cssText =
+      'width:56px;height:56px;border-radius:14px;' +
+      'border:2px dashed #d1d5db;background:white;' +
+      'display:flex;align-items:center;justify-content:center;' +
+      'cursor:pointer;flex-shrink:0;transition:border-color .2s,background .2s;' +
+      'padding:0;';
+    addBtn.innerHTML =
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" ' +
+      'stroke="#9ca3af" stroke-width="2" stroke-linecap="round">' +
+      '<line x1="12" y1="5" x2="12" y2="19"/>' +
+      '<line x1="5" y1="12" x2="19" y2="12"/></svg>';
+    addBtn.onmouseenter = function() {
+      addBtn.style.borderColor = '#791ADB';
+      addBtn.style.background = 'rgba(121,26,219,0.04)';
+      addBtn.querySelector('svg').setAttribute('stroke', '#791ADB');
+    };
+    addBtn.onmouseleave = function() {
+      addBtn.style.borderColor = '#d1d5db';
+      addBtn.style.background = 'white';
+      addBtn.querySelector('svg').setAttribute('stroke', '#9ca3af');
+    };
+  }
+
+  // Tampilkan/sembunyikan settings icon
+  if (settingsBtn) settingsBtn.style.display = accounts.length ? 'flex' : 'none';
+}
+
+/* ─── Modal Kelola (Disconnect) Akun Terhubung ─────────────── */
+
+function showManageChannelsModal() {
+  if (document.getElementById('pfmModalOverlay')) { _closePfmModal(); return; }
+
+  var accounts = _getStoredAccounts();
+  if (!accounts.length) return;
+
+  var overlay = document.createElement('div');
+  overlay.id = 'pfmModalOverlay';
+  overlay.style.cssText =
+    'position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,0.45);' +
+    'display:flex;align-items:center;justify-content:center;';
+  overlay.onclick = function(e) { if (e.target === overlay) _closePfmModal(); };
+
+  var card = document.createElement('div');
+  card.style.cssText =
+    'background:white;border-radius:20px;padding:28px 24px;width:360px;max-width:90vw;' +
+    'box-shadow:0 20px 60px rgba(0,0,0,0.25);font-family:var(--font,sans-serif);' +
+    'animation:pfmFadeIn 0.2s ease;';
+
+  var _PFM_COLORS_LOCAL = { instagram:'#E1306C', tiktok:'#010101', facebook:'#1877F2', youtube:'#FF0000' };
+  var platLabel = { instagram:'Instagram', tiktok:'TikTok', facebook:'Facebook', youtube:'YouTube' };
+
+  card.innerHTML =
+    '<style>@keyframes pfmFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}</style>' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">' +
+      '<div>' +
+        '<div style="font-size:16px;font-weight:700;color:#111827;">Kelola Akun Terhubung</div>' +
+        '<div style="font-size:12px;color:#9ca3af;margin-top:2px;">Pilih akun untuk diputuskan</div>' +
+      '</div>' +
+      '<button onclick="_closePfmModal()" style="background:none;border:none;cursor:pointer;' +
+        'width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;' +
+        'color:#9ca3af;font-size:18px;line-height:1;">✕</button>' +
+    '</div>' +
+    accounts.map(function(acc) {
+      var color = _PFM_COLORS_LOCAL[acc.platform] || '#6b7280';
+      var logo  = _PFM_LOGOS[acc.platform] || '';
+      var label = platLabel[acc.platform] || acc.platform;
+      return '<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;' +
+        'margin-bottom:10px;border:1.5px solid rgba(34,197,94,0.4);border-radius:12px;' +
+        'background:rgba(34,197,94,0.04);">' +
+        '<div style="width:40px;height:40px;border-radius:10px;background:' +
+          (acc.platform === 'tiktok' ? '#f0f0f0' : color + '18') +
+          ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+          logo + '</div>' +
+        '<div style="flex:1;">' +
+          '<div style="font-size:14px;font-weight:600;color:#111827;">' + label + '</div>' +
+          '<div style="font-size:12px;color:#6b7280;">@' + (acc.username || acc.id) + '</div>' +
+        '</div>' +
+        '<button onclick="_disconnectAccount(\'' + acc.platform + '\')" ' +
+          'style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;' +
+          'border:1.5px solid #fca5a5;background:#fff5f5;color:#dc2626;cursor:pointer;' +
+          'font-family:var(--font,sans-serif);transition:all .15s;"' +
+          'onmouseenter="this.style.background=\'#dc2626\';this.style.color=\'#fff\'"' +
+          'onmouseleave="this.style.background=\'#fff5f5\';this.style.color=\'#dc2626\'">' +
+          'Disconnect</button>' +
+        '</div>';
+    }).join('');
+
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+}
+
+/* ─── Modal Hubungkan Akun (centered, dengan logo) ────────── */
+
+function showConnectAccountsFlow() {
+  if (document.getElementById('pfmModalOverlay')) {
+    _closePfmModal(); return;
+  }
+
+  var storedAccounts = _getStoredAccounts();
+  var connectedMap   = {};
+  storedAccounts.forEach(function(a) { connectedMap[a.platform] = a; });
+
+  var platforms = [
+    { id: 'facebook',  label: 'Facebook'  },
+    { id: 'instagram', label: 'Instagram' },
+    { id: 'tiktok',    label: 'TikTok'    },
+    { id: 'youtube',   label: 'YouTube'   }
+  ];
+
+  var overlay = document.createElement('div');
+  overlay.id = 'pfmModalOverlay';
+  overlay.style.cssText =
+    'position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,0.45);' +
+    'display:flex;align-items:center;justify-content:center;';
+  overlay.onclick = function(e) { if (e.target === overlay) _closePfmModal(); };
+
+  var card = document.createElement('div');
+  card.style.cssText =
+    'background:white;border-radius:20px;padding:28px 24px;width:360px;max-width:90vw;' +
+    'box-shadow:0 20px 60px rgba(0,0,0,0.25);font-family:var(--font,sans-serif);' +
+    'animation:pfmFadeIn 0.2s ease;';
+
+  card.innerHTML =
+    '<style>@keyframes pfmFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}</style>' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">' +
+    '<div>' +
+    '<div style="font-size:16px;font-weight:700;color:#111827;">Hubungkan Akun Sosial</div>' +
+    '<div style="font-size:12px;color:#9ca3af;margin-top:2px;">via PostForMe.dev · OAuth aman</div>' +
+    '</div>' +
+    '<button onclick="_closePfmModal()" style="background:none;border:none;cursor:pointer;' +
+    'width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;' +
+    'color:#9ca3af;font-size:18px;line-height:1;">✕</button>' +
+    '</div>' +
+    platforms.map(function(p) {
+      var acc    = connectedMap[p.id];
+      var isConn = !!acc;
+      var color  = _PFM_COLORS[p.id] || '#6b7280';
+      var logo   = _PFM_LOGOS[p.id]  || '';
+      var badge  = isConn
+        ? ('✓ @' + (acc.username || acc.id))
+        : 'Hubungkan';
+      return '<button id="pfm-btn-' + p.id + '" ' +
+        'onclick="' + (isConn ? '_disconnectAccount(\'' + p.id + '\')' : 'connectPostForMe(\'' + p.id + '\')') + '" ' +
+        'style="display:flex;align-items:center;gap:14px;width:100%;padding:12px 16px;' +
+        'margin-bottom:10px;border:1.5px solid ' + (isConn ? 'rgba(34,197,94,0.5)' : '#f0f0f0') + ';' +
+        'border-radius:12px;background:' + (isConn ? 'rgba(34,197,94,0.05)' : '#fafafa') + ';' +
+        'cursor:pointer;font-family:var(--font,sans-serif);transition:all 0.15s;">' +
+        '<div style="width:40px;height:40px;border-radius:10px;background:' +
+        (p.id === 'tiktok' ? '#f0f0f0' : color + '18') +
+        ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+        logo + '</div>' +
+        '<span style="flex:1;font-size:14px;font-weight:600;color:#111827;text-align:left;">' + p.label + '</span>' +
+        '<span style="font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;' +
+        'background:' + (isConn ? 'rgba(34,197,94,0.12)' : '#f0f0f0') + ';' +
+        'color:' + (isConn ? '#15803d' : '#6b7280') + ';">' + badge + '</span>' +
+        '</button>';
+    }).join('');
+
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+}
+
+function _closePfmModal() {
+  var overlay = document.getElementById('pfmModalOverlay');
+  if (overlay) overlay.remove();
+  var panel = document.getElementById('connectPanel');
+  if (panel) panel.remove();
+}
+
+function _disconnectAccount(platform) {
+  var accounts = _getStoredAccounts();
+  var acc = accounts.filter(function(a){ return a.platform === platform; })[0];
+  if (!acc) return;
+
+  var platLabel = { instagram:'Instagram', tiktok:'TikTok', facebook:'Facebook', youtube:'YouTube' };
+
+  var old = document.getElementById('disconnectModal');
+  if (old) old.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'disconnectModal';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-family:var(--font,sans-serif);';
+
+  var PFM_LOGOS = {
+    instagram: '<svg viewBox="0 0 24 24" width="32" height="32" fill="#E1306C"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>',
+    facebook: '<svg viewBox="0 0 24 24" width="32" height="32" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>',
+    tiktok: '<svg viewBox="0 0 24 24" width="32" height="32" fill="#010101"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.79 1.54V6.78a4.85 4.85 0 01-1.02-.09z"/></svg>',
+    youtube: '<svg viewBox="0 0 24 24" width="32" height="32" fill="#FF0000"><path d="M23.5 6.19a3 3 0 00-2.12-2.13C19.54 3.5 12 3.5 12 3.5s-7.54 0-9.38.56A3 3 0 00.5 6.19C0 8.03 0 12 0 12s0 3.97.5 5.81a3 3 0 002.12 2.12C4.46 20.5 12 20.5 12 20.5s7.54 0 9.38-.57a3 3 0 002.12-2.12C24 15.97 24 12 24 12s0-3.97-.5-5.81zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/></svg>'
+  };
+
+  var logo = PFM_LOGOS[platform] || '';
+  var name = acc.username || acc.id;
+  var label = platLabel[platform] || platform;
+
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:16px;padding:32px 28px;' +
+    'width:480px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.2);">' +
+      '<div style="font-size:18px;font-weight:700;color:#111;margin-bottom:20px;">' +
+        'Disconnect ' + name + '</div>' +
+      '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;' +
+        'display:flex;align-items:center;gap:14px;margin-bottom:20px;">' +
+        '<div style="position:relative;width:48px;height:48px;flex-shrink:0;">' +
+          '<div style="width:48px;height:48px;border-radius:10px;background:#f3f4f6;' +
+            'display:flex;align-items:center;justify-content:center;">' + logo + '</div>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:15px;font-weight:600;color:#111;">' + name + '</div>' +
+          '<div style="font-size:13px;color:#6b7280;">' + label + ' Professional Account</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="font-size:14px;color:#374151;line-height:1.6;margin-bottom:20px;">' +
+        'Kamu tidak akan bisa lagi memposting ke akun ini. Semua postingan, analitik, tag, ' +
+        'dan data yang terkait akan dihapus secara permanen. ' +
+        '<strong>Tindakan ini tidak bisa dibatalkan.</strong></div>' +
+      '<div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">' +
+        'Ketik "disconnect" untuk konfirmasi.</div>' +
+      '<input id="disconnectInput" type="text" placeholder="disconnect" ' +
+        'style="width:100%;padding:10px 14px;border:1px solid #d1d5db;' +
+        'border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:20px;' +
+        'font-family:var(--font,sans-serif);outline:none;">' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
+        '<button onclick="document.getElementById(\'disconnectModal\').remove()" ' +
+          'style="padding:10px 24px;border-radius:8px;border:2px solid #791ADB;' +
+          'background:white;color:#791ADB;font-size:14px;font-weight:600;cursor:pointer;' +
+          'font-family:var(--font,sans-serif);">Batal</button>' +
+        '<button id="disconnectConfirmBtn" disabled ' +
+          'onclick="if(this.disabled)return;' +
+          'var accs=_getStoredAccounts().filter(function(a){return a.platform!==\'' + platform + '\';});' +
+          'localStorage.setItem(\'radar_social_accounts\',JSON.stringify(accs));' +
+          'updateBufferIndicator();updateChannelChipsWithUsername();' +
+          'document.getElementById(\'disconnectModal\').remove();' +
+          'if(typeof showAnToast===\'function\')showAnToast(\'Akun ' + platform + ' dilepas\');" ' +
+          'style="padding:10px 24px;border-radius:8px;border:none;' +
+          'background:#d1d5db;color:#9ca3af;font-size:14px;font-weight:600;' +
+          'cursor:not-allowed;font-family:var(--font,sans-serif);">' +
+          'Putuskan Akun</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+
+  var input = document.getElementById('disconnectInput');
+  var btn = document.getElementById('disconnectConfirmBtn');
+  input.addEventListener('input', function() {
+    var ok = input.value.toLowerCase() === 'disconnect';
+    btn.disabled = !ok;
+    btn.style.background = ok ? '#dc2626' : '#d1d5db';
+    btn.style.color = ok ? 'white' : '#9ca3af';
+    btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+  });
+  overlay.onclick = function(e) {
+    if (e.target === overlay) overlay.remove();
+  };
+}
+
+/* ─── Upload Media via PostForMe ───────────────────────────── */
+
+// Upload raw blob URL (foto ke-2 dst dari carousel) tanpa overlay
+async function _uploadBlobUrl(blobUrl) {
+  // Fetch blob dari object URL lokal
+  var resp = await fetch(blobUrl);
+  var blob = await resp.blob();
+
+  // Minta signed URL via proxy
+  var data      = await _pfmProxy('/v1/media/create-upload-url', 'POST', { content_type: 'image/jpeg' });
+  var uploadUrl = data.upload_url;
+  var mediaUrl  = data.media_url || data.url;
+  if (!uploadUrl) throw new Error('No upload URL from PostForMe');
+
+  // Upload langsung ke signed URL (tanpa proxy — aman)
+  var uploadResp = await fetch(uploadUrl, {
+    method:  'PUT',
+    body:    blob,
+    headers: { 'Content-Type': 'image/jpeg' }
+  });
+  if (!uploadResp.ok) throw new Error('Upload failed: ' + uploadResp.status);
+  return mediaUrl;
+}
+
+async function uploadToPostForMe(canvas) {
+  var data = await _pfmProxy('/v1/media/create-upload-url', 'POST', { content_type: 'image/jpeg' });
+  var uploadUrl = data.upload_url;
+  var mediaUrl  = data.media_url || data.url;
+  if (!uploadUrl) throw new Error('Tidak dapat upload URL dari PostForMe');
+
+  var fmt = typeof activeFormat !== 'undefined' ? activeFormat : 'post';
+  var blob;
+
+  if (fmt === 'post' && canvas) {
+    blob = await new Promise(function(resolve) {
+      canvas.toBlob(function(b) { resolve(b); }, 'image/jpeg', 0.92);
+    });
+    console.log('[postforme] Post: canvas 4:5, size:', blob ? blob.size : 0);
+  } else if (typeof uploadedDataURL !== 'undefined' && uploadedDataURL &&
+             uploadedDataURL.startsWith('data:')) {
+    var arr   = uploadedDataURL.split(',');
+    var mime  = (arr[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
+    var bstr  = atob(arr[1]);
+    var u8arr = new Uint8Array(bstr.length);
+    for (var i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+    blob = new Blob([u8arr], { type: mime });
+    console.log('[postforme] Story/Reel: foto original, size:', blob.size);
+  } else {
+    blob = await new Promise(function(resolve) {
+      canvas.toBlob(function(b) { resolve(b); }, 'image/jpeg', 0.9);
+    });
+    console.log('[postforme] fallback canvas, size:', blob ? blob.size : 0);
+  }
+
+  var uploadResp = await fetch(uploadUrl, {
+    method:  'PUT',
+    body:    blob,
+    headers: { 'Content-Type': 'image/jpeg' }
+  });
+  if (!uploadResp.ok) throw new Error('Upload media gagal: ' + uploadResp.status);
+  return mediaUrl;
+}
+
+/* ─── Publish via PostForMe API v1 ────────────────────────── */
+
+async function publishViaPostForMe(canvas, campaignData) {
+  var featureOn = typeof RADAR_CONFIG === 'undefined' ||
+                  !RADAR_CONFIG.FEATURES ||
+                  RADAR_CONFIG.FEATURES.social_publish !== false;
+  if (!featureOn) return { success: true, skipped: true };
+
+  var accounts = _getStoredAccounts();
+  if (!accounts.length) return { success: false, error: 'no_accounts' };
+
+  // Filter sesuai platform yang dipilih user
+  var selectedPlatforms = campaignData.platforms || [];
+  var platMap = { ig: 'instagram', tiktok: 'tiktok', meta: 'facebook', youtube: 'youtube' };
+  var filtered = accounts.filter(function(a) {
+    if (!selectedPlatforms.length) return true;
+    return selectedPlatforms.some(function(sp) {
+      return platMap[sp] === a.platform || sp === a.platform;
+    });
+  });
+  if (!filtered.length) filtered = accounts;
+
+  var platNames = filtered.map(function(a) { return a.platform; }).join(', ');
+
+  try {
+    // Upload semua foto dari uploadedDataURLs array (base64 asli, full resolution)
+    var allMediaUrls = [];
+
+    // Upload video langsung dari File object (hindari blob URL re-fetch yang tidak reliable)
+    var hasVideoUpload = typeof uploadedVideoFile !== 'undefined' && uploadedVideoFile instanceof File;
+
+    if (hasVideoUpload) {
+      // VIDEO: pakai File object langsung
+      try {
+        var vFile   = uploadedVideoFile;
+        var vMime   = vFile.type || 'video/mp4';
+        console.log('[postforme] VIDEO upload dari File object:', vFile.name, 'size:', vFile.size, 'type:', vMime);
+
+        var dataUpV = await _pfmProxy('/v1/media/create-upload-url', 'POST', { content_type: vMime });
+        var upUrlV  = dataUpV.upload_url;
+        var medUrlV = dataUpV.media_url || dataUpV.url;
+        if (!upUrlV) throw new Error('No upload URL untuk video');
+
+        var upRespV = await fetch(upUrlV, { method: 'PUT', body: vFile, headers: { 'Content-Type': vMime } });
+        if (!upRespV.ok) throw new Error('Upload video gagal: ' + upRespV.status);
+        allMediaUrls.push(medUrlV);
+        console.log('[postforme] video uploaded, size:', vFile.size);
+      } catch(e) {
+        console.warn('[postforme] video upload error:', e.message);
+      }
+    } else {
+      // FOTO: pakai uploadedDataURLs[] (base64 asli, full resolution)
+      var allPhotoURLs = (typeof uploadedDataURLs !== 'undefined' && uploadedDataURLs.length > 0)
+        ? uploadedDataURLs.filter(Boolean)
+        : (typeof uploadedDataURL !== 'undefined' && uploadedDataURL ? [uploadedDataURL] : []);
+
+      console.log('[postforme] total foto:', allPhotoURLs.length);
+
+      for (var d = 0; d < allPhotoURLs.length; d++) {
+        try {
+          var dataUrl = allPhotoURLs[d];
+          var arrD    = dataUrl.split(',');
+          var mimeD   = (arrD[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
+
+          var bstrD   = atob(arrD[1]);
+          var u8D     = new Uint8Array(bstrD.length);
+          for (var k = 0; k < bstrD.length; k++) u8D[k] = bstrD.charCodeAt(k);
+          var blobD   = new Blob([u8D], { type: mimeD });
+
+          var dataUp  = await _pfmProxy('/v1/media/create-upload-url', 'POST', { content_type: mimeD });
+          var upUrl   = dataUp.upload_url;
+          var medUrl  = dataUp.media_url || dataUp.url;
+          if (!upUrl) throw new Error('No upload URL foto ' + (d + 1));
+
+          var upResp  = await fetch(upUrl, { method: 'PUT', body: blobD, headers: { 'Content-Type': mimeD } });
+          if (!upResp.ok) throw new Error('Upload foto ' + (d + 1) + ' gagal: ' + upResp.status);
+          allMediaUrls.push(medUrl);
+          console.log('[postforme] foto', d + 1, 'uploaded, size:', blobD.size);
+        } catch(e) {
+          console.warn('[postforme] foto', d + 1, 'error:', e.message);
+        }
+      }
+    }
+
+    var hasVideo = hasVideoUpload;
+
+    // Tentukan format dari campaignData (disimpan saat launch) — fallback ke global
+    var fmt = campaignData.format
+           || (typeof activeFormat !== 'undefined' ? activeFormat : 'post');
+
+    var placementMap = {
+      post:  'timeline',
+      reel:  'reels',
+      story: 'stories'
+    };
+    var placement = placementMap[fmt] || 'timeline';
+
+    console.log('[postforme] fmt:', fmt, '| placement:', placement);
+
+    var igAccounts = filtered.filter(function(a){ return a.platform === 'instagram'; });
+    var fbAccounts = filtered.filter(function(a){ return a.platform === 'facebook'; });
+
+    var platformConfigs = {};
+    if (igAccounts.length) {
+      platformConfigs.instagram = { placement: placement };
+      // Pastikan video selalu pakai placement yang sesuai format
+      if (hasVideo && platformConfigs.instagram) {
+        platformConfigs.instagram.placement = placement;
+      }
+    }
+    if (fbAccounts.length) {
+      platformConfigs.facebook = { placement: placement };
+      if (hasVideo && platformConfigs.facebook) {
+        platformConfigs.facebook.placement = placement;
+      }
+    }
+
+    var ytAccounts = filtered.filter(function(a){
+      return a.platform === 'youtube';
+    });
+
+    if (ytAccounts.length) {
+      platformConfigs.youtube = {
+        title: campaignData.caption
+          ? campaignData.caption.split('\n')[0].slice(0, 100)
+          : 'Video',
+        privacy_status: 'public',
+        made_for_kids: false
+      };
+    }
+
+    console.log('[postforme] platform_configurations:', JSON.stringify(platformConfigs, null, 2));
+
+    var payload = {
+      caption:         campaignData.caption || '',
+      social_accounts: filtered.map(function(a){ return a.id; })
+    };
+
+    if (allMediaUrls.length) {
+      payload.media = allMediaUrls.map(function(u){ return { url: u }; });
+    }
+
+    if (Object.keys(platformConfigs).length) {
+      payload.platform_configurations = platformConfigs;
+    }
+
+    console.log('[postforme] final payload:', JSON.stringify(payload, null, 2));
+
+    var data = await _pfmProxy('/v1/social-posts', 'POST', payload);
+    console.log('[postforme] publish result full:', JSON.stringify(data));
+
+    var postId = data.id || data.post_id || null;
+
+    // Coba ekstrak URL postingan langsung dari response (untuk chip)
+    var postUrl = null;
+    if (data.posts && Array.isArray(data.posts) && data.posts.length) {
+      var pp0 = data.posts[0];
+      postUrl = pp0.post_url || pp0.platform_url || pp0.permalink || pp0.url || null;
+    }
+    if (!postUrl) {
+      postUrl = data.post_url || data.platform_url || data.permalink || null;
+    }
+    console.log('[postforme] postId:', postId, '| postUrl:', postUrl);
+
+    // Simpan post_id ke Supabase jika ada supabase_id di campaign
+    if (postId && campaignData && campaignData.supabase_id) {
+      if (typeof updateCampaignPostId === 'function') {
+        updateCampaignPostId(campaignData.supabase_id, postId);
+      }
+    }
+
+    if (typeof showAnToast === 'function') {
+      showAnToast('✓ Postingan berhasil dikirim ke ' + platNames + '!');
+    }
+    return { success: true, postId: postId, postUrl: postUrl };
+
+  } catch(e) {
+    console.error('[postforme] publish error:', e.message);
+    if (typeof showAnToast === 'function') {
+      showAnToast('⚠ Posting gagal: ' + e.message);
+    }
+    return { success: false, error: e.message };
+  }
+}
+
+/* ─── Campaign Analytics (PostForMe feed metrics) ─────────── */
+
+async function fetchCampaignAnalytics(socialAccountId) {
+  try {
+    var data = await _pfmProxy(
+      '/v1/social-account-feeds/' + encodeURIComponent(socialAccountId) + '?expand=metrics',
+      'GET', null
+    );
+    var metrics = (data && data.metrics) || data || {};
+    return {
+      likes:          metrics.likes           || metrics.like_count       || null,
+      comments:       metrics.comments        || metrics.comment_count    || null,
+      views:          metrics.views           || metrics.view_count       || null,
+      shares:         metrics.shares          || metrics.share_count      || null,
+      engagementRate: metrics.engagement_rate || metrics.engagementRate   || null
+    };
+  } catch(e) {
+    console.warn('[postforme] fetchCampaignAnalytics error:', e.message);
+    return null;
+  }
+}
+window.fetchCampaignAnalytics = fetchCampaignAnalytics;
+
+/* ─── Backward Compat Aliases ──────────────────────────────── */
+
+var connectBuffer    = showConnectAccountsFlow;
+var publishViaBuffer = publishViaPostForMe;
+
+/* ─── Init on DOM Ready ────────────────────────────────────── */
+
+document.addEventListener('DOMContentLoaded', function() {
+  updateBufferIndicator();
+  updateChannelChipsWithUsername();
+});

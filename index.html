@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RADAR — Creative Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Circular+Std:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <!-- CSS modules -->
+  <link rel="stylesheet" href="src/css/tokens.css">
+  <link rel="stylesheet" href="src/css/layout.css">
+  <link rel="stylesheet" href="src/css/panel.css">
+  <link rel="stylesheet" href="src/css/upload.css">
+  <link rel="stylesheet" href="src/css/persona.css">
+  <link rel="stylesheet" href="src/css/map.css">
+  <link rel="stylesheet" href="src/css/chips.css">
+  <link rel="stylesheet" href="src/css/phone.css">
+  <link rel="stylesheet" href="src/css/caption.css">
+  <link rel="stylesheet" href="src/css/stitch.css">
+  <link rel="stylesheet" href="src/css/bottom-bar.css">
+  <link rel="stylesheet" href="src/css/monitor.css">
+  <link rel="stylesheet" href="src/css/analytics.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sb-logo">
+    <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 1C10.5 1 6.5 5.3 6.5 10.8c0 3.6 2.1 7.5 6.2 11.7.9.9 1.9 1.8 2.9 2.7l.4.3.4-.3c1-.9 2-1.8 2.9-2.7 4.1-4.2 6.2-8.1 6.2-11.7C25.5 5.3 21.5 1 16 1zm0 13.2c-1.9 0-3.4-1.5-3.4-3.4S14.1 7.4 16 7.4s3.4 1.5 3.4 3.4-1.5 3.4-3.4 3.4z"/>
+    </svg>
+  </div>
+  <div class="sb-icon active" onclick="switchMenu('command')">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+  </div>
+  <div class="sb-icon" onclick="switchMenu('monitor')">
+    <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+  </div>
+  <div class="sb-icon" onclick="switchMenu('analytics')">
+    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+  </div>
+</div>
+
+<div class="main">
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="header-title" id="headerTitle">Creative Command Center</div>
+      <div class="header-sub" id="headerSub">Orchestrate your cross-platform digital presence with precision.</div>
+    </div>
+    <div class="header-right">
+      <div class="search-bar">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input placeholder="Search campaigns, assets...">
+      </div>
+      <div id="bufferIndicator"></div>
+      <div class="notif-btn"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg></div>
+      <div class="avatar">BO</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div id="view-command" style="display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;">
+    <div class="panels">
+
+      <!-- LEFT: Creative Assets -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-icon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </div>
+          <div>
+            <div class="panel-title">Creative Assets</div>
+            <div class="panel-sub">Max 5 Photos or 1 Video</div>
+          </div>
+        </div>
+        <div class="panel-body">
+
+          <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+            <div class="plus-icon">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </div>
+            <div class="upload-label">Upload</div>
+            <div class="upload-caption">Drag photos here or click to browse</div>
+          </div>
+          <input type="file" id="fileInput" accept="image/*,video/*" multiple style="display:none" onchange="handleUpload(event)">
+          <div class="uploaded-thumbs" id="thumbs" style="display:none"></div>
+
+          <div class="scanning" id="scanning">
+            <div class="scan-dot"></div><div class="scan-dot"></div><div class="scan-dot"></div>
+            <div class="scan-text" id="scanText">Scanning your asset for optimal targeting...</div>
+          </div>
+
+          <div class="cat-nudge" id="catNudge">
+            <div class="nudge-title">Bantu AI lebih akurat — pilih kategori bisnis</div>
+            <div class="cat-tiles">
+              <div class="cat-tile" onclick="selectCat(this,'Kuliner')"><span class="cat-emoji">🍔</span>Kuliner</div>
+              <div class="cat-tile" onclick="selectCat(this,'FashionWanita')"><span class="cat-emoji">👗</span>F. Wanita</div>
+              <div class="cat-tile" onclick="selectCat(this,'FashionPria')"><span class="cat-emoji">👔</span>F. Pria</div>
+              <div class="cat-tile" onclick="selectCat(this,'FashionMuslim')"><span class="cat-emoji">🧕</span>F. Muslim</div>
+              <div class="cat-tile" onclick="selectCat(this,'Properti')"><span class="cat-emoji">🏠</span>Properti</div>
+              <div class="cat-tile" onclick="selectCat(this,'Beauty')"><span class="cat-emoji">💄</span>Beauty</div>
+              <div class="cat-tile" onclick="selectCat(this,'Bayi')"><span class="cat-emoji">👶</span>Bayi</div>
+              <div class="cat-tile" onclick="selectCat(this,'Gadget')"><span class="cat-emoji">📱</span>Gadget</div>
+              <div class="cat-tile" onclick="selectCat(this,'Wisata')"><span class="cat-emoji">✈️</span>Wisata</div>
+              <div class="cat-tile" onclick="selectCat(this,'Pet')"><span class="cat-emoji">🐾</span>Pet</div>
+              <div class="cat-tile" onclick="selectCat(this,'Seni')"><span class="cat-emoji">🎨</span>Seni</div>
+            </div>
+          </div>
+
+          <div class="persona-card" id="personaCard">
+            <div class="persona-top">
+              <div class="persona-check">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="persona-badge" id="personaBadge">Master Persona</div>
+              <button class="persona-edit-btn" id="personaEditBtn" onclick="openEditPersona()" style="display:none">✏️ Edit</button>
+            </div>
+            <div class="persona-name" id="personaName">Culinary / Cafe</div>
+            <div class="persona-targeting" id="personaTarget">Targeting: Foodies & Urban Professionals</div>
+            <div class="persona-age" id="personaAge">Age range: 20–40 · Mixed</div>
+            <div class="persona-tags" id="personaTags"></div>
+          </div>
+
+          <div style="height:1px;background:var(--border);margin:0 -18px"></div>
+          <div class="section-label">Target Audience</div>
+
+          <div class="audience-item">
+            <svg class="aud-icon" id="localIcon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <div style="flex:1;">
+              <div class="aud-title" id="localTitle">Local Resident</div>
+              <div class="aud-desc" id="localDesc">Target users who currently live in the selected radar area.</div>
+            </div>
+            <div class="toggle" id="toggleLocal" onclick="toggleLocalFn()"><div class="toggle-knob"></div></div>
+          </div>
+
+          <div class="audience-item" id="travelerItem">
+            <svg class="aud-icon" viewBox="0 0 24 24" id="travelerIcon"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <div style="flex:1;">
+              <div class="aud-title" id="travelerTitle">Traveler</div>
+              <div class="aud-desc" id="travelerDesc">Target users who are currently visiting or recently visited the area.</div>
+            </div>
+            <div class="toggle" id="toggleTraveler" onclick="toggleTravelerFn()" style="cursor:pointer"><div class="toggle-knob"></div></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- MIDDLE: Map -->
+      <div class="panel" style="padding:0;position:relative;overflow:visible;">
+        <div class="map-search">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="mapSearchInput" placeholder="Tentukan lokasi bisnis atau titik target iklan Anda..." oninput="onSearchInput(this.value)" autocomplete="off">
+          <div id="searchDropdown" style="position:absolute;top:52px;left:0;right:0;background:#fff;border-radius:0 0 12px 12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:2000;display:none;max-height:200px;overflow-y:auto;"></div>
+        </div>
+        <div id="map" style="border-radius:var(--radius-card)"></div>
+        <div class="map-popup">
+          <div class="popup-loc">Sumbersari, Daerah Istimewa Yogyakarta</div>
+          <div class="popup-reach" id="popupReach">REACH: 95,000 PEOPLE</div>
+        </div>
+        <div class="radius-bar">
+          <div class="radius-row">
+            <div class="radius-label">Target Radius</div>
+            <div class="radius-val" id="radiusVal">1.0 KM</div>
+          </div>
+          <input type="range" min="1" max="25" value="1" step="0.5" oninput="updateRadius(this.value)">
+          <div class="drag-hint">Drag to expand reach</div>
+        </div>
+      </div>
+
+      <!-- RIGHT: AI Editor -->
+      <div class="panel" style="display:flex;flex-direction:column;">
+        <div class="panel-header" style="justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="panel-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+            </div>
+            <div>
+              <div class="panel-title">AI Editor Command Center</div>
+              <div class="panel-sub">Real-time Content Optimization</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p3-body">
+
+          <!-- LEFT: Preview Selector → Visual Filters → AI Caption → Publish -->
+          <div class="p3-left">
+
+            <!-- 1. Publish ke Channel Selector -->
+            <div class="opt-mode-row">
+              <div class="opt-mode-tag">Publish ke Channel</div>
+              <div class="preview-label-badge" id="previewLabel" onclick="cycleChannel()" style="cursor:pointer;user-select:none;" title="Klik untuk ganti platform">Instagram</div>
+            </div>
+
+            <!-- 2. Visual Filters -->
+            <div>
+              <div class="section-label" style="margin-bottom:10px;">Visual Filters</div>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div class="filter-row">
+                  <div class="filter-label">Brightness</div>
+                  <input type="range" min="0" max="200" value="100" oninput="brightnessVal=parseInt(this.value);document.getElementById('bVal').textContent=this.value+'%';applyFilters()">
+                  <div class="filter-val" id="bVal">100%</div>
+                </div>
+                <div class="filter-row">
+                  <div class="filter-label">Contrast</div>
+                  <input type="range" min="0" max="200" value="100" oninput="contrastVal=parseInt(this.value);document.getElementById('cVal').textContent=this.value+'%';applyFilters()">
+                  <div class="filter-val" id="cVal">100%</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. AI Caption -->
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div class="section-label">AI Optimized Caption</div>
+                <div id="captionPlatformLabel" style="font-size:10px;font-weight:700;color:#791ADB;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:4px;"></div>
+              </div>
+              <div class="caption-box">
+                <textarea id="captionArea" placeholder="AI akan otomatis generate caption setelah foto diupload..." rows="5"></textarea>
+                <div class="caption-actions">
+                  <button class="gen-btn" id="genBtn" onclick="generateCaption(true)">Generate ulang</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5. Connect Channels -->
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--secondary);">Connect Channels</div>
+                <button id="connectSettingsBtn" onclick="showManageChannelsModal()" style="display:none;background:none;border:none;cursor:pointer;padding:3px 5px;color:var(--secondary);border-radius:6px;line-height:1;transition:.15s;" title="Kelola akun terhubung" onmouseenter="this.style.color='#791ADB'" onmouseleave="this.style.color='var(--secondary)'">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                </button>
+              </div>
+              <div id="connectedAvatarsRow" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <button id="addChannelBtn" onclick="showConnectAccountsFlow()" class="add-channel-btn" title="Tambah Channel">
+                  <span class="add-icon">+</span>
+                  <span class="add-label">Connect Channel</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- RIGHT: Live Preview label + Phone mockup + Geo-Stitching -->
+          <div class="p3-right">
+
+            <!-- Hidden chips for JS logic -->
+            <div id="previewChips" style="display:none">
+              <div class="chip-preview active" data-platform="ig-story" onclick="selectPreview(this)">📷 IG Story/Reels</div>
+              <div class="chip-preview" data-platform="ig-feed"  onclick="selectPreview(this)">📸 IG Feed</div>
+              <div class="chip-preview" data-platform="tiktok"   onclick="selectPreview(this)">🎵 TikTok</div>
+              <div class="chip-preview" data-platform="youtube"  onclick="selectPreview(this)">▶ YouTube</div>
+              <div class="chip-preview" data-platform="meta"     onclick="selectPreview(this)">⊡ Meta Feed</div>
+            </div>
+            <div id="ratioLabel" style="display:none">9:16 — Stories</div>
+
+            <!-- Live Preview label + format selector (2 baris) -->
+            <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
+              <!-- Baris 1: LIVE PREVIEW + nama platform+format -->
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div class="section-label">Live Preview</div>
+                <span id="livePreviewPlatformLabel" style="font-size:11px;font-weight:600;color:var(--secondary);letter-spacing:0.2px;">Instagram Reel</span>
+              </div>
+              <!-- Baris 2: Post / Reel / Story full-width (hanya Instagram & Facebook) -->
+              <div id="formatSelector" class="fmt-selector-row">
+                <label class="fmt-radio-label"><input type="radio" name="fmt" value="post" onchange="selectFormat('post')"> Post</label>
+                <label class="fmt-radio-label"><input type="radio" name="fmt" value="reel" checked onchange="selectFormat('reel')"> Reel</label>
+                <label class="fmt-radio-label"><input type="radio" name="fmt" value="story" onchange="selectFormat('story')"> Story</label>
+              </div>
+            </div>
+
+            <!-- Phone mockup -->
+            <div class="preview-wrap" style="flex:1; padding:16px;">
+              <div style="display:flex; justify-content:center; align-items:center; flex:1; width:100%;">
+                <div class="phone-shell" id="phoneShell">
+                  <div id="phoneChrome"></div>
+                  <div class="phone-placeholder" id="phoneMedia">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  </div>
+                  <div class="phone-stitch" id="phoneStitch" style="display:none" contenteditable="true" spellcheck="false"></div>
+                </div>
+              </div>
+              <!-- Carousel dots — muncul saat foto > 1 -->
+              <div id="carouselDots" style="display:none;gap:6px;justify-content:center;align-items:center;padding-top:10px;flex-shrink:0;"></div>
+            </div>
+
+            <!-- Smart Geo-Stitching -->
+            <div class="stitch-card" id="stitchCard" style="display:none">
+              <div class="stitch-top">
+                <div class="stitch-icon">
+                  <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <div class="stitch-title">Smart Geo-Stitching</div>
+              </div>
+              <div class="stitch-desc">Real-time location tags yang stop the scroll! Meningkatkan local engagement sebesar <span class="stitch-highlight">40%.</span></div>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="padding:10px 18px;border-top:1px solid var(--border);flex-shrink:0;">
+          <div class="free-badge">
+            <span style="font-size:16px;">🎁</span>
+            <span class="free-text">Free AI Launch: <span id="freeCount">10</span>/10 Remaining</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /panels -->
+
+    <!-- Bottom Bar -->
+    <div class="bottom-bar">
+      <div>
+        <div class="reach-label">Estimasi Jangkauan</div>
+        <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;">
+          <div style="font-size:22px;font-weight:700;color:var(--near-black);letter-spacing:-0.44px;" id="reachNum">72K – 119K</div>
+          <div style="font-size:13px;color:var(--secondary);">orang bisa lihat iklanmu</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0;margin-top:6px;">
+          <div style="display:flex;align-items:center;gap:5px;" id="reachPct"></div>
+          <span id="reachDivider" style="width:1px;height:11px;background:var(--secondary);opacity:0.3;margin:0 8px;display:none;"></span>
+          <div style="font-size:11px;color:var(--secondary);" id="reachLocLabel"></div>
+        </div>
+      </div>
+      <div class="bar-divider"></div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex:1;">
+        <div class="reach-label">Optimized Placements</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <div class="placement-text">Multi-Channel Dynamic Split</div>
+        </div>
+        <div style="font-size:11px;color:var(--secondary);">AI akan otomatis membagi budget iklan Anda ke platform yang memberikan jangkauan terbaik secara real-time.</div>
+      </div>
+      <button class="launch-btn" onclick="launchRadar()">
+        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        LAUNCH RADAR
+      </button>
+    </div>
+    </div><!-- /view-command -->
+
+    <!-- View 2: Campaign Live Monitor -->
+    <div id="view-monitor" style="display:none;flex-direction:column;flex:1;min-height:0;">
+      <div class="panels-monitor">
+
+        <!-- LEFT: Campaign List -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-icon">
+              <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <div>
+              <div class="panel-title">Live Campaigns</div>
+              <div class="panel-sub">Campaign yang sedang berjalan</div>
+            </div>
+            <div class="monitor-tabs">
+              <div class="monitor-tab active" onclick="filterCampaigns('all',this)">All</div>
+              <div class="monitor-tab" onclick="filterCampaigns('running',this)">Running</div>
+              <div class="monitor-tab" onclick="filterCampaigns('paused',this)">Paused</div>
+            </div>
+          </div>
+          <div id="campaign-list"></div>
+        </div>
+
+        <!-- RIGHT: AI Chat Panel -->
+        <div class="panel" style="padding:0;display:flex;flex-direction:column;">
+          <!-- Header -->
+          <div class="chat-panel-header" style="flex-direction:column;align-items:stretch;gap:8px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="panel-icon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+              </div>
+              <div class="panel-title" style="white-space:nowrap;">AI Co-Pilot</div>
+            </div>
+            <div class="context-pill" id="contextPill" style="width:fit-content;max-width:100%;">
+              <span class="ctx-dot" id="ctxDot"></span>
+              <span style="color:var(--secondary);">Pilih campaign</span>
+            </div>
+          </div>
+
+          <!-- Chat body -->
+          <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;">
+            <!-- Empty state -->
+            <div class="chat-empty" id="chatEmpty">
+              <div class="chat-empty-icon">
+                <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              </div>
+              <div class="chat-empty-title">AI Co-Pilot siap</div>
+              <div class="chat-empty-sub">Pilih salah satu campaign di kiri untuk mulai bicara dengan AI co-pilot.</div>
+            </div>
+            <!-- Messages -->
+            <div class="chat-messages" id="chatMessages" style="display:none;"></div>
+          </div>
+
+          <!-- Input area -->
+          <div class="chat-input-area">
+            <div class="chat-input-wrap">
+              <textarea class="chat-input-field" id="chatInput" placeholder="Ketik pesan ke AI..." rows="1"
+                onkeydown="handleChatKey(event)" oninput="autoResizeChat(this)"></textarea>
+            </div>
+            <button class="chat-send-btn" onclick="sendChatMessage()">
+              <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /view-monitor -->
+
+    <!-- View 3: Analytics & Estimate Hub -->
+    <div id="view-analytics" style="display:none;flex-direction:column;flex:1;min-height:0;gap:12px;overflow-y:auto;padding-bottom:24px;">
+
+      <!-- Filter Row -->
+      <div class="an-filter-row">
+        <div class="an-date-pills" id="anDatePills">
+          <div class="an-date-pill" onclick="setAnPeriod('7d',this)">7H</div>
+          <div class="an-date-pill active" onclick="setAnPeriod('30d',this)">30H</div>
+          <div class="an-date-pill" onclick="setAnPeriod('90d',this)">90H</div>
+        </div>
+        <span class="an-data-note">Data campaign RADAR kamu</span>
+        <button class="an-export-btn-content" id="anExportBtn" onclick="handleExport()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export PDF
+        </button>
+      </div>
+
+      <!-- KPI Row -->
+      <div class="kpi-row">
+        <div class="kpi-card purple">
+          <div class="kpi-label">Total Jangkauan</div>
+          <div class="kpi-value" id="anKpiReach">48.4rb</div>
+          <div class="kpi-sub"><span class="kpi-badge up" id="anKpiReachBadge">↑ 23%</span> vs periode lalu</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">Engagement Rate</div>
+          <div class="kpi-value" id="anKpiEng">6.8%</div>
+          <div class="kpi-sub"><span class="kpi-badge up" id="anKpiEngBadge">↑ 1.2%</span> rata-rata kategori 2.3%</div>
+        </div>
+        <div class="kpi-card amber">
+          <div class="kpi-label">Total CTR <span class="kpi-info" title="CTR = % orang yang klik iklanmu setelah melihatnya. Makin tinggi = makin menarik iklanmu.">ⓘ</span></div>
+          <div class="kpi-value" id="anKpiCtr">4.2%</div>
+          <div class="kpi-sub"><span class="kpi-badge up" id="anKpiCtrBadge">↑ 0.8%</span> <span id="anKpiCtrNote">benchmark 1.8%</span></div>
+        </div>
+        <div class="kpi-card blue">
+          <div class="kpi-label">Budget Terpakai</div>
+          <div class="kpi-value" id="anKpiBudget">Rp 2.4jt</div>
+          <div class="kpi-sub"><span class="kpi-badge down" id="anKpiBudgetBadge">↓ 12%</span> <span id="anKpiBudgetSub">dari Rp 2.7jt dialokasi</span></div>
+        </div>
+      </div>
+
+      <!-- Main Grid: Left (insight dominan) + Right (data angka) -->
+      <div class="an-main-grid">
+
+        <!-- LEFT: Insight & Actions -->
+        <div class="an-col-left">
+
+          <!-- AI Summary -->
+          <div class="ai-card" id="anAiPanel">
+            <!-- Rendered by JS -->
+          </div>
+
+          <!-- Local Pulse -->
+          <div class="local-pulse-card">
+            <div class="local-pulse-header">
+              <div class="local-pulse-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                The Local Pulse
+              </div>
+              <div class="local-pulse-badge">FITUR LOKAL</div>
+            </div>
+            <div class="local-pulse-body">
+              <div class="pulse-insight">
+                <div class="pulse-emoji">🗣️</div>
+                <div>
+                  <div class="pulse-text">Sapaan <strong>"Sugeng Rawuh"</strong> terbukti meningkatkan durasi tonton Reels kamu secara signifikan.</div>
+                  <div class="pulse-compare" style="margin-top:8px;">
+                    <div class="pulse-compare-item local">
+                      <div class="pulse-compare-label">Sapaan Lokal</div>
+                      <div class="pulse-compare-val purple">18 dtk</div>
+                      <div class="pulse-compare-sub">avg watch time</div>
+                    </div>
+                    <div class="pulse-compare-item formal">
+                      <div class="pulse-compare-label">Sapaan Formal</div>
+                      <div class="pulse-compare-val">11 dtk</div>
+                      <div class="pulse-compare-sub">avg watch time</div>
+                    </div>
+                  </div>
+                  <div class="pulse-metric">
+                    <div class="pulse-metric-val">+64%</div>
+                    <div class="pulse-metric-label">lebih lama ditonton<br>identitas lokalmu adalah aset.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pencapaian Campaign -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-header-left">
+                <div class="panel-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+                </div>
+                <div>
+                  <div class="panel-title">Pencapaian Campaign</div>
+                  <div class="panel-sub">Progress & momentum kamu</div>
+                </div>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="achievement-row" style="margin-bottom:10px;">
+                <div class="achievement-item">
+                  <div class="achievement-icon">🔥</div>
+                  <div class="achievement-label">Streak Aktif</div>
+                  <div class="achievement-val">4 minggu</div>
+                </div>
+                <div class="achievement-item">
+                  <div class="achievement-icon">👥</div>
+                  <div class="achievement-label">Total Dijangkau</div>
+                  <div class="achievement-val" id="anAchTotal">48.4rb</div>
+                </div>
+                <div class="achievement-item">
+                  <div class="achievement-icon">📈</div>
+                  <div class="achievement-label">Rekor Reach</div>
+                  <div class="achievement-val">9.100</div>
+                </div>
+              </div>
+              <div style="background:rgba(34,197,94,0.08);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--near-black);line-height:1.55;">
+                💡 Bisnis yang konsisten <strong>4+ minggu</strong> rata-rata mendapat reach <strong>2.4× lebih besar</strong>. Kamu sudah di jalur yang tepat!
+              </div>
+            </div>
+          </div>
+
+          <!-- Next Campaign CTA -->
+          <div class="next-cta">
+            <div class="next-cta-top">
+              <div>
+                <div class="next-cta-title">Campaign berikutnya bisa menjangkau <span>12.000–15.000</span> orang</div>
+                <div class="next-cta-sub">AI sudah siapkan draft berdasarkan performa terbaikmu</div>
+              </div>
+              <div class="next-cta-stats">
+                <div class="next-stat">
+                  <div class="next-stat-val">+31%</div>
+                  <div class="next-stat-label">Est. boost</div>
+                </div>
+              </div>
+            </div>
+            <div class="next-streak" style="margin-bottom:2px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <div class="next-streak-text">Waktu terbaik publish: <strong>Kamis–Sabtu, pukul 18.00–20.00</strong></div>
+            </div>
+            <button class="next-cta-btn" onclick="switchMenu('command')">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7-7 7 7"/></svg>
+              Mulai Campaign Berikutnya →
+            </button>
+          </div>
+
+        </div><!-- /an-col-left -->
+
+        <!-- RIGHT: Data & Charts -->
+        <div class="an-col-right">
+
+          <!-- Estimasi vs Aktual + Chart -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-header-left">
+                <div class="panel-icon purple">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                </div>
+                <div>
+                  <div class="panel-title">Estimasi vs Aktual Jangkauan</div>
+                  <div class="panel-sub">Per platform · campaign aktif bulan ini</div>
+                </div>
+              </div>
+            </div>
+            <div class="panel-body">
+              <!-- Est cards -->
+              <div class="est-grid">
+                <div class="est-card">
+                  <div class="est-platform"><div class="est-platform-dot" style="background:#E1306C"></div>Instagram</div>
+                  <div class="est-row"><span class="est-key">Estimasi</span><span class="est-val" id="anEvaIgEst">12.000</span></div>
+                  <div class="est-row"><span class="est-key">Aktual</span><span class="est-val accent" id="anEvaIgAct">14.800</span></div>
+                  <div class="est-gap over" id="anEvaIgGap">↑ +23% overperform</div>
+                </div>
+                <div class="est-card">
+                  <div class="est-platform"><div class="est-platform-dot" style="background:#010101"></div>TikTok</div>
+                  <div class="est-row"><span class="est-key">Estimasi</span><span class="est-val" id="anEvaTtEst">18.000</span></div>
+                  <div class="est-row"><span class="est-key">Aktual</span><span class="est-val accent" id="anEvaTtAct">24.200</span></div>
+                  <div class="est-gap over" id="anEvaTtGap">↑ +34% overperform</div>
+                </div>
+                <div class="est-card">
+                  <div class="est-platform"><div class="est-platform-dot" style="background:#1877F2"></div>Meta Feed</div>
+                  <div class="est-row"><span class="est-key">Estimasi</span><span class="est-val" id="anEvaMetaEst">10.000</span></div>
+                  <div class="est-row"><span class="est-key">Aktual</span><span class="est-val" style="color:#dc2626" id="anEvaMetaAct">8.700</span></div>
+                  <div class="est-gap under" id="anEvaMetaGap">↓ -13% underperform</div>
+                </div>
+              </div>
+              <!-- Chart tabs -->
+              <div class="tab-row">
+                <button class="tab-btn active" onclick="switchChartTab(this,'reach')">Reach</button>
+                <button class="tab-btn" onclick="switchChartTab(this,'engagement')">Engagement</button>
+                <button class="tab-btn" onclick="switchChartTab(this,'ctr')">CTR</button>
+              </div>
+              <div class="chart-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#791ADB"></div>Instagram</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#222222"></div>TikTok</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>Meta Feed</div>
+              </div>
+              <div class="chart-wrap">
+                <canvas id="reachChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Budget Breakdown -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-header-left">
+                <div class="panel-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                </div>
+                <div>
+                  <div class="panel-title">Budget Allocation Breakdown</div>
+                  <div class="panel-sub">Distribusi budget per platform</div>
+                </div>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div style="display:grid;grid-template-columns:1fr 160px;gap:16px;align-items:center;">
+                <div class="budget-list" id="anBudgetList">
+                  <!-- Rendered by JS -->
+                </div>
+                <div style="position:relative;height:150px;">
+                  <canvas id="budgetChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /an-col-right -->
+
+      </div><!-- /an-main-grid -->
+
+      <!-- Freemium Bar -->
+      <div style="background:var(--white);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:32px;height:32px;border-radius:8px;background:rgba(121,26,219,0.1);display:flex;align-items:center;justify-content:center;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#791ADB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--near-black);">Buka fitur lengkap — Benchmark Kategori, Export PDF &amp; Audience Insights</div>
+            <div style="font-size:11px;color:var(--secondary);margin-top:2px;">Upgrade ke RADAR Pro dan lihat seberapa jauh bisnis kamu bisa berkembang.</div>
+          </div>
+        </div>
+        <button onclick="handleUpgrade()" style="background:var(--rausch);color:white;border:none;border-radius:var(--radius-btn);padding:8px 18px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;white-space:nowrap;">Upgrade Pro</button>
+      </div>
+
+    </div><!-- /view-analytics -->
+
+  </div>
+</div>
+
+  <!-- Scripts: data first, then modules, then main -->
+
+  <!-- Config — harus paling pertama -->
+  <script src="src/js/config.js"></script>
+
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="src/js/supabase.js"></script>
+
+  <!-- Buffer -->
+  <script src="src/js/buffer.js"></script>
+
+  <!-- html2canvas CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <!-- Export engine -->
+  <script src="src/js/export.js"></script>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="src/data/locations.js"></script>
+  <script src="src/data/region-dialek.js"></script>
+  <script src="src/data/personas.js"></script>
+  <script src="src/data/caption-templates.js"></script>
+  <script src="src/js/state.js"></script>
+  <script src="src/js/reach.js"></script>
+  <script src="src/js/map.js"></script>
+  <script src="src/js/upload.js"></script>
+  <script src="src/js/phone-preview.js"></script>
+  <script src="src/js/persona.js"></script>
+  <script src="src/js/caption.js"></script>
+  <script src="src/js/stitch.js"></script>
+  <script src="src/js/launch.js"></script>
+  <script src="src/js/main.js"></script>
+  <script src="src/js/boost.js"></script>
+  <script src="src/js/monitor.js"></script>
+  <script src="src/js/analytics.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <!-- Launch Sequence Modal (Loading → Success) -->
+  <div id="launchingModal" class="lm-overlay">
+    <div class="ll-card">
+      <!-- State 1: Loading -->
+      <div id="llLoading" class="ll-state">
+        <div class="ll-spinner-wrap">
+          <div class="ll-spinner"></div>
+          <div class="ll-spinner-icon">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+        </div>
+        <div class="ll-loading-title">Meluncurkan campaign...</div>
+        <div id="llCampName" class="ll-camp-name"></div>
+        <div class="ll-loading-dots"><span></span><span></span><span></span></div>
+      </div>
+      <!-- State 2: Success -->
+      <div id="llSuccess" class="ll-state" style="display:none;">
+        <div class="ll-success-ring">
+          <svg class="ll-checkmark" viewBox="0 0 52 52">
+            <circle class="ll-check-circle" cx="26" cy="26" r="23" fill="none"/>
+            <polyline class="ll-check-stroke" points="14,26 22,34 38,18" fill="none"/>
+          </svg>
+        </div>
+        <div class="ll-success-title">Campaign berhasil diluncurkan!</div>
+        <div id="llSuccessCampName" class="ll-camp-name"></div>
+        <div class="ll-redirect-hint">
+          <svg viewBox="0 0 24 24" width="12" height="12"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          Membuka Campaign Live Monitor...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Launch Validation Modal -->
+  <div id="launchModal" class="lm-overlay" onclick="closeLaunchModal(event)">
+    <div class="lm-card">
+      <div class="lm-icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      </div>
+      <div class="lm-title">Hampir siap!</div>
+      <div class="lm-sub">Lengkapi langkah berikut sebelum launch:</div>
+      <div id="lmChecklist" class="lm-checklist"></div>
+      <button class="lm-cta" onclick="document.getElementById('launchModal').style.display='none'">Oke, saya lengkapi</button>
+    </div>
+  </div>
+  <div id="an-toast" class="an-toast" style="display:none"></div>
+</body>
+</html>
