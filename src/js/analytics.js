@@ -1,708 +1,622 @@
-// RADAR — analytics.js
-// Analytics & Estimate Hub
+// RADAR — analytics.js v2
+// Analytics & Estimate Hub — "Laporan Bisnis" concept
 
 /* ─────────────────────────────────────────
-   KPI Mock Data per Period
+   A. buildAnalyticsPrompt(campaigns)
+   Bangun prompt untuk Claude API dari data CAMPAIGNS
    ───────────────────────────────────────── */
-var AN_KPI = {
-  '7d': {
-    reach: '12.1rb', reachBadge: '↑ 18%', reachDir: 'up',
-    eng: '6.8%',    engBadge:   '↑ 1.2%', engDir:   'up',
-    ctr: '4.2%',    ctrBadge:   '↑ 0.8%', ctrDir:   'up',   ctrNote: 'benchmark 1.8%',
-    budget: 'Rp 780rb', budgetBadge: '↓ 8%', budgetDir: 'down', budgetNote: 'dari Rp 850rb dialokasi',
-    achTotal: '12.1rb',
-    eva: {
-      ig:   { est: '4.200',  act: '5.100',  gap: '↑ +21% overperform', dir: 'over' },
-      tt:   { est: '5.800',  act: '7.800',  gap: '↑ +34% overperform', dir: 'over' },
-      meta: { est: '3.200',  act: '2.800',  gap: '↓ -13% underperform', dir: 'under' }
-    }
-  },
-  '30d': {
-    reach: '48.4rb', reachBadge: '↑ 23%', reachDir: 'up',
-    eng: '6.8%',    engBadge:   '↑ 1.2%', engDir:   'up',
-    ctr: '4.2%',    ctrBadge:   '↑ 0.8%', ctrDir:   'up',   ctrNote: 'benchmark 1.8%',
-    budget: 'Rp 2.4jt', budgetBadge: '↓ 12%', budgetDir: 'down', budgetNote: 'dari Rp 2.7jt dialokasi',
-    achTotal: '48.4rb',
-    eva: {
-      ig:   { est: '12.000', act: '14.800', gap: '↑ +23% overperform', dir: 'over' },
-      tt:   { est: '18.000', act: '24.200', gap: '↑ +34% overperform', dir: 'over' },
-      meta: { est: '10.000', act: '8.700',  gap: '↓ -13% underperform', dir: 'under' }
-    }
-  },
-  '90d': {
-    reach: '141rb',  reachBadge: '↑ 31%', reachDir: 'up',
-    eng: '6.4%',    engBadge:   '↑ 0.9%', engDir:   'up',
-    ctr: '3.9%',    ctrBadge:   '↑ 0.5%', ctrDir:   'up',   ctrNote: 'benchmark 1.8%',
-    budget: 'Rp 6.8jt', budgetBadge: '↑ 5%', budgetDir: 'up', budgetNote: 'dari Rp 6.5jt dialokasi',
-    achTotal: '141rb',
-    eva: {
-      ig:   { est: '36.000', act: '44.100', gap: '↑ +23% overperform', dir: 'over' },
-      tt:   { est: '54.000', act: '72.600', gap: '↑ +34% overperform', dir: 'over' },
-      meta: { est: '30.000', act: '26.100', gap: '↓ -13% underperform', dir: 'under' }
-    }
-  }
-};
+function buildAnalyticsPrompt(campaigns) {
+  var real = (campaigns || []).filter(function(c) { return !c.isDemo; });
+  var total = real.length;
 
-/* ─────────────────────────────────────────
-   Chart Data (30-day rolling, 3 datasets)
-   ───────────────────────────────────────── */
-var chartData = {
-  reach: {
-    ig:     [3200,2800,4100,3600,4800,5200,4600,5800,6200,5400,6800,7100,6400,7800,8200,7600,8900,9100,8400,9800,10200,9600,11000,10800,11400,12100,11600,12800,13200,14800],
-    tiktok: [4100,5200,6800,5400,7200,8100,7600,9200,10400,9800,11200,12100,11600,13200,14100,13600,15200,16100,15600,17200,18100,17600,19200,20100,19600,21200,22100,21600,23200,24200],
-    meta:   [1800,2100,1600,2400,2800,2200,3100,2600,3400,2900,3600,3100,3800,3200,4100,3400,4400,3600,4700,3900,5000,4200,5300,4600,5600,4900,5900,5200,6200,8700]
-  },
-  engagement: {
-    ig:     [4.2,4.5,5.1,4.8,5.6,5.9,5.4,6.2,6.8,6.4,7.1,7.4,6.9,7.8,8.1,7.6,8.4,8.8,8.2,9.1,9.4,8.8,9.7,9.2,9.8,10.2,9.6,10.4,10.8,11.2],
-    tiktok: [5.1,5.8,6.4,5.9,7.1,7.8,7.2,8.4,9.1,8.6,9.8,10.4,9.8,11.2,11.8,11.2,12.4,12.9,12.2,13.4,13.8,13.1,14.4,13.8,14.4,15.1,14.4,15.8,16.2,16.8],
-    meta:   [2.1,2.4,2.0,2.8,3.2,2.6,3.6,3.0,3.9,3.4,4.2,3.6,4.4,3.7,4.8,3.9,5.1,4.2,5.4,4.6,5.8,4.9,6.2,5.3,6.5,5.7,6.8,6.0,7.1,6.8]
-  },
-  ctr: {
-    ig:     [2.1,2.4,2.8,2.5,3.1,3.4,3.0,3.8,4.1,3.7,4.5,4.8,4.3,5.1,5.4,4.9,5.8,6.1,5.6,6.4,6.8,6.2,7.1,6.8,7.2,7.6,7.1,7.9,8.2,8.8],
-    tiktok: [1.8,2.1,2.5,2.2,2.9,3.2,2.8,3.6,3.9,3.5,4.3,4.6,4.1,4.9,5.2,4.8,5.6,5.9,5.4,6.2,6.6,6.1,6.9,6.5,7.0,7.4,6.9,7.7,8.1,8.6],
-    meta:   [0.9,1.1,0.8,1.4,1.6,1.2,1.8,1.4,2.0,1.7,2.2,1.8,2.4,1.9,2.6,2.1,2.8,2.2,3.0,2.4,3.2,2.6,3.4,2.8,3.6,3.0,3.8,3.2,4.0,3.4]
-  }
-};
+  var platCount  = {};
+  var formatCount = {};
+  var areas      = [];
+  var totalReach = 0;
+  var maxReachCamp = null;
 
-/* Generate 30-day date labels */
-var chartLabels = (function() {
-  var arr = [];
-  for (var i = 30; i >= 1; i--) {
-    var d = new Date();
-    d.setDate(d.getDate() - i);
-    arr.push(d.getDate() + '/' + (d.getMonth() + 1));
-  }
-  return arr;
-})();
-
-/* ─────────────────────────────────────────
-   AI Insights per Period
-   ───────────────────────────────────────── */
-var AN_INSIGHTS = {
-  '7d': [
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
-      text: 'Campaign <strong>Kuliner Jogja Selatan</strong> kamu menjangkau <strong>7.800 orang nyata</strong> minggu ini — CTR-nya 2× di atas benchmark kategori.'
-    },
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
-      text: 'Meta Feed <strong>-13% dari estimasi</strong> minggu ini. Coba alihkan Rp 50rb dari Meta ke TikTok untuk tambah <strong>800 reach</strong>.'
-    },
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#791ADB" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
-      text: 'Sapaan lokal <strong>"Sugeng Rawuh"</strong> di TikTok kamu mendapat watch time <strong>+64%</strong> lebih lama dibanding konten tanpa sapaan lokal.'
-    }
-  ],
-  '30d': [
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
-      text: 'Campaign <strong>Kuliner Jogja Selatan</strong> kamu menjangkau <strong>24.200 orang nyata</strong> — 2× lebih baik dari benchmark kategori yang sama.'
-    },
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
-      text: 'Budget Meta Feed <strong>-13% dari estimasi</strong>. Coba alihkan Rp 200rb dari Meta ke TikTok untuk potensi tambah <strong>2.800 reach</strong>.'
-    },
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#791ADB" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
-      text: 'CTR kamu <strong>4.2%</strong> — rata-rata kategori Kuliner Jogja hanya <strong>1.8%</strong>. Kamu 2.3× di atas benchmark!'
-    }
-  ],
-  '90d': [
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
-      text: '3 bulan terakhir kamu menjangkau <strong>141.000 orang</strong> di Yogyakarta — rata-rata <strong>47rb per bulan</strong> secara konsisten.'
-    },
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
-      text: 'TikTok adalah channel paling efisien — cost-per-reach hanya <strong>Rp 42/orang</strong> vs Instagram Rp 68/orang.'
-    },
-    {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#791ADB" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
-      text: 'Identitas lokal "Sugeng Rawuh" konsisten <strong>+60–70% watch time</strong> selama 3 bulan. Ini diferensiasi nyata kamu vs kompetitor.'
-    }
-  ]
-};
-
-/* ─────────────────────────────────────────
-   State
-   ───────────────────────────────────────── */
-var _anChartsInitialized = false;
-var _anReachChart  = null;
-var _anBudgetChart = null;
-var _anCurrentPeriod = '30d';
-
-/* ─────────────────────────────────────────
-   Init
-   ───────────────────────────────────────── */
-function initAnalytics() {
-  if (_anChartsInitialized) {
-    renderAnKpi(_anCurrentPeriod);
-    loadAnalyticsData();
-    return;
-  }
-  _anChartsInitialized = true;
-  _anCurrentPeriod = '30d';
-  renderAnKpi('30d');
-  renderAnAi('30d');
-  updateReachChart('reach');
-  initBudgetChart();
-  renderBudgetList();
-  loadAnalyticsData();
-}
-
-/* ─────────────────────────────────────────
-   Period Switching
-   ───────────────────────────────────────── */
-function setAnPeriod(period, el) {
-  _anCurrentPeriod = period;
-  document.querySelectorAll('#anDatePills .an-date-pill').forEach(function(p) {
-    p.classList.remove('active');
-  });
-  el.classList.add('active');
-  renderAnKpi(period);
-  renderAnAi(period);
-}
-
-/* ─────────────────────────────────────────
-   KPI Render
-   ───────────────────────────────────────── */
-function renderAnKpi(period) {
-  var d = AN_KPI[period];
-  if (!d) return;
-
-  setText('anKpiReach', d.reach);
-  setBadge('anKpiReachBadge', d.reachBadge, d.reachDir);
-  setText('anKpiEng', d.eng);
-  setBadge('anKpiEngBadge', d.engBadge, d.engDir);
-  setText('anKpiCtr', d.ctr);
-  setBadge('anKpiCtrBadge', d.ctrBadge, d.ctrDir);
-  setText('anKpiCtrNote', d.ctrNote);
-  setText('anKpiBudget', d.budget);
-  setBadge('anKpiBudgetBadge', d.budgetBadge, d.budgetDir);
-  setText('anKpiBudgetSub', d.budgetNote);
-  setText('anAchTotal', d.achTotal);
-
-  // EVA cards
-  setEva('anEvaIgEst',   'anEvaIgAct',   'anEvaIgGap',   d.eva.ig);
-  setEva('anEvaTtEst',   'anEvaTtAct',   'anEvaTtGap',   d.eva.tt);
-  setEva('anEvaMetaEst', 'anEvaMetaAct', 'anEvaMetaGap', d.eva.meta);
-}
-
-function setText(id, val) {
-  var el = document.getElementById(id);
-  if (el) el.textContent = val;
-}
-
-function setBadge(id, text, dir) {
-  var el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = text;
-  el.className = 'kpi-badge ' + (dir === 'up' ? 'up' : 'down');
-}
-
-function setEva(estId, actId, gapId, data) {
-  setText(estId, data.est);
-  setText(actId, data.act);
-  var gapEl = document.getElementById(gapId);
-  if (gapEl) {
-    gapEl.textContent = data.gap;
-    gapEl.className = 'est-gap ' + data.dir;
-  }
-  // Meta actual color
-  if (actId === 'anEvaMetaAct' && gapEl) {
-    var actEl = document.getElementById(actId);
-    if (actEl) actEl.style.color = data.dir === 'under' ? '#dc2626' : 'var(--rausch)';
-  }
-}
-
-/* ─────────────────────────────────────────
-   AI Insights Render
-   ───────────────────────────────────────── */
-function renderAnAi(period) {
-  var panel = document.getElementById('anAiPanel');
-  if (!panel) return;
-  var insights = AN_INSIGHTS[period] || AN_INSIGHTS['30d'];
-
-  panel.innerHTML =
-    '<div class="ai-header">' +
-    '  <div class="ai-avatar"><svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7H3a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2zM5 19v2a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-2a2 2 0 00-2-2H7a2 2 0 00-2 2zm4-5a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2z"/></svg></div>' +
-    '  <div><div class="ai-name">RADAR AI Summary</div><div class="ai-tag">Berdasarkan data campaign kamu · diperbarui otomatis</div></div>' +
-    '</div>' +
-    '<div class="ai-insights">' +
-    insights.map(function(ins) {
-      return '<div class="ai-insight-item">' +
-        '<div class="ai-insight-icon">' + ins.icon + '</div>' +
-        '<div class="ai-insight-text">' + ins.text + '</div>' +
-        '</div>';
-    }).join('') +
-    '</div>';
-}
-
-/* ─────────────────────────────────────────
-   Budget List Render
-   ───────────────────────────────────────── */
-function renderBudgetList() {
-  var list = document.getElementById('anBudgetList');
-  if (!list) return;
-
-  var platforms = [
-    {
-      name: 'Instagram',
-      pct: 38, amt: 'Rp 912rb',
-      color: '#E1306C',
-      bgColor: 'rgba(225,48,108,0.1)',
-      icon: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#E1306C" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/></svg>'
-    },
-    {
-      name: 'TikTok',
-      pct: 45, amt: 'Rp 1.08jt',
-      color: '#010101',
-      bgColor: 'rgba(0,0,0,0.06)',
-      icon: '<svg width="12" height="12" viewBox="0 0 24 24" fill="#010101"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 106.33 6.34V8.69a8.18 8.18 0 004.79 1.54V6.78a4.85 4.85 0 01-1.02-.09z"/></svg>'
-    },
-    {
-      name: 'Meta Feed',
-      pct: 17, amt: 'Rp 408rb',
-      color: '#1877F2',
-      bgColor: 'rgba(24,119,242,0.1)',
-      icon: '<svg width="12" height="12" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>'
-    }
-  ];
-
-  list.innerHTML = platforms.map(function(p) {
-    return '<div class="budget-item">' +
-      '<div class="budget-item-header">' +
-      '<div class="budget-platform">' +
-      '<div class="budget-platform-icon" style="background:' + p.bgColor + '">' + p.icon + '</div>' +
-      p.name +
-      '</div>' +
-      '<div class="budget-vals">' +
-      '<span class="budget-pct">' + p.pct + '%</span>' +
-      '<span class="budget-amt">' + p.amt + '</span>' +
-      '</div>' +
-      '</div>' +
-      '<div class="budget-bar-bg"><div class="budget-bar" style="width:' + p.pct + '%;background:' + p.color + ';"></div></div>' +
-      '</div>';
-  }).join('');
-}
-
-/* ─────────────────────────────────────────
-   Reach Chart (Multi-line, destroy/recreate)
-   ───────────────────────────────────────── */
-function switchChartTab(el, type) {
-  document.querySelectorAll('.tab-btn').forEach(function(b) {
-    b.classList.remove('active');
-  });
-  el.classList.add('active');
-  updateReachChart(type);
-}
-
-function updateReachChart(type) {
-  if (_anReachChart) {
-    _anReachChart.destroy();
-    _anReachChart = null;
-  }
-  var canvas = document.getElementById('reachChart');
-  if (!canvas) return;
-  var ctx = canvas.getContext('2d');
-  var d = chartData[type];
-
-  _anReachChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: chartLabels,
-      datasets: [
-        {
-          label: 'Instagram',
-          data: d.ig,
-          borderColor: '#791ADB',
-          backgroundColor: 'rgba(121,26,219,0.06)',
-          borderWidth: 2,
-          pointRadius: 0,
-          pointHoverRadius: 4,
-          fill: true,
-          tension: 0.4
-        },
-        {
-          label: 'TikTok',
-          data: d.tiktok,
-          borderColor: '#222222',
-          backgroundColor: 'rgba(0,0,0,0.03)',
-          borderWidth: 2,
-          pointRadius: 0,
-          pointHoverRadius: 4,
-          fill: false,
-          tension: 0.4,
-          borderDash: [4, 3]
-        },
-        {
-          label: 'Meta Feed',
-          data: d.meta,
-          borderColor: '#3b82f6',
-          backgroundColor: 'rgba(59,130,246,0.04)',
-          borderWidth: 2,
-          pointRadius: 0,
-          pointHoverRadius: 4,
-          fill: false,
-          tension: 0.4
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#222222',
-          titleColor: 'rgba(255,255,255,0.6)',
-          bodyColor: 'white',
-          padding: 10,
-          cornerRadius: 8,
-          titleFont: { size: 11, family: 'Circular Std' },
-          bodyFont:  { size: 12, family: 'Circular Std', weight: '700' }
-        }
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          border: { display: false },
-          ticks: {
-            font: { size: 10, family: 'Circular Std' },
-            color: '#6a6a6a',
-            maxTicksLimit: 8,
-            autoSkip: true
-          }
-        },
-        y: {
-          grid: { color: 'rgba(0,0,0,0.04)' },
-          border: { display: false },
-          ticks: {
-            font: { size: 10, family: 'Circular Std' },
-            color: '#6a6a6a',
-            callback: function(v) {
-              if (v >= 1000) return (v / 1000).toFixed(0) + 'rb';
-              return v.toFixed(1);
-            }
-          }
-        }
-      }
-    }
-  });
-}
-
-/* ─────────────────────────────────────────
-   Budget Donut Chart
-   ───────────────────────────────────────── */
-function initBudgetChart() {
-  var canvas = document.getElementById('budgetChart');
-  if (!canvas) return;
-  var ctx = canvas.getContext('2d');
-
-  _anBudgetChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: ['Instagram', 'TikTok', 'Meta Feed'],
-      datasets: [{
-        data: [38, 45, 17],
-        backgroundColor: ['#E1306C', '#222222', '#1877F2'],
-        borderWidth: 3,
-        borderColor: '#ffffff',
-        hoverOffset: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '72%',
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#222222',
-          bodyColor: 'white',
-          padding: 8,
-          cornerRadius: 8,
-          bodyFont: { family: 'Circular Std' },
-          callbacks: {
-            label: function(ctx) {
-              return ' ' + ctx.label + ': ' + ctx.parsed + '%';
-            }
-          }
-        }
-      }
-    }
-  });
-}
-
-/* ─────────────────────────────────────────
-   Load Analytics Data from Supabase
-   ───────────────────────────────────────── */
-async function loadAnalyticsData() {
-  if (typeof getCampaigns !== 'function') return;
-  try {
-    var campaigns = await getCampaigns();
-    if (!campaigns || !campaigns.length) return;
-
-    var totalReach = campaigns.reduce(function(s, c) {
-      return s + (parseInt(c.estimated_reach_max) || 0);
-    }, 0);
-    var activeCnt = campaigns.filter(function(c) { return c.status === 'active'; }).length;
-    var platCount = {};
-    campaigns.forEach(function(c) {
-      (c.platforms || []).forEach(function(p) { platCount[p] = (platCount[p] || 0) + 1; });
+  real.forEach(function(c) {
+    (c.platforms || []).forEach(function(p) {
+      platCount[p] = (platCount[p] || 0) + 1;
     });
-    var strongestPlat = Object.keys(platCount).sort(function(a, b) {
-      return platCount[b] - platCount[a];
-    })[0] || '—';
+    if (c.format) formatCount[c.format] = (formatCount[c.format] || 0) + 1;
+    if (c.kecamatan) areas.push(c.kecamatan);
+    var r = c.reachMax || c.reachTarget || 0;
+    totalReach += r;
+    if (!maxReachCamp || r > (maxReachCamp.reachMax || maxReachCamp.reachTarget || 0)) {
+      maxReachCamp = c;
+    }
+  });
 
-    var reachStr = totalReach >= 1000000 ? (totalReach / 1000000).toFixed(1) + 'jt'
-                 : totalReach >= 1000    ? Math.round(totalReach / 1000) + 'rb'
-                 : totalReach.toString();
+  var platNames = { ig: 'Instagram', tiktok: 'TikTok', meta: 'Facebook', youtube: 'YouTube' };
+  var plats   = Object.keys(platCount).map(function(p) {
+    return (platNames[p] || p) + ' (' + platCount[p] + 'x)';
+  }).join(', ');
+  var formats = Object.keys(formatCount).map(function(f) {
+    return f + ' (' + formatCount[f] + ')';
+  }).join(', ');
+  var reachStr   = totalReach >= 1000 ? Math.round(totalReach / 1000) + 'rb' : String(totalReach);
+  var topCamp    = maxReachCamp
+    ? (maxReachCamp.name || maxReachCamp.nama_campaign || 'Campaign terbaru')
+    : '—';
+  var uniqueAreas = areas.filter(function(a, i) { return areas.indexOf(a) === i; }).join(', ');
 
-    var reachEl = document.getElementById('anKpiReach');
-    if (reachEl && totalReach > 0) reachEl.textContent = reachStr;
-
-    // Store for PDF and insight
-    window._anCampaigns    = campaigns;
-    window._anTotalReach   = totalReach;
-    window._anActiveCnt    = activeCnt;
-    window._anStrongestPlat = strongestPlat;
-
-    generateInsight(campaigns);
-  } catch(e) {
-    console.warn('[analytics] loadAnalyticsData error:', e);
-  }
+  return 'Data campaign bisnis UMKM ini:\n' +
+    '- Total campaign (termasuk demo): ' + campaigns.length + ', campaign nyata: ' + total + '\n' +
+    '- Platform yang dipakai: ' + (plats || '—') + '\n' +
+    '- Format konten: ' + (formats || '—') + '\n' +
+    '- Area/lokasi: ' + (uniqueAreas || '—') + '\n' +
+    '- Estimasi total reach: ' + reachStr + ' orang\n' +
+    '- Campaign dengan reach tertinggi: ' + topCamp + '\n\n' +
+    'Buatkan laporan bisnis dalam format JSON yang diminta.';
 }
 
 /* ─────────────────────────────────────────
-   AI Insight — Rate Limiting + Edge Function
+   B. fetchAIStory(campaigns, promptText)
+   Panggil Anthropic API → parse JSON → fallback jika error
+   promptText boleh dipasskan langsung dari renderAnalytics()
+   agar tidak build ulang — jika tidak diisi, akan di-build di sini.
    ───────────────────────────────────────── */
-function checkInsightRateLimit() {
-  var cooldown = (typeof RADAR_CONFIG !== 'undefined') ? RADAR_CONFIG.INSIGHT_COOLDOWN_MS : 10000;
-  var last = localStorage.getItem('radar_last_insight');
-  if (!last) return true;
-  return (Date.now() - parseInt(last)) >= cooldown;
-}
+async function fetchAIStory(campaigns, promptText) {
+  // Gunakan prompt yang sudah dibangun, atau build baru jika tidak ada
+  if (!promptText) {
+    promptText = buildAnalyticsPrompt(campaigns);
+  }
+  console.log('[analytics] total campaigns loaded:', (campaigns || []).length);
+  console.log('[analytics] prompt:', promptText.slice(0, 100));
 
-async function generateInsight(campaigns) {
-  if (typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.FEATURES && !RADAR_CONFIG.FEATURES.ai_insight) return;
+  var systemPrompt =
+    'Kamu adalah asisten bisnis untuk UMKM Indonesia.\n' +
+    'Analisis performa campaign media sosial dan sampaikan\n' +
+    'dalam bahasa Indonesia santai, hangat, mudah dimengerti\n' +
+    'pemilik bisnis kecil. Jangan gunakan istilah teknis.\n' +
+    'Jangan tampilkan angka mentah. Ceritakan seperti teman\n' +
+    'yang paham bisnis.\n\n' +
+    'Format response HARUS JSON seperti ini tanpa markdown:\n' +
+    '{\n' +
+    '  "cerita": "narasi 2-3 kalimat tentang performa",\n' +
+    '  "insight": [\n' +
+    '    "insight 1 actionable dan spesifik",\n' +
+    '    "insight 2 actionable dan spesifik"\n' +
+    '  ],\n' +
+    '  "rekomendasi": [\n' +
+    '    {\n' +
+    '      "judul": "judul aksi pendek",\n' +
+    '      "deskripsi": "penjelasan 1 kalimat",\n' +
+    '      "cta": "teks tombol aksi"\n' +
+    '    }\n' +
+    '  ],\n' +
+    '  "semangat": "1 kalimat motivasi untuk pemilik bisnis"\n' +
+    '}';
 
-  var panel = document.getElementById('anAiPanel');
-  if (!panel) return;
+  // Panggil via Supabase proxy (anthropic-proxy Edge Function)
+  // Proxy perlu di-deploy dulu di Supabase — kalau belum ada, return manual summary
+  var supabaseUrl = (typeof RADAR_CONFIG !== 'undefined') ? RADAR_CONFIG.SUPABASE_URL      : '';
+  var supabaseKey = (typeof RADAR_CONFIG !== 'undefined') ? RADAR_CONFIG.SUPABASE_ANON_KEY : '';
 
-  panel.innerHTML = _buildAiPanelShell(
-    '<div style="font-size:13px;color:var(--secondary);padding:8px 0;">Membaca data campaign kamu...</div>',
-    false
-  );
-
-  // Try Edge Function
-  if (window.radarSupabaseUrl && window.radarSupabaseKey && campaigns && campaigns.length) {
+  if (supabaseUrl && supabaseKey) {
     try {
-      var platCount = {};
-      campaigns.forEach(function(c) {
-        (c.platforms || []).forEach(function(p) { platCount[p] = (platCount[p] || 0) + 1; });
-      });
-      var topPlat = Object.keys(platCount).sort(function(a, b) { return platCount[b] - platCount[a]; })[0] || '—';
-      var totalR  = campaigns.reduce(function(s, c) { return s + (parseInt(c.estimated_reach_max) || 0); }, 0);
-
-      var resp = await fetch(window.radarSupabaseUrl + '/functions/v1/ai-insight', {
-        method:  'POST',
+      var resp = await fetch(supabaseUrl + '/functions/v1/anthropic-proxy', {
+        method: 'POST',
         headers: {
-          'Authorization': 'Bearer ' + window.radarSupabaseKey,
-          'Content-Type':  'application/json'
+          'Authorization': 'Bearer ' + supabaseKey,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          campaigns:       campaigns.slice(0, 5),
-          totalReach:      totalR,
-          platformTerkuat: topPlat,
-          totalCampaign:   campaigns.length
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: promptText }]
         })
       });
 
       if (resp.ok) {
-        var data = await resp.json();
-        if (data && data.insight) {
-          localStorage.setItem('radar_last_insight', Date.now().toString());
-          panel.innerHTML = _buildAiPanelShell(
-            '<div class="ai-insights"><div class="ai-insight-item">' +
-            '<div class="ai-insight-text">' + data.insight.replace(/\n/g, '<br>') + '</div>' +
-            '</div></div>',
-            true
-          );
-          return;
+        var raw = await resp.json();
+        console.log('[analytics] API response:', raw);
+        var text = raw.content && raw.content[0] && raw.content[0].text;
+        if (text) {
+          text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+          var parsed = JSON.parse(text);
+          if (parsed && parsed.cerita) return parsed;
         }
+      } else {
+        console.warn('[analytics] proxy status:', resp.status, resp.statusText);
       }
-    } catch(e) {
-      console.warn('[analytics] Edge Function error, fallback:', e.message);
+    } catch (e) {
+      console.warn('[analytics] proxy error:', e.message);
     }
-  }
-
-  _renderFallbackInsight(campaigns);
-}
-
-function _renderFallbackInsight(campaigns) {
-  var panel = document.getElementById('anAiPanel');
-  if (!panel) return;
-
-  var insights;
-  if (campaigns && campaigns.length) {
-    var cnt = campaigns.length;
-    var platCount = {};
-    campaigns.forEach(function(c) {
-      (c.platforms || []).forEach(function(p) { platCount[p] = (platCount[p] || 0) + 1; });
-    });
-    var topPlat = Object.keys(platCount).sort(function(a, b) { return platCount[b] - platCount[a]; })[0] || 'ig';
-    var platNames = { ig: 'Instagram', tiktok: 'TikTok', meta: 'Meta Feed', youtube: 'YouTube' };
-    var topPlatName = platNames[topPlat] || topPlat;
-    var totalR   = campaigns.reduce(function(s, c) { return s + (parseInt(c.estimated_reach_max) || 0); }, 0);
-    var reachStr = totalR >= 1000 ? Math.round(totalR / 1000) + 'rb' : totalR.toString();
-    var firstName  = campaigns[0].nama_campaign || campaigns[0].name || 'campaign terbaru';
-    var kecamatan  = campaigns[0].kecamatan || 'area target';
-
-    var okIcon   = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>';
-    var warnIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
-    var starIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#791ADB" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
-
-    insights = [
-      { icon: okIcon,   text: 'Kamu sudah punya <strong>' + cnt + ' campaign</strong> di RADAR. Total estimasi jangkauan: <strong>' + reachStr + ' users</strong>.' },
-      { icon: warnIcon, text: 'Campaign terbaru <strong>' + firstName + '</strong> di <strong>' + kecamatan + '</strong> sedang berjalan. Terus konsisten agar momentum tidak putus.' },
-      { icon: starIcon, text: 'Platform paling aktif: <strong>' + topPlatName + '</strong>. Konsistensi di satu platform membangun algoritma lebih cepat.' }
-    ];
   } else {
-    insights = AN_INSIGHTS[_anCurrentPeriod] || AN_INSIGHTS['30d'];
+    console.warn('[analytics] SUPABASE_URL/KEY tidak tersedia');
   }
 
-  panel.innerHTML = _buildAiPanelShell(
-    '<div class="ai-insights">' +
-    insights.map(function(ins) {
-      return '<div class="ai-insight-item">' +
-        '<div class="ai-insight-icon">' + ins.icon + '</div>' +
-        '<div class="ai-insight-text">' + ins.text + '</div>' +
-        '</div>';
-    }).join('') + '</div>',
-    true
-  );
-}
-
-function _buildAiPanelShell(contentHTML, showRefresh) {
-  return '<div class="ai-header">' +
-    '<div class="ai-avatar"><svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7H3a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2zM5 19v2a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-2a2 2 0 00-2-2H7a2 2 0 00-2 2zm4-5a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2z"/></svg></div>' +
-    '<div style="flex:1;"><div class="ai-name">RADAR AI Summary</div>' +
-    '<div class="ai-tag">Berdasarkan data campaign kamu · diperbarui otomatis</div></div>' +
-    (showRefresh
-      ? '<button onclick="_refreshInsight()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--secondary);padding:4px 6px;border-radius:6px;" title="Refresh">↺ Refresh</button>'
-      : '') +
-    '</div>' + contentHTML;
-}
-
-function _refreshInsight() {
-  if (!checkInsightRateLimit()) {
-    if (typeof showAnToast === 'function') showAnToast('⏳ Tunggu sebentar sebelum refresh lagi');
-    return;
-  }
-  generateInsight(window._anCampaigns || []);
+  // Proxy belum deploy atau gagal — tampilkan manual summary
+  console.log('[analytics] API response: proxy belum tersedia, tampilkan manual summary');
+  return _buildManualSummary(campaigns);
 }
 
 /* ─────────────────────────────────────────
-   Export PDF (jsPDF)
+   _buildFallbackStory(campaigns)
+   Data fallback yang dinamis berdasarkan CAMPAIGNS array
+   ───────────────────────────────────────── */
+function _buildFallbackStory(campaigns) {
+  var real = (campaigns || []).filter(function(c) { return !c.isDemo; });
+  var cnt  = real.length;
+
+  var totalReach = real.reduce(function(s, c) {
+    return s + (c.reachMax || c.reachTarget || 0);
+  }, 0);
+  var reachStr = totalReach >= 1000
+    ? Math.round(totalReach / 1000) + 'rb'
+    : String(totalReach);
+
+  var platCount = {};
+  real.forEach(function(c) {
+    (c.platforms || []).forEach(function(p) {
+      platCount[p] = (platCount[p] || 0) + 1;
+    });
+  });
+  var topPlat = Object.keys(platCount).sort(function(a, b) {
+    return platCount[b] - platCount[a];
+  })[0] || 'ig';
+  var platNames   = { ig: 'Instagram', tiktok: 'TikTok', meta: 'Facebook', youtube: 'YouTube' };
+  var topPlatName = platNames[topPlat] || topPlat;
+
+  var areas      = real.map(function(c) { return c.kecamatan; }).filter(Boolean);
+  var uniqueArea = areas.length ? areas[0] : 'area target';
+
+  return {
+    cerita: 'Kamu sudah punya ' + cnt + ' campaign aktif dengan potensi jangkauan sekitar ' + reachStr +
+      ' orang di ' + uniqueArea + '! Ini langkah yang bagus — konsistensi adalah kunci supaya algoritma ' +
+      'media sosial semakin mengenal dan mendukung bisnismu.',
+    insight: [
+      'Platform paling aktif kamu adalah ' + topPlatName + '. Terus fokus di sini untuk membangun momentum yang lebih kuat.',
+      'Konten dengan sapaan lokal terbukti meningkatkan durasi tonton. Manfaatkan fitur Smart Geo Stitching RADAR!'
+    ],
+    rekomendasi: [
+      {
+        judul: 'Tambah Campaign Baru',
+        deskripsi: 'Momentum terbaik adalah sekarang — buat campaign berikutnya selagi audiens masih hangat.',
+        cta: 'Buat Campaign →'
+      },
+      {
+        judul: 'Eksplorasi Platform Baru',
+        deskripsi: topPlat !== 'tiktok'
+          ? 'TikTok punya reach organik tertinggi untuk bisnis lokal. Coba publish ke sana sekarang!'
+          : 'Instagram Reels adalah channel visual terkuat kedua untuk menjangkau pelanggan baru di sekitar kamu.',
+        cta: topPlat !== 'tiktok' ? 'Coba TikTok →' : 'Coba Instagram →'
+      }
+    ],
+    semangat: 'Kamu sudah selangkah lebih maju dari pesaing yang belum mulai. Terus semangat dan konsisten! 💪'
+  };
+}
+
+/* ─────────────────────────────────────────
+   waitForCampaigns(callback)
+   Poll window.CAMPAIGNS sampai terisi,
+   lalu panggil callback(campaigns).
+   ───────────────────────────────────────── */
+function waitForCampaigns(callback) {
+  if (window.CAMPAIGNS && window.CAMPAIGNS.length > 0) {
+    console.log('[analytics] waitForCampaigns: ready, campaigns:', window.CAMPAIGNS.length);
+    callback(window.CAMPAIGNS);
+  } else {
+    console.log('[analytics] waitForCampaigns: belum siap, retry in 500ms...');
+    setTimeout(function() {
+      waitForCampaigns(callback);
+    }, 500);
+  }
+}
+
+/* ─────────────────────────────────────────
+   _buildManualSummary(campaigns)
+   Summary manual saat Supabase proxy belum deploy
+   ───────────────────────────────────────── */
+function _buildManualSummary(campaigns) {
+  var platCount    = {};
+  var totalViews   = 0;
+  var totalReact   = 0;
+  var bestCamp     = null;
+  var bestScore    = -1;
+
+  campaigns.forEach(function(c) {
+    (c.platforms || []).forEach(function(p) {
+      platCount[p] = (platCount[p] || 0) + 1;
+    });
+    totalViews += (c.reach || 0);
+    // sparkData = engagement history; ambil nilai tertinggi sebagai proxy reactions
+    var sparkPeak = (c.sparkData && c.sparkData.length)
+      ? Math.max.apply(null, c.sparkData)
+      : 0;
+    totalReact += sparkPeak;
+    if (sparkPeak > bestScore) {
+      bestScore = sparkPeak;
+      bestCamp  = c;
+    }
+  });
+
+  var platNames   = { ig: 'Instagram', tiktok: 'TikTok', meta: 'Facebook', youtube: 'YouTube' };
+  var topPlat     = Object.keys(platCount).sort(function(a, b) {
+    return platCount[b] - platCount[a];
+  })[0] || '—';
+  var topPlatName = platNames[topPlat] || topPlat;
+  var bestName    = bestCamp ? (bestCamp.name || bestCamp.nama_campaign || '—') : '—';
+
+  var fmt = function(n) {
+    return n >= 1000 ? Math.round(n / 1000) + 'rb' : String(n);
+  };
+
+  return {
+    cerita: 'Fitur AI Story akan aktif setelah deploy. Sementara ini, berikut ringkasan campaign kamu:',
+    insight: [
+      'Total campaign: ' + campaigns.length,
+      'Platform terbanyak: ' + topPlatName,
+      'Total views: ' + fmt(totalViews),
+      'Total reactions: ' + fmt(totalReact),
+      'Campaign terbaik: ' + bestName
+    ],
+    rekomendasi: [],
+    semangat: ''
+  };
+}
+
+/* ─────────────────────────────────────────
+   C. renderAnalytics()
+   Render seluruh "Laporan Bisnis" ke view-analytics
+   Flow: skeleton dulu → waitForCampaigns → build prompt → fetch → render
+   ───────────────────────────────────────── */
+function renderAnalytics() {
+  var container = document.getElementById('view-analytics');
+  if (!container) return;
+
+  // Format tanggal Indonesia
+  var today  = new Date();
+  var days   = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  var months = ['Januari','Februari','Maret','April','Mei','Juni','Juli',
+                'Agustus','September','Oktober','November','Desember'];
+  var dateStr = days[today.getDay()] + ', ' + today.getDate() + ' ' +
+    months[today.getMonth()] + ' ' + today.getFullYear();
+
+  // Step 3 — Render skeleton + empty sections dulu (langsung tampil)
+  container.innerHTML =
+    '<div id="an-story-container">' +
+
+    /* S1 — Greeting */
+    '<div class="an-greeting-card">' +
+      '<div class="an-greeting-emoji">👋</div>' +
+      '<div>' +
+        '<div class="an-greeting-title">Halo! Ini laporan bisnis kamu</div>' +
+        '<div class="an-greeting-date">' + dateStr + '</div>' +
+      '</div>' +
+    '</div>' +
+
+    /* S2 — Loading skeleton */
+    '<div id="an-loading-card" class="an-story-card">' +
+      '<div class="an-loading-row">' +
+        '<div class="an-skeleton-circle"></div>' +
+        '<div class="an-skeleton-line" style="width:55%;height:14px;"></div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:8px;">' +
+        '<div class="an-skeleton-line" style="width:100%;height:12px;"></div>' +
+        '<div class="an-skeleton-line" style="width:88%;height:12px;"></div>' +
+        '<div class="an-skeleton-line" style="width:72%;height:12px;"></div>' +
+      '</div>' +
+      '<div class="an-loading-label">Sedang membaca campaign kamu...</div>' +
+    '</div>' +
+
+    /* S3 — Cerita (hidden until fetch done) */
+    '<div id="an-cerita-card" class="an-story-card" style="display:none;flex-direction:column;gap:12px;">' +
+      '<div class="an-section-header">' +
+        '<span class="an-section-icon">📖</span>' +
+        '<span class="an-section-title">Cerita Hari Ini</span>' +
+      '</div>' +
+      '<p id="an-cerita-text" class="an-cerita-text"></p>' +
+    '</div>' +
+
+    /* S4 — Insights */
+    '<div id="an-insights-card" class="an-story-card" style="display:none;flex-direction:column;gap:12px;">' +
+      '<div class="an-section-header">' +
+        '<span class="an-section-icon">💡</span>' +
+        '<span class="an-section-title">Yang Menarik</span>' +
+      '</div>' +
+      '<div id="an-insights-list" class="an-insights-list"></div>' +
+    '</div>' +
+
+    /* S5 — Rekomendasi */
+    '<div id="an-rekom-card" class="an-story-card" style="display:none;flex-direction:column;gap:12px;">' +
+      '<div class="an-section-header">' +
+        '<span class="an-section-icon">🎯</span>' +
+        '<span class="an-section-title">Langkah Berikutnya</span>' +
+      '</div>' +
+      '<div id="an-rekom-list" class="an-rekom-list"></div>' +
+    '</div>' +
+
+    /* S6 — Semangat */
+    '<div id="an-semangat-card" class="an-story-card an-semangat-card" style="display:none;">' +
+      '<p id="an-semangat-text" class="an-semangat-text"></p>' +
+    '</div>' +
+
+    /* S7 — Upgrade CTA */
+    '<div class="an-upgrade-card">' +
+      '<div class="an-upgrade-content">' +
+        '<div class="an-upgrade-icon">🚀</div>' +
+        '<div>' +
+          '<div class="an-upgrade-title">Mau hasil lebih maksimal? Upgrade ke Pro</div>' +
+          '<div class="an-upgrade-sub">Unlock AI insights lengkap, benchmark kategori, dan export laporan PDF.</div>' +
+        '</div>' +
+      '</div>' +
+      '<button class="an-upgrade-btn" onclick="showPricingModal()">Lihat Paket</button>' +
+    '</div>' +
+
+    '</div>'; /* /an-story-container */
+
+  // Step 4 — Skeleton sudah tampil di layar
+  // Step 1+2 — Tunggu CAMPAIGNS terisi (poll 500ms), lalu cek + build prompt + fetch
+  waitForCampaigns(function(campaigns) {
+    console.log('[analytics] total campaigns loaded:', campaigns.length);
+
+    // Cek empty state: semua campaign tidak punya post_id (belum pernah publish)
+    var hasPublished = campaigns.some(function(c) { return !!c.post_id; });
+    if (!campaigns.length || !hasPublished) {
+      var loadCard = document.getElementById('an-loading-card');
+      if (loadCard) loadCard.style.display = 'none';
+
+      var storyWrap = document.getElementById('an-story-container');
+      if (storyWrap) {
+        // Sisipkan empty state setelah greeting, sebelum upgrade card
+        var upgradeCard = storyWrap.querySelector('.an-upgrade-card');
+        var emptyDiv = document.createElement('div');
+        emptyDiv.className = 'an-empty-state';
+        emptyDiv.innerHTML =
+          '<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+            '<circle cx="60" cy="60" r="50" fill="#f5f3ff"/>' +
+            '<rect x="30" y="75" width="12" height="20" rx="3" fill="#e9d5ff"/>' +
+            '<rect x="48" y="60" width="12" height="35" rx="3" fill="#c4b5fd"/>' +
+            '<rect x="66" y="45" width="12" height="50" rx="3" fill="#7c3aed"/>' +
+            '<path d="M28 40 Q45 25 60 35 Q75 45 88 28" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" fill="none" stroke-dasharray="4 3"/>' +
+          '</svg>' +
+          '<h3>Belum ada data untuk dianalisis</h3>' +
+          '<p>Mulai dengan launch campaign pertamamu — AI akan langsung analisis performa dan kasih rekomendasi terbaik untukmu!</p>' +
+          '<button onclick="switchMenu(\'command\')" class="an-empty-cta">🚀 Buat Campaign Pertama</button>';
+        if (upgradeCard) {
+          storyWrap.insertBefore(emptyDiv, upgradeCard);
+        } else {
+          storyWrap.appendChild(emptyDiv);
+        }
+      }
+      return; // jangan fetch AI jika belum ada data
+    }
+
+    // Step 2 — Build prompt dari data real
+    var prompt = buildAnalyticsPrompt(campaigns);
+    console.log('[analytics] prompt:', prompt.slice(0, 100));
+
+    // Step 5 — Fetch via Supabase proxy
+    fetchAIStory(campaigns, prompt).then(function(data) {
+      // Step 6 — Render hasil ke UI
+      console.log('[analytics] API response:', data);
+      _updateAnalyticsUI(data);
+    }).catch(function(err) {
+      console.warn('[analytics] fetchAIStory error:', err);
+      _updateAnalyticsUI(_buildManualSummary(campaigns));
+    });
+  });
+}
+
+/* ─────────────────────────────────────────
+   _updateAnalyticsUI(data)
+   Isi section S3–S6 setelah fetchAIStory selesai
+   ───────────────────────────────────────── */
+function _updateAnalyticsUI(data) {
+  if (!data) return;
+
+  // Sembunyikan skeleton
+  var loadCard = document.getElementById('an-loading-card');
+  if (loadCard) loadCard.style.display = 'none';
+
+  // S3: Cerita
+  var ceritaCard = document.getElementById('an-cerita-card');
+  var ceritaText = document.getElementById('an-cerita-text');
+  if (ceritaCard && ceritaText && data.cerita) {
+    ceritaText.textContent = data.cerita;
+    ceritaCard.style.display = 'flex';
+  }
+
+  // S4: Insights
+  var insCard = document.getElementById('an-insights-card');
+  var insList = document.getElementById('an-insights-list');
+  if (insCard && insList && data.insight && data.insight.length) {
+    insList.innerHTML = data.insight.map(function(ins) {
+      return '<div class="an-insight-chip">' +
+        '<span class="an-insight-bullet">💡</span>' +
+        '<span class="an-insight-text">' + ins + '</span>' +
+        '</div>';
+    }).join('');
+    insCard.style.display = 'flex';
+  }
+
+  // S5: Rekomendasi
+  var rekCard = document.getElementById('an-rekom-card');
+  var rekList = document.getElementById('an-rekom-list');
+  if (rekCard && rekList && data.rekomendasi && data.rekomendasi.length) {
+    rekList.innerHTML = data.rekomendasi.slice(0, 2).map(function(r) {
+      return '<div class="an-rekom-item">' +
+        '<div class="an-rekom-judul">' + r.judul + '</div>' +
+        '<div class="an-rekom-desc">' + r.deskripsi + '</div>' +
+        '<button class="an-rekom-btn" onclick="switchMenu(\'command\')">' + r.cta + '</button>' +
+        '</div>';
+    }).join('');
+    rekCard.style.display = 'flex';
+  }
+
+  // S6: Semangat
+  var semCard = document.getElementById('an-semangat-card');
+  var semText = document.getElementById('an-semangat-text');
+  if (semCard && semText && data.semangat) {
+    semText.textContent = data.semangat;
+    semCard.style.display = 'flex';
+  }
+}
+
+/* ─────────────────────────────────────────
+   D. showPricingModal()
+   Modal overlay 4 plan pricing
+   ───────────────────────────────────────── */
+function showPricingModal() {
+  var existing = document.getElementById('an-pricing-modal');
+  if (existing) { existing.style.display = 'flex'; return; }
+
+  var modal = document.createElement('div');
+  modal.id = 'an-pricing-modal';
+  modal.className = 'an-pricing-overlay';
+
+  modal.innerHTML =
+    '<div class="an-pricing-sheet">' +
+
+    /* Header */
+    '<div class="an-pricing-header">' +
+      '<div>' +
+        '<div class="an-pricing-title">Pilih Paket RADAR</div>' +
+        '<div class="an-pricing-subtitle">Mulai gratis, upgrade kapan saja</div>' +
+      '</div>' +
+      '<button class="an-pricing-close" onclick="closePricingModal()">✕</button>' +
+    '</div>' +
+
+    '<div class="an-pricing-cards">' +
+
+    /* 1: Freemium */
+    '<div class="an-pricing-card">' +
+      '<div class="an-pc-top">' +
+        '<div class="an-pc-name">Freemium</div>' +
+        '<div class="an-pc-price">Gratis <span class="an-pc-period">selamanya</span></div>' +
+      '</div>' +
+      '<ul class="an-pc-features">' +
+        '<li>10 AI Launch/bulan</li>' +
+        '<li>AI Vision &amp; Master Persona</li>' +
+        '<li>4 channel publishing</li>' +
+        '<li>Geo-Radar Targeting</li>' +
+        '<li>Smart Geo Stitching</li>' +
+      '</ul>' +
+      '<button class="an-pc-btn an-pc-btn-outline" onclick="closePricingModal()">Mulai Freemium</button>' +
+    '</div>' +
+
+    /* 2: Starter */
+    '<div class="an-pricing-card">' +
+      '<div class="an-pc-top">' +
+        '<div class="an-pc-name">Starter</div>' +
+        '<div class="an-pc-price">Rp 99rb <span class="an-pc-period">/bulan</span></div>' +
+        '<div class="an-pc-badge-free">Coba 7 hari gratis</div>' +
+      '</div>' +
+      '<ul class="an-pc-features">' +
+        '<li>50 AI Launch/bulan</li>' +
+        '<li>Semua fitur Freemium</li>' +
+        '<li>Dedicated Generate</li>' +
+      '</ul>' +
+      '<button class="an-pc-btn an-pc-btn-outline" onclick="closePricingModal()">Coba Gratis 7 Hari</button>' +
+    '</div>' +
+
+    /* 3: Pro (highlight) */
+    '<div class="an-pricing-card an-pricing-card-pro">' +
+      '<div class="an-pc-top">' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<div class="an-pc-name">Pro</div>' +
+          '<div class="an-pc-badge-popular">Paling Populer</div>' +
+        '</div>' +
+        '<div class="an-pc-price">Rp 199rb <span class="an-pc-period">/bulan</span></div>' +
+        '<div class="an-pc-badge-free">Coba 7 hari gratis</div>' +
+      '</div>' +
+      '<ul class="an-pc-features">' +
+        '<li>Unlimited AI Launch</li>' +
+        '<li>Semua fitur Starter</li>' +
+        '<li>Dedicated Generate</li>' +
+      '</ul>' +
+      '<button class="an-pc-btn an-pc-btn-pro" onclick="closePricingModal()">Coba Gratis 7 Hari</button>' +
+    '</div>' +
+
+    /* 4: Enterprise */
+    '<div class="an-pricing-card">' +
+      '<div class="an-pc-top">' +
+        '<div class="an-pc-name">Enterprise</div>' +
+        '<div class="an-pc-price">Custom</div>' +
+      '</div>' +
+      '<ul class="an-pc-features">' +
+        '<li>Unlimited AI Launch</li>' +
+        '<li>Multi-akun klien</li>' +
+        '<li>White-label dashboard</li>' +
+        '<li>Dedicated support</li>' +
+      '</ul>' +
+      '<button class="an-pc-btn an-pc-btn-dark" onclick="closePricingModal()">Hubungi Kami</button>' +
+    '</div>' +
+
+    '</div>' + /* /an-pricing-cards */
+    '</div>';  /* /an-pricing-sheet */
+
+  document.body.appendChild(modal);
+
+  // Tutup saat klik overlay
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) closePricingModal();
+  });
+}
+
+function closePricingModal() {
+  var modal = document.getElementById('an-pricing-modal');
+  if (modal) modal.style.display = 'none';
+}
+window.closePricingModal = closePricingModal;
+
+/* ─────────────────────────────────────────
+   initAnalytics() — entry point dari switchMenu
+   ───────────────────────────────────────── */
+function initAnalytics() {
+  renderAnalytics();
+}
+
+/* ─────────────────────────────────────────
+   Backward compat — fungsi lama yang masih
+   mungkin dipanggil dari index.html lama
+   ───────────────────────────────────────── */
+function handleExport() { exportPDF(); }
+function handleUpgrade() { showPricingModal(); }
+
+/* ─────────────────────────────────────────
+   exportPDF() — tetap tersedia
    ───────────────────────────────────────── */
 async function exportPDF() {
-  if (typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.FEATURES && !RADAR_CONFIG.FEATURES.export_pdf) return;
-
-  var btn = document.getElementById('anExportBtn');
-  var SVG_DL = '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-
-  if (btn) { btn.disabled = true; btn.textContent = 'Menyiapkan laporan...'; }
-
   try {
     var jsPDFLib = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
-    if (!jsPDFLib) throw new Error('jsPDF tidak tersedia');
+    if (!jsPDFLib) { console.warn('[analytics] jsPDF tidak tersedia'); return; }
 
     var doc = new jsPDFLib();
     var y = 20; var lh = 7;
-
-    // Header
-    doc.setFontSize(18); doc.setFont('helvetica', 'bold'); doc.setTextColor(0);
-    doc.text('RADAR Campaign Report', 20, y); y += 10;
-    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(100);
     var now = new Date();
-    doc.text('Dibuat: ' + now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }), 20, y); y += 12;
+    var camps = (typeof CAMPAIGNS !== 'undefined') ? CAMPAIGNS.filter(function(c) { return !c.isDemo; }) : [];
 
-    // KPI
-    doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.setTextColor(0);
-    doc.text('Ringkasan Performa', 20, y); y += lh;
-    doc.setFontSize(10); doc.setFont('helvetica', 'normal');
-    var get = function(id) { var el = document.getElementById(id); return el ? el.textContent.trim() : '—'; };
-    doc.text('Total Jangkauan   : ' + get('anKpiReach'), 20, y); y += lh;
-    doc.text('Engagement Rate   : ' + get('anKpiEng'),   20, y); y += lh;
-    doc.text('CTR               : ' + get('anKpiCtr'),   20, y); y += 12;
+    doc.setFontSize(18); doc.setFont('helvetica', 'bold'); doc.setTextColor(0);
+    doc.text('RADAR — Laporan Bisnis', 20, y); y += 10;
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(100);
+    doc.text('Dibuat: ' + now.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' }), 20, y); y += 12;
 
-    // Campaigns
-    var campaigns = window._anCampaigns || [];
-    if (campaigns.length) {
-      doc.setFontSize(12); doc.setFont('helvetica', 'bold');
-      doc.text('Daftar Campaign (' + campaigns.length + ')', 20, y); y += lh;
-      campaigns.slice(0, 10).forEach(function(c) {
+    if (camps.length) {
+      doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.setTextColor(0);
+      doc.text('Campaign Aktif (' + camps.length + ')', 20, y); y += lh;
+      camps.slice(0, 10).forEach(function(c) {
         if (y > 255) { doc.addPage(); y = 20; }
-        var dateStr = c.created_at ? new Date(c.created_at).toLocaleDateString('id-ID') : '—';
         doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(0);
-        doc.text(c.nama_campaign || c.name || 'Campaign', 20, y); y += lh - 2;
+        doc.text(c.name || c.nama_campaign || 'Campaign', 20, y); y += lh - 1;
         doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(80);
-        var detail = 'Lokasi: ' + (c.kecamatan || '—') + ' · Platform: ' + (c.platforms || []).join(', ') +
-                     ' · Reach est.: ' + (c.estimated_reach_min || 0) + '–' + (c.estimated_reach_max || 0) +
-                     ' · ' + dateStr;
-        doc.text(detail, 22, y); doc.setTextColor(0); y += lh + 1;
+        doc.text('Platform: ' + (c.platforms || []).join(', ') + ' · Area: ' + (c.kecamatan || '—'), 22, y);
+        y += lh + 1;
       });
     }
 
-    // AI Insight
-    var panelEl = document.getElementById('anAiPanel');
-    if (panelEl) {
-      var insightText = panelEl.innerText.replace(/↺\s*Refresh/g, '').trim();
-      if (insightText.length > 20) {
-        if (y > 240) { doc.addPage(); y = 20; }
-        doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.setTextColor(0);
-        doc.text('AI Insight', 20, y); y += lh;
-        doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(60);
-        doc.splitTextToSize(insightText, 170).slice(0, 25).forEach(function(line) {
-          if (y > 270) { doc.addPage(); y = 20; }
-          doc.text(line, 20, y); y += lh - 1;
-        });
-      }
-    }
-
-    // Footer
     doc.setFontSize(8); doc.setTextColor(150);
     doc.text('Dibuat oleh RADAR · radar.id', 20, 285);
 
-    var dateFormatted = now.getFullYear() + '' +
+    var dateFormatted = now.getFullYear() +
       String(now.getMonth() + 1).padStart(2, '0') +
       String(now.getDate()).padStart(2, '0');
-    doc.save('radar-report-' + dateFormatted + '.pdf');
-
-    if (btn) {
-      btn.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" style="stroke:white;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><polyline points="20 6 9 17 4 12"/></svg> Laporan tersimpan!';
-      setTimeout(function() { btn.disabled = false; btn.innerHTML = SVG_DL + ' Export PDF'; }, 2000);
-    }
-
+    doc.save('radar-laporan-' + dateFormatted + '.pdf');
   } catch(e) {
     console.error('[analytics] exportPDF error:', e);
-    if (btn) { btn.disabled = false; btn.innerHTML = SVG_DL + ' Export PDF'; }
-    if (typeof showAnToast === 'function') showAnToast('⚠ Gagal export PDF');
   }
-}
-
-/* kept for backward compat — redirects to exportPDF */
-function handleExport() { exportPDF(); }
-
-/* ─────────────────────────────────────────
-   Upgrade (placeholder)
-   ───────────────────────────────────────── */
-function handleUpgrade() {
-  var toast = document.getElementById('an-toast');
-  if (!toast) return;
-  toast.textContent = '✨ Fitur Pro: Benchmark, Export PDF, Audience Insights';
-  toast.style.display = 'block';
-  setTimeout(function() { toast.style.display = 'none'; }, 3000);
 }

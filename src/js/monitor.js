@@ -174,9 +174,18 @@ function renderCampaigns() {
   var filtered = getFilteredCampaigns();
   if (!filtered.length) {
     list.innerHTML =
-      '<div style="text-align:center;padding:40px 20px;color:var(--secondary);">' +
-      '<p style="font-size:14px;line-height:1.6;">Belum ada campaign aktif.<br>Yuk mulai campaign pertamamu!</p>' +
-      '<button onclick="switchMenu(\'command\')" style="margin-top:12px;padding:8px 16px;background:var(--rausch);color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:var(--font);">Buat Campaign →</button>' +
+      '<div class="cc-empty-state">' +
+        '<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+          '<circle cx="60" cy="60" r="50" fill="#f5f3ff"/>' +
+          '<rect x="35" y="40" width="50" height="35" rx="8" fill="#e9d5ff"/>' +
+          '<rect x="42" y="48" width="20" height="3" rx="2" fill="#7c3aed"/>' +
+          '<rect x="42" y="55" width="14" height="3" rx="2" fill="#a78bfa"/>' +
+          '<circle cx="72" cy="72" r="14" fill="#7c3aed"/>' +
+          '<path d="M68 72h8M72 68v8" stroke="white" stroke-width="2.5" stroke-linecap="round"/>' +
+        '</svg>' +
+        '<h3>Belum ada campaign yang berjalan</h3>' +
+        '<p>Launch campaign pertamamu dan pantau performanya secara real-time di sini!</p>' +
+        '<button onclick="switchMenu(\'command\')" class="cc-empty-cta">🚀 Buat Campaign Pertama</button>' +
       '</div>';
     return;
   }
@@ -322,6 +331,11 @@ async function fetchAndUpdatePostUrl(campaign) {
 var _postUrlPollInterval = null;
 
 function startPostUrlPolling() {
+  if (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1') {
+    console.log('[monitor] polling dinonaktifkan di localhost');
+    return;
+  }
   // Jalankan sekali langsung untuk semua campaign yang belum punya post_url
   CAMPAIGNS.forEach(function(c) {
     if (!c.post_url && c.post_id) fetchAndUpdatePostUrl(c);
@@ -1399,3 +1413,6 @@ var ManualGuideGenerator = {
     return 'Panduan manual untuk ' + action + ' telah disiapkan di chat.';
   }
 };
+
+/* ─── Window exports ─── */
+window.switchMenu = switchMenu;
