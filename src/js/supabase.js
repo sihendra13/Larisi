@@ -226,3 +226,18 @@ async function deleteCampaign(campaignId) {
   }
 }
 window.deleteCampaign = deleteCampaign;
+
+async function updateCampaignPostUrl(campaignId, postUrl) {
+  var client = getSupabaseClient();
+  if (!client || !campaignId || !postUrl) return;
+  try {
+    await client
+      .from('campaigns')
+      .update({ post_url: postUrl })
+      .eq('id', campaignId);
+    console.log('[supabase] post_url updated:', campaignId);
+  } catch(e) {
+    console.warn('[supabase] updateCampaignPostUrl error:', e.message);
+  }
+}
+window.updateCampaignPostUrl = updateCampaignPostUrl;

@@ -130,7 +130,7 @@
           <div class="audience-item">
             <svg class="aud-icon" id="localIcon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             <div style="flex:1;">
-              <div class="aud-title" id="localTitle">Local Resident</div>
+              <div class="aud-title" id="localTitle">Warga Sekitar</div>
               <div class="aud-desc" id="localDesc">Target users who currently live in the selected radar area.</div>
             </div>
             <div class="toggle" id="toggleLocal" onclick="toggleLocalFn()"><div class="toggle-knob"></div></div>
@@ -139,7 +139,7 @@
           <div class="audience-item" id="travelerItem">
             <svg class="aud-icon" viewBox="0 0 24 24" id="travelerIcon"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             <div style="flex:1;">
-              <div class="aud-title" id="travelerTitle">Traveler</div>
+              <div class="aud-title" id="travelerTitle">Pengunjung</div>
               <div class="aud-desc" id="travelerDesc">Target users who are currently visiting or recently visited the area.</div>
             </div>
             <div class="toggle" id="toggleTraveler" onclick="toggleTravelerFn()" style="cursor:pointer"><div class="toggle-knob"></div></div>
@@ -153,6 +153,7 @@
         <div class="map-search">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input id="mapSearchInput" placeholder="Tentukan lokasi bisnis atau titik target iklan Anda..." oninput="onSearchInput(this.value)" autocomplete="off">
+          <button id="mapSearchClear" onclick="clearMapSearch()" style="display:none;flex-shrink:0;background:none;border:none;cursor:pointer;padding:2px 0 2px 4px;color:#9ca3af;line-height:0;" onmouseover="this.style.color='#6b7280'" onmouseout="this.style.color='#9ca3af'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           <div id="searchDropdown" style="position:absolute;top:52px;left:0;right:0;background:#fff;border-radius:0 0 12px 12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:2000;display:none;max-height:200px;overflow-y:auto;"></div>
         </div>
         <div id="map" style="border-radius:var(--radius-card)"></div>

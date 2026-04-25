@@ -6,65 +6,56 @@ var CAMPAIGNS = [
   {
     id: 1,
     isDemo: true,
-    name: 'Kuliner Jogja Selatan',
+    name: 'Retro Automotive · tes campaign 3',
     status: 'running',
-    platforms: ['ig', 'tiktok'],
-    reach: 72400,
-    reachTarget: 150000,
+    platforms: ['ig'],
+    reach: 695,
+    reachTarget: 1000,
     budget: 500000,
     budgetUsed: 234000,
     sparkData: [20, 35, 40, 45, 60, 72],
-    thumbColor: '#791ADB',
-    launchTime: '6 jam lalu',
-    aiOpening: 'Campaign <strong>Kuliner Jogja Selatan</strong> · Running 6 jam\n\nReach saat ini <strong>72K</strong>, tren naik +23% dari 2 jam lalu. Lonjakan terjadi antara 19.00–21.00 — prime time audiens kamu.\n\nAudiens di <strong>Sewon</strong> dan <strong>Bantul</strong> paling responsif. Saya rekomendasikan naikkan radius 2km di area ini.',
-    aiChips: ['Ya, terapkan', 'Lihat detail area', 'Nanti saja'],
-    aiChipResponses: {
-      'Ya, terapkan': 'Perubahan sudah saya catat. Karena akun Meta Ads kamu belum terhubung ke RADAR, saya sudah siapkan panduan 3 langkah untuk terapkan ini secara manual — estimasi 2 menit.\n\n1. Buka Meta Ads Manager\n2. Pilih Campaign Kuliner Jogja Selatan\n3. Edit Audience → tambah area Sewon dan Bantul (+2km)\n\nMau saya kirim panduan ini ke WhatsApp kamu? Atau <strong>hubungkan akun Meta sekarang</strong> agar perubahan berikutnya otomatis.',
-      'Lihat detail area': 'Breakdown performa per area:\n\n📍 <strong>Sewon, Bantul</strong> — Engagement 34% di atas rata-rata. CTR 4.2%\n📍 <strong>Kasihan, Bantul</strong> — Reach growing, engagement 28% above avg\n📍 <strong>Umbulharjo, Yogyakarta</strong> — Stabil, CTR 3.1%\n\nRekomendasi: fokus budget tambahan ke Sewon & Kasihan untuk ROI maksimal.',
-      'Nanti saja': 'Oke, saya tetap pantau. Kalau ada perubahan signifikan berikutnya, saya akan langsung notify kamu di sini.'
-    }
+    thumbColor: '#fbbf24',
+    thumbUrl: 'Assets/demo/automotive.png',
+    launchTime: 'Jumat, 25 Apr 2026 · 13.10',
+    aiOpening: 'Campaign <strong>Retro Automotive</strong> · Running\n\nReach saat ini <strong>695</strong>. Performa iklan stabil dengan engagement yang menjanjikan.',
+    aiChips: ['Lihat detail', 'Optimalkan', 'Nanti'],
+    aiChipResponses: {}
   },
   {
     id: 2,
     isDemo: true,
-    name: 'Promo Ramadan Sleman',
+    name: 'tes kuliner 2',
     status: 'running',
-    platforms: ['meta', 'ig'],
-    reach: 31200,
-    reachTarget: 80000,
+    platforms: ['ig'],
+    reach: 728,
+    reachTarget: 1500,
     budget: 300000,
     budgetUsed: 87000,
     sparkData: [10, 12, 18, 22, 28, 31],
-    thumbColor: '#6315b8',
-    launchTime: '2 jam lalu',
-    aiOpening: 'Campaign <strong>Promo Ramadan Sleman</strong> · Running 2 jam\n\nAwal yang solid! Reach <strong>31K</strong> dalam 2 jam pertama — pace ini bagus untuk target 80K.\n\nBudget terpakai baru <strong>29%</strong> (Rp 87rb dari Rp 300rb). Meta Feed perform lebih baik dari Instagram untuk audiens Sleman saat ini.',
-    aiChips: ['Optimalkan Meta vs IG', 'Cek performa budget', 'Tambah radius'],
-    aiChipResponses: {
-      'Optimalkan Meta vs IG': 'Berdasarkan data 2 jam pertama:\n\n<strong>Meta Feed</strong>: CTR 3.8%, CPC Rp 1.200\n<strong>Instagram</strong>: CTR 2.4%, CPC Rp 1.800\n\nSaya rekomendasikan alokasi ulang ke 70% Meta · 30% Instagram untuk efisiensi budget lebih baik.',
-      'Cek performa budget': 'Budget breakdown saat ini:\n\nTotal: Rp 300.000\nTerpakai: Rp 87.000 (29%)\nSisa: Rp 213.000\nBurn rate: ~Rp 43.500/jam\n\nProjected: budget habis dalam ±5 jam. Untuk full day coverage, pertimbangkan tambah Rp 150.000.',
-      'Tambah radius': 'Radius saat ini 5km dari titik Sleman. Rekomendasi ekspansi:\n\n• +2km ke arah <strong>Mlati</strong> (populasi 83K)\n• +2km ke arah <strong>Ngaglik</strong> (populasi 97K)\n\nEstimasi tambahan reach: +15K–20K users.'
-    }
+    thumbColor: '#ef4444',
+    thumbUrl: 'Assets/demo/culinary.png',
+    launchTime: 'Jumat, 25 Apr 2026 · 12.45',
+    aiOpening: 'Campaign <strong>tes kuliner 2</strong> · Running\n\nReach mencapai <strong>728</strong>. Audiens sangat tertarik dengan visual produk yang Anda gunakan.',
+    aiChips: ['Analisis budget', 'Cek area', 'Oke'],
+    aiChipResponses: {}
   },
   {
     id: 3,
     isDemo: true,
-    name: 'Grand Opening Kafe',
-    status: 'paused',
-    platforms: ['tiktok'],
-    reach: 18900,
-    reachTarget: 50000,
+    name: 'test posting only 1 IG Post',
+    status: 'running',
+    platforms: ['ig'],
+    reach: 597,
+    reachTarget: 1200,
     budget: 200000,
     budgetUsed: 112000,
     sparkData: [5, 12, 16, 18, 18, 18],
-    thumbColor: '#9ca3af',
-    launchTime: '1 hari lalu',
-    aiOpening: 'Campaign <strong>Grand Opening Kafe</strong> · Paused\n\nCampaign ini di-pause sejak 4 jam lalu. Reach terhenti di <strong>18.9K</strong> dari target 50K.\n\nBudget terpakai <strong>56%</strong> — sisa cukup untuk lanjutkan. TikTok perform stabil sebelum di-pause, tidak ada indikasi masalah teknis.',
-    aiChips: ['Resume campaign', 'Kenapa di-pause?', 'Ubah strategi dulu'],
-    aiChipResponses: {
-      'Resume campaign': 'Untuk resume campaign Grand Opening Kafe di TikTok:\n\n1. Buka TikTok Ads Manager\n2. Pilih campaign Grand Opening Kafe\n3. Klik tombol <strong>Resume / Aktifkan</strong>\n\nCampaign aktif kembali dalam 5–15 menit. Dengan sisa budget Rp 88.000, estimasi bisa tambah reach 15K–20K users.',
-      'Kenapa di-pause?': 'Berdasarkan history, campaign di-pause manual oleh kamu pukul 17:32 kemarin — tidak ada flag dari sistem, bukan karena budget habis atau policy violation.\n\nKemungkinan jam istirahat operasional? Ini justru waktu bagus untuk resume — prime time TikTok malam mulai pukul 20.00.',
-      'Ubah strategi dulu': 'Saran sebelum resume:\n\n1. Coba format konten lebih native TikTok (lebih candid, less polished)\n2. Tambahkan hashtag trending lokal Jogja\n3. Pertimbangkan micro-influencer TikTok lokal untuk area spesifik\n\nMau saya bantu susun brief konten baru?'
-    }
+    thumbColor: '#791ADB',
+    thumbUrl: 'Assets/demo/fashion.png',
+    launchTime: 'Rabu, 22 Apr 2026 · 10.15',
+    aiOpening: 'Campaign <strong>test posting only 1 IG Post</strong> · Running\n\nReach: <strong>597</strong>. Postingan fashion ini mendapatkan respon positif di area target.',
+    aiChips: ['Scale up', 'Cek engagement', 'Selesai'],
+    aiChipResponses: {}
   }
 ];
 
@@ -212,10 +203,12 @@ async function loadCampaignsFromSupabase() {
     var platMap = { ig: 'ig', tiktok: 'tiktok', meta: 'meta', youtube: 'youtube',
                     instagram: 'ig', facebook: 'meta' };
 
-    // Ada data real dari Supabase → hapus demo campaign agar tidak campur
+    // JANGAN hapus demo campaign agar user bisa melihat contoh premium
+    /* 
     for (var j = CAMPAIGNS.length - 1; j >= 0; j--) {
       if (CAMPAIGNS[j].isDemo) CAMPAIGNS.splice(j, 1);
     }
+    */
 
     rows.forEach(function(row) {
       // Skip if already loaded (by supabase id)
@@ -234,6 +227,7 @@ async function loadCampaignsFromSupabase() {
         id:          row.id,
         supabase_id: row.id,
         post_id:     row.post_id  || null,
+        post_url:    row.post_url || null,
         format:      row.format   || 'post',
         name:        row.nama_campaign || 'Campaign',
         status:      row.status === 'active' ? 'running' : (row.status || 'running'),
@@ -262,10 +256,96 @@ async function loadCampaignsFromSupabase() {
 
     renderCampaigns();
     startReachCounters();
+    startPostUrlPolling();
   } catch(e) {
     console.warn('[monitor] loadCampaignsFromSupabase error:', e);
   }
 }
+
+/* ─── Auto-fetch post_url dari PostForMe ─── */
+
+async function fetchAndUpdatePostUrl(campaign) {
+  if (!campaign.post_id) return;
+  if (campaign.post_url) return; // sudah ada, skip
+
+  try {
+    var data = await _pfmProxy(
+      '/v1/social-posts/' + campaign.post_id,
+      'GET', null
+    );
+
+    var url = null;
+    if (data.posts && data.posts.length) {
+      url = data.posts[0].post_url
+         || data.posts[0].platform_url
+         || data.posts[0].permalink
+         || null;
+    }
+    if (!url) {
+      url = data.post_url
+         || data.platform_url
+         || data.permalink
+         || null;
+    }
+
+    if (url) {
+      campaign.post_url = url;
+
+      if (typeof updateCampaignPostUrl === 'function') {
+        updateCampaignPostUrl(campaign.supabase_id, url);
+      }
+
+      // Update timestamp link di DOM tanpa rebuild seluruh card
+      var card = document.querySelector('[data-id="' + campaign.id + '"]');
+      if (card) {
+        var tsEl = card.querySelector('.cc-timestamp');
+        if (tsEl && tsEl.tagName !== 'A') {
+          var a = document.createElement('a');
+          a.href = url;
+          a.target = '_blank';
+          a.rel = 'noopener';
+          a.className = 'cc-timestamp';
+          a.style.cssText = 'color:#791ADB;text-decoration:underline;text-underline-offset:2px;font-weight:600;';
+          a.textContent = tsEl.textContent;
+          a.addEventListener('click', function(e) { e.stopPropagation(); });
+          tsEl.parentNode.replaceChild(a, tsEl);
+        }
+      }
+
+      console.log('[monitor] post_url updated:', campaign.name, url);
+    }
+  } catch(e) {
+    console.warn('[monitor] fetchAndUpdatePostUrl error:', e.message);
+  }
+}
+
+var _postUrlPollInterval = null;
+
+function startPostUrlPolling() {
+  // Jalankan sekali langsung untuk semua campaign yang belum punya post_url
+  CAMPAIGNS.forEach(function(c) {
+    if (!c.post_url && c.post_id) fetchAndUpdatePostUrl(c);
+  });
+
+  // Bersihkan interval lama jika ada
+  if (_postUrlPollInterval) clearInterval(_postUrlPollInterval);
+
+  _postUrlPollInterval = setInterval(function() {
+    var pending = CAMPAIGNS.filter(function(c) {
+      return !c.post_url && c.post_id;
+    });
+
+    if (!pending.length) {
+      clearInterval(_postUrlPollInterval);
+      _postUrlPollInterval = null;
+      return;
+    }
+
+    console.log('[monitor] polling', pending.length, 'campaigns untuk post_url...');
+    pending.forEach(function(c) { fetchAndUpdatePostUrl(c); });
+  }, 60000);
+}
+window.startPostUrlPolling = startPostUrlPolling;
 
 function showDeleteConfirmModal(campaign) {
   var old = document.getElementById('deleteConfirmOverlay');
@@ -430,38 +510,19 @@ function buildCampaignCard(c) {
 
   // Thumbnail dari thumbUrl (foto yang diupload saat launch)
   var thumbHTML = c.thumbUrl
-    ? '<div style="padding:0 12px;">'
-    +   '<img src="' + c.thumbUrl + '" style="width:100%;height:160px;'
-    +   'object-fit:cover;border-radius:8px;margin:8px 0;display:block;">'
+    ? '<div class="cc-thumbnail-container" style="margin:0 12px 8px;height:240px;border-radius:8px;overflow:hidden;">'
+    +   '<img src="' + c.thumbUrl + '" class="cc-thumbnail-img" style="width:100%;height:100%;'
+    +   'object-fit:cover;object-position:top;display:block;">'
     + '</div>'
-    : '<div style="margin:0 12px 8px;background:#f3f4f6;height:80px;'
-    +   'border-radius:8px;display:flex;align-items:center;'
-    +   'justify-content:center;font-size:12px;color:#9ca3af;">'
-    +   'Foto tidak tersedia'
+    : '<div class="cc-thumbnail-container" style="margin:0 12px 8px;height:240px;'
+    +   'border-radius:8px;display:flex;align-items:center;justify-content:center;">'
+    +   '<span style="color:#9ca3af;font-size:12px;text-align:center;">Foto tidak tersedia</span>'
     + '</div>';
 
-  // View URL untuk timestamp chip
-  var viewUrl   = null;
-  var viewLabel = 'Lihat di ' + platName;
-  var plat = c.platforms[0];
-  if (c.post_id) {
-    if (plat === 'ig') {
-      viewUrl = fmt === 'reel'
-        ? 'https://www.instagram.com/reel/' + c.post_id + '/'
-        : 'https://www.instagram.com/p/' + c.post_id + '/';
-    } else if (plat === 'meta') {
-      viewUrl = 'https://www.facebook.com/permalink.php?story_fbid=' + c.post_id;
-    } else if (plat === 'tiktok' && username) {
-      viewUrl = 'https://www.tiktok.com/@' + username + '/video/' + c.post_id;
-    } else if (plat === 'youtube') {
-      viewUrl = 'https://www.youtube.com/shorts/' + c.post_id;
-    }
-  } else if (username) {
-    if (plat === 'ig')         viewUrl = 'https://instagram.com/' + username;
-    else if (plat === 'meta')  viewUrl = 'https://facebook.com/' + username;
-    else if (plat === 'tiktok') viewUrl = 'https://tiktok.com/@' + username;
-    else if (plat === 'youtube') viewUrl = 'https://youtube.com/@' + username;
-  }
+  // View URL untuk timestamp — pakai post_url langsung dari API (bukan konstruksi)
+  // Story tidak punya URL permanen, selalu plain text
+  var isStory = fmt === 'story';
+  var viewUrl = (!isStory && c.post_url) ? c.post_url : null;
 
   var card = document.createElement('div');
   card.className = 'campaign-card' + (isRunning ? ' running-card' : '')
@@ -476,8 +537,8 @@ function buildCampaignCard(c) {
     '<div style="display:flex;align-items:center;gap:8px;padding:12px 12px 8px;">'
 
     // Avatar
-    + '<div style="position:relative;width:36px;height:36px;flex-shrink:0;">'
-    +   '<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;'
+    + '<div style="position:relative;width:40px;height:40px;flex-shrink:0;">'
+    +   '<div style="width:40px;height:40px;border-radius:50%;overflow:hidden;'
     +     'border:1.5px solid ' + primaryColor + '40;">' + avatarHTML + '</div>'
     +   '<div style="position:absolute;bottom:0;right:0;width:16px;height:16px;'
     +     'border-radius:50%;background:white;border:1.5px solid #e5e7eb;'
@@ -491,30 +552,21 @@ function buildCampaignCard(c) {
 
     // Info — nama + username + timestamp
     + '<div style="flex:1;min-width:0;">'
-    +   '<div style="font-size:12px;font-weight:700;color:#111827;'
-    +     'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
+    +   '<div style="font-size:13px;font-weight:700;color:#111827;'
+    +     'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-0.2px;">'
     +     c.name
     +   '</div>'
     +   '<div style="font-size:10px;color:#9ca3af;margin-top:1px;">'
     +     usernameDisplay
     +   '</div>'
-    +   '<div style="font-size:10px;color:#9ca3af;margin-top:1px;">'
-    +     '<span class="cc-ts-wrap">'
-    +       '<span style="text-decoration:underline;text-underline-offset:2px;'
-    +         'cursor:pointer;">' + timeDisplay + '</span>'
-    +       (viewUrl
-    ?         '<a href="' + viewUrl + '" target="_blank" rel="noopener" '
-    +           'class="cc-ts-chip" onclick="event.stopPropagation();">'
-    +           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-    +             'stroke-width="2" width="10" height="10">'
-    +             '<path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>'
-    +             '<polyline points="15 3 21 3 21 9"/>'
-    +             '<line x1="10" y1="14" x2="21" y2="3"/>'
-    +           '</svg>'
-    +           viewLabel
-    +         '</a>'
-    :         '')
-    +     '</span>'
+    +   '<div style="font-size:10px;margin-top:2px;">'
+    +     (viewUrl
+    ?       '<a href="' + viewUrl + '" target="_blank" rel="noopener" class="cc-timestamp" '
+    +         'style="color:#791ADB;text-decoration:underline;text-underline-offset:2px;font-weight:600;" '
+    +         'onclick="event.stopPropagation();">' + timeDisplay + '</a>'
+    : isStory
+    ?       '<span class="cc-timestamp" style="color:#9ca3af;">' + timeDisplay + '</span>'
+    :       '<span class="cc-timestamp" style="color:#9ca3af;cursor:help;" title="Link belum tersedia">' + timeDisplay + '</span>')
     +   '</div>'
     + '</div>'
 
@@ -573,9 +625,7 @@ function buildCampaignCard(c) {
     +       '<span style="font-size:10px;color:#111827;">Reach</span>'
     +       '<span style="font-size:11px;font-weight:700;color:#111827;display:flex;align-items:center;gap:4px;">'
     +         '<span id="reach-num-' + c.id + '">' + formatReach(c.reach) + '</span>'
-    +         (!c.reachReal
-    ?           '<span id="reach-est-' + c.id + '" style="font-size:10px;color:#9ca3af;font-weight:400;margin-left:4px;">(estimasi)</span>'
-    :           '')
+    +         '<span style="font-size:10px;color:#9ca3af;font-weight:400;margin-left:4px;">(estimasi)</span>'
     +         (isRunning ? '<span style="font-size:9px;color:#16a34a;margin-left:3px;">▲</span>' : '')
     +       '</span>'
     +     '</div>'
@@ -741,16 +791,32 @@ async function _loadAnalyticsForCard(campaign) {
       }
     }
 
-    // Update timestamp chip + tsText
-    if (postUrl) {
-      var cardEl = document.getElementById('campaign-card-' + campaign.id);
-      if (cardEl) {
+    // Update UI — versi baru (Image + Link)
+    var cardEl = document.getElementById('campaign-card-' + campaign.id);
+    if (cardEl) {
+      if (postUrl) {
+        var tsLink = cardEl.querySelector('.cc-timestamp-link');
+        if (tsLink) tsLink.href = postUrl;
+
         var chip = cardEl.querySelector('.cc-ts-chip');
-        if (chip) {
-          chip.href = postUrl;
-          chip.style.pointerEvents = 'auto';
-          chip.style.display = '';
+        if (chip) { chip.href = postUrl; chip.style.display = ''; }
+      }
+
+      if (mediaUrl) {
+        var thumbContainer = cardEl.querySelector('.cc-thumbnail-container');
+        if (thumbContainer) {
+          // Jika tadi placeholder, ganti jadi gambar
+          var img = thumbContainer.querySelector('.cc-thumbnail-img');
+          if (img) {
+            img.src = mediaUrl;
+          } else {
+            thumbContainer.innerHTML = '<img src="' + mediaUrl + '" class="cc-thumbnail-img" style="width:100%;height:180px;'
+              + 'object-fit:cover;border-radius:12px;display:block;box-shadow: 0 4px 12px rgba(0,0,0,0.08);">';
+            thumbContainer.style.background = 'none';
+            thumbContainer.style.border = 'none';
+          }
         }
+      }
         var tsText = cardEl.querySelector('.cc-ts-text');
         if (tsText) {
           tsText.style.color = '#791ADB';
@@ -759,7 +825,6 @@ async function _loadAnalyticsForCard(campaign) {
           tsText.setAttribute('onclick', 'event.stopPropagation();_openCampaignPost(\'' + campaign.id + '\');');
         }
       }
-    }
 
   } catch(e) { /* silent */ }
 }

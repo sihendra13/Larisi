@@ -4,12 +4,26 @@
 var searchTimer = null;
 
 function onSearchInput(val) {
-  var dd = document.getElementById('searchDropdown');
+  var dd  = document.getElementById('searchDropdown');
+  var clr = document.getElementById('mapSearchClear');
+  var inp = document.getElementById('mapSearchInput');
+  if (clr) clr.style.display = val ? 'block' : 'none';
+  if (inp) inp.style.paddingRight = val ? '28px' : '';
   if (!val || val.length < 2) { dd.style.display='none'; return; }
   if (searchTimer) clearTimeout(searchTimer);
   searchTimer = setTimeout(function() {
     fetchNominatim(val);
   }, 350);
+}
+
+function clearMapSearch() {
+  var inp = document.getElementById('mapSearchInput');
+  var dd  = document.getElementById('searchDropdown');
+  var clr = document.getElementById('mapSearchClear');
+  if (inp) { inp.value = ''; inp.style.paddingRight = ''; }
+  if (dd)  dd.style.display  = 'none';
+  if (clr) clr.style.display = 'none';
+  if (map) map.flyTo([-7.7956, 110.3695], 13, {duration: 1.2});
 }
 
 function searchLocations(query) {
@@ -92,7 +106,7 @@ window.onload = function() {
   }).addTo(map);
 
   /* ── Tombol "Locate Me" ── */
-  var locBtn = L.control({ position: 'topright' });
+  var locBtn = L.control({ position: 'topleft' });
   locBtn.onAdd = function() {
     var btn = L.DomUtil.create('button', '');
     btn.title = 'Gunakan lokasi saya';

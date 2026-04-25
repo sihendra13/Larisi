@@ -837,10 +837,34 @@ async function publishViaPostForMe(canvas, campaignData) {
 
     console.log('[postforme] final payload:', JSON.stringify(payload, null, 2));
 
-    var data = await _pfmProxy('/v1/social-posts', 'POST', payload);
-    console.log('[postforme] publish result full:', JSON.stringify(data));
+    var data;
+    if (fmt === 'story' && allMediaUrls.length > 1) {
+      // Story multi-foto → publish satu per satu sebagai story terpisah
+      var storyResults = [];
+      for (var s = 0; s < allMediaUrls.length; s++) {
+        var storyPayload = {
+          caption:                 campaignData.caption || '',
+          social_accounts:         filtered.map(function(a){ return a.id; }),
+          media:                   [{ url: allMediaUrls[s] }],
+          platform_configurations: platformConfigs
+        };
+        var storyData = await _pfmProxy('/v1/social-posts', 'POST', storyPayload);
+        storyResults.push(storyData);
+        console.log('[postforme] story', s + 1, 'result:', JSON.stringify(storyData));
+      }
+      data = storyResults[0] || {};
+    } else {
+      data = await _pfmProxy('/v1/social-posts', 'POST', payload);
+    }
 
-    var postId = data.id || data.post_id || null;
+    console.log('[postforme] publish result full:', JSON.stringify(data));
+    console.log('[postforme] raw response keys:', Object.keys(data));
+    console.log('[postforme] data.posts:', JSON.stringify(data.posts));
+
+    var postId = data.id
+      || data.post_id
+      || (data.posts && data.posts[0] && (data.posts[0].id || data.posts[0].post_id))
+      || null;
 
     // Coba ekstrak URL postingan langsung dari response (untuk chip)
     var postUrl = null;
