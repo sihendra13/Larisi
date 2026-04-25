@@ -509,15 +509,29 @@ function buildCampaignCard(c) {
   var platName = platLabels[c.platforms[0]] || 'Platform';
 
   // Thumbnail dari thumbUrl (foto yang diupload saat launch)
-  var thumbHTML = c.thumbUrl
-    ? '<div class="cc-thumbnail-container" style="margin:0 12px 8px;height:240px;border-radius:8px;overflow:hidden;">'
-    +   '<img src="' + c.thumbUrl + '" class="cc-thumbnail-img" style="width:100%;height:100%;'
-    +   'object-fit:cover;object-position:top;display:block;">'
-    + '</div>'
-    : '<div class="cc-thumbnail-container" style="margin:0 12px 8px;height:240px;'
+  var _thumb = c.thumbUrl || '';
+  var _isVideoPlaceholder = _thumb.startsWith('blob:') || _thumb.startsWith('data:video');
+  var _isImage = !_isVideoPlaceholder && (_thumb.startsWith('data:image') || _thumb.startsWith('https://'));
+  var _videoPlaceholderHTML =
+    '<div class="cc-thumbnail-container" style="margin:0 12px 8px;height:240px;'
+    + 'border-radius:8px;background:' + (c.thumbColor || '#1a1a2e') + ';'
+    + 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;">'
+    + '<span style="font-size:36px;line-height:1;">&#9654;</span>'
+    + '<span style="color:white;font-size:12px;font-weight:600;letter-spacing:0.05em;">VIDEO</span>'
+    + '</div>';
+  var thumbHTML = !_thumb
+    ? '<div class="cc-thumbnail-container" style="margin:0 12px 8px;height:240px;'
     +   'border-radius:8px;display:flex;align-items:center;justify-content:center;">'
     +   '<span style="color:#9ca3af;font-size:12px;text-align:center;">Foto tidak tersedia</span>'
-    + '</div>';
+    + '</div>'
+    : _isVideoPlaceholder
+    ? _videoPlaceholderHTML
+    : _isImage
+    ? '<div class="cc-thumbnail-container" style="margin:0 12px 8px;height:240px;border-radius:8px;overflow:hidden;">'
+    +   '<img src="' + _thumb + '" class="cc-thumbnail-img" style="width:100%;height:100%;'
+    +   'object-fit:cover;object-position:top;display:block;">'
+    + '</div>'
+    : _videoPlaceholderHTML;
 
   // View URL untuk timestamp — pakai post_url langsung dari API (bukan konstruksi)
   // Story tidak punya URL permanen, selalu plain text

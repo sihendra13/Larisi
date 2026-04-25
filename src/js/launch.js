@@ -353,6 +353,57 @@ async function launchRadar() {
 }
 
 /* ─────────────────────────────────────────
+   captureVideoFrame(videoFile)
+   Capture JPEG thumbnail dari frame 0.5s video yang di-upload
+   Return: data:image/jpeg base64 string, atau null jika gagal
+   ───────────────────────────────────────── */
+function captureVideoFrame(videoFile) {
+  return new Promise(function(resolve) {
+    var video = document.createElement('video');
+    video.preload = 'metadata';
+    video.muted   = true;
+    var url = URL.createObjectURL(videoFile);
+    video.src = url;
+
+    video.addEventListener('loadeddata', function() {
+      video.currentTime = Math.min(0.5, video.duration || 0.5);
+    });
+
+    video.addEventListener('seeked', function() {
+      try {
+        var canvas = document.createElement('canvas');
+        canvas.width  = 480;
+        canvas.height = 270;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        console.log('[launch] captureVideoFrame success, size:', dataUrl.length);
+        resolve(dataUrl);
+      } catch(e) {
+        console.warn('[launch] captureVideoFrame canvas error:', e.message);
+        URL.revokeObjectURL(url);
+        resolve(null);
+      }
+    });
+
+    video.addEventListener('error', function() {
+      console.warn('[launch] captureVideoFrame video load error');
+      URL.revokeObjectURL(url);
+      resolve(null);
+    });
+
+    // Timeout fallback — 5 detik
+    setTimeout(function() {
+      URL.revokeObjectURL(url);
+      resolve(null);
+    }, 5000);
+
+    video.load();
+  });
+}
+
+/* ─────────────────────────────────────────
    _doLaunch(campNameOverride)
    Dipanggil setelah user klik "Launch Sekarang →"
    5-step flow: collect → export → save → buffer → animate
@@ -421,6 +472,16 @@ async function _doLaunch(campNameOverride) {
     campName:       campName
   });
 
+  // ── Capture thumbnail dari video (jika ada uploadedVideoFile) ──
+  var thumbUrl = uploadedDataURL;
+  if (typeof uploadedVideoFile !== 'undefined' && uploadedVideoFile) {
+    var frameBase64 = await captureVideoFrame(uploadedVideoFile);
+    if (frameBase64) {
+      thumbUrl = frameBase64;
+      console.log('[launch] video thumbnail captured, using frame as thumbUrl');
+    }
+  }
+
   // Campaign object untuk CAMPAIGNS array (Monitor)
   var newCamp = {
     id:           Date.now(),
@@ -435,7 +496,7 @@ async function _doLaunch(campNameOverride) {
     budgetUsed:   0,
     sparkData:    [0, 0, 0, 0, 0, 0],
     thumbColor:   '#791ADB',
-    thumbUrl:     uploadedDataURL,
+    thumbUrl:     thumbUrl,
     launchTime:   'Baru saja',
     aiOpening:    'Campaign <strong>' + campName + '</strong> sudah live!\n\nAudiens tersedia: <strong>' + reachText + '</strong> di area kamu — jangkauan mulai dihitung begitu iklan ditayangkan.\n\nSaya pantau tren di <strong>' + (locShort || 'area target') + '</strong> via <strong>' + platLabel + '</strong> dan akan notify kamu kalau ada yang perlu dioptimalkan.',
     aiChips:      ['Lihat proyeksi', 'Optimalkan targeting', 'Bagikan ke tim'],
@@ -489,9 +550,10 @@ async function _doLaunch(campNameOverride) {
       campaignData.supabase_id = saveResult.id;
       console.log('[launch] supabase_id ready:', saveResult.id);
       // Simpan thumbnail ke localStorage agar tetap ada setelah page refresh
-      if (uploadedDataURL) {
+      var _thumbToSave = thumbUrl || uploadedDataURL;
+      if (_thumbToSave) {
         try {
-          localStorage.setItem('radar_thumb_' + saveResult.id, uploadedDataURL);
+          localStorage.setItem('radar_thumb_' + saveResult.id, _thumbToSave);
           console.log('[launch] thumbUrl saved to localStorage for', saveResult.id);
         } catch(e) {
           console.warn('[launch] localStorage thumb save failed (mungkin terlalu besar):', e.message);
