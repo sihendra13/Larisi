@@ -367,6 +367,37 @@ async function launchRadar() {
 }
 
 /* ─────────────────────────────────────────
+   _createThumbDataUrl(dataUrl)
+   Kompres foto asli menjadi thumbnail kecil (max 300px lebar, JPEG 65%)
+   untuk disimpan ke Supabase (bukan localStorage).
+   Return: compressed data:image/jpeg string, atau null
+   ───────────────────────────────────────── */
+function _createThumbDataUrl(dataUrl) {
+  return new Promise(function(resolve) {
+    if (!dataUrl || !dataUrl.startsWith('data:image')) { resolve(null); return; }
+    var img = new Image();
+    img.onload = function() {
+      try {
+        var maxW   = 300;
+        var ratio  = maxW / img.naturalWidth;
+        var targetW = maxW;
+        var targetH = Math.round(img.naturalHeight * ratio);
+        var c = document.createElement('canvas');
+        c.width  = targetW;
+        c.height = targetH;
+        c.getContext('2d').drawImage(img, 0, 0, targetW, targetH);
+        resolve(c.toDataURL('image/jpeg', 0.65));
+      } catch(e) {
+        console.warn('[launch] _createThumbDataUrl error:', e.message);
+        resolve(null);
+      }
+    };
+    img.onerror = function() { resolve(null); };
+    img.src = dataUrl;
+  });
+}
+
+/* ─────────────────────────────────────────
    captureVideoFrame(videoFile)
    Capture JPEG thumbnail dari frame 0.5s video yang di-upload
    Return: data:image/jpeg base64 string, atau null jika gagal
@@ -474,7 +505,8 @@ async function _doLaunch(campNameOverride) {
     reachMax:    reachHigh,
     caption:     captionEl ? captionEl.value : '',
     stitchText:  stitchEl  ? stitchEl.innerText : '',
-    budget:      null
+    budget:      null,
+    thumbUrl:    compressedThumb  // compressed JPEG untuk disimpan ke Supabase
   };
 
   console.log('[launch] DEBUG state saat launch:', {
@@ -494,6 +526,17 @@ async function _doLaunch(campNameOverride) {
       thumbUrl = frameBase64;
       console.log('[launch] video thumbnail captured, using frame as thumbUrl');
     }
+  }
+
+  // ── Buat compressed thumbnail untuk disimpan ke Supabase ──
+  // thumbUrl bisa jadi full-res base64 (besar) → kompres dulu ke ~15-25KB
+  var compressedThumb = null;
+  var thumbSourceUrl = (thumbUrl && thumbUrl.startsWith('data:image')) ? thumbUrl
+    : (typeof uploadedDataURLs !== 'undefined' && uploadedDataURLs[0] && uploadedDataURLs[0].startsWith('data:image'))
+      ? uploadedDataURLs[0] : null;
+  if (thumbSourceUrl) {
+    compressedThumb = await _createThumbDataUrl(thumbSourceUrl);
+    console.log('[launch] compressed thumb size:', compressedThumb ? compressedThumb.length : 0);
   }
 
   // Campaign object untuk CAMPAIGNS array (Monitor)
@@ -564,14 +607,16 @@ async function _doLaunch(campNameOverride) {
       newCamp.supabase_id      = saveResult.id;
       campaignData.supabase_id = saveResult.id;
       console.log('[launch] supabase_id ready:', saveResult.id);
-      // Simpan thumbnail ke localStorage agar tetap ada setelah page refresh
-      var _thumbToSave = thumbUrl || uploadedDataURL;
-      if (_thumbToSave) {
+      // thumb_url sudah disimpan ke Supabase via saveCampaign (compressed JPEG).
+      // Simpan juga compressed version ke localStorage sebagai fallback cepat (sesi saat ini).
+      if (compressedThumb) {
         try {
-          localStorage.setItem('radar_thumb_' + saveResult.id, _thumbToSave);
-          console.log('[launch] thumbUrl saved to localStorage for', saveResult.id);
+          localStorage.setItem('radar_thumb_' + saveResult.id, compressedThumb);
+          console.log('[launch] compressed thumb saved to localStorage for', saveResult.id,
+            '| size:', compressedThumb.length);
         } catch(e) {
-          console.warn('[launch] localStorage thumb save failed (mungkin terlalu besar):', e.message);
+          // localStorage penuh — tidak masalah, Supabase sudah punya thumb_url
+          console.warn('[launch] localStorage thumb save failed (OK — Supabase sudah punya):', e.message);
         }
       }
     }

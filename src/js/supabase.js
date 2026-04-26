@@ -149,7 +149,8 @@ async function saveCampaign(campaignData) {
         status:              'active',
         budget_idr:          d.budget      || null,
         format:              d.format      || null,
-        post_id:             d.postId      || null
+        post_id:             d.postId      || null,
+        thumb_url:           d.thumbUrl    || null
       })
       .select()
       .single();

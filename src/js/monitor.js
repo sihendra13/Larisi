@@ -204,7 +204,9 @@ async function loadCampaignsFromSupabase() {
         budgetUsed:  0,
         sparkData:   [0, 0, 0, 0, 0, 0],
         thumbColor:  '#791ADB',
-        thumbUrl:    localStorage.getItem('radar_thumb_' + row.id) || null,
+        // Prioritas: thumb_url dari Supabase (compressed JPEG, reliable antar sesi)
+        // Fallback: localStorage (untuk campaign lama sebelum fitur ini)
+        thumbUrl:    row.thumb_url || localStorage.getItem('radar_thumb_' + row.id) || null,
         launchTime:  dateStr,
         created_at:  row.created_at || null,
         aiOpening:

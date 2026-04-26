@@ -118,7 +118,9 @@ function showUploadModal(msg, onConfirm) {
 }
 
 function handleUpload(e) {
-  uploadedDataURLs = [];
+  // JANGAN reset uploadedDataURLs di sini — kalau user tambah foto via tombol "+"
+  // array lama akan kehilangan base64 foto-foto sebelumnya.
+  // Reset hanya dilakukan di clearThumbs() dan xBtn.onclick (lihat di bawah).
   var rawFiles = Array.from(e.target.files);
   if (!rawFiles.length) return;
   e.target.value = '';
@@ -153,6 +155,7 @@ function clearThumbs() {
   thumbs.innerHTML = '';
   thumbs.style.display = 'none';
   uploadMode = null;
+  uploadedDataURLs = []; // Reset array saat ganti dari video→foto atau foto→video
 }
 
 function processFiles(rawFiles, hasVideo) {

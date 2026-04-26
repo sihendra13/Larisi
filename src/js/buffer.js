@@ -947,6 +947,9 @@ async function publishViaPostForMe(canvas, campaignData) {
 
       console.log('[postforme] total foto di-upload:', allPhotoURLs.length,
         '| indices:', allPhotoURLs.map(function(u, i) { return i + ':' + (u ? u.slice(0,20) : 'null'); }));
+      if (!allPhotoURLs.length) {
+        console.warn('[postforme] ⚠ uploadedDataURLs kosong — cek apakah FileReader selesai sebelum launch');
+      }
 
       // ── Geo-Stitch: composite teks langsung di atas setiap foto asli ──
       // Tidak pakai html2canvas — gambar asli di-draw ke canvas lalu stitch overlay di-render manual
@@ -977,6 +980,7 @@ async function publishViaPostForMe(canvas, campaignData) {
             console.log('[postforme] foto', d + 1, '— original (no stitch), size:', blobToUpload.size);
           }
 
+          console.log('[postforme] upload foto ' + (d + 1) + ' dari ' + allPhotoURLs.length + ' ...');
           var dataUp = await _pfmProxy('/v1/media/create-upload-url', 'POST', { content_type: 'image/jpeg' });
           var upUrl  = dataUp.upload_url;
           var medUrl = dataUp.media_url || dataUp.url;
@@ -985,6 +989,7 @@ async function publishViaPostForMe(canvas, campaignData) {
           var upResp = await fetch(upUrl, { method: 'PUT', body: blobToUpload, headers: { 'Content-Type': 'image/jpeg' } });
           if (!upResp.ok) throw new Error('Upload foto ' + (d + 1) + ' gagal: ' + upResp.status);
           allMediaUrls.push(medUrl);
+          console.log('[postforme] ✓ foto ' + (d + 1) + '/' + allPhotoURLs.length + ' uploaded OK, url:', medUrl ? medUrl.slice(0,50) : '—');
         } catch(e) {
           console.warn('[postforme] foto', d + 1, 'error:', e.message);
         }
