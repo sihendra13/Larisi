@@ -245,3 +245,46 @@
 .cc-ts-wrap:hover .cc-ts-chip {
   display: flex;
 }
+
+/* ─── Campaign Empty State ─── */
+.cc-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+  min-height: calc(100vh - 200px);
+  padding: 40px 20px;
+  margin: 0 auto;
+  gap: 16px;
+}
+.cc-empty-state h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0;
+  font-family: var(--font, sans-serif);
+}
+.cc-empty-state p {
+  font-size: 14px;
+  color: #6b7280;
+  max-width: 280px;
+  line-height: 1.6;
+  margin: 0;
+  font-family: var(--font, sans-serif);
+}
+.cc-empty-cta {
+  background: #1a1a2e;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  font-family: var(--font, sans-serif);
+  transition: background 0.2s;
+}
+.cc-empty-cta:hover { background: #7c3aed; }

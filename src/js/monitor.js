@@ -173,8 +173,12 @@ function renderCampaigns() {
   });
   var filtered = getFilteredCampaigns();
   if (!filtered.length) {
+    // Override display grid → flex agar empty state bisa center penuh
+    list.style.display         = 'flex';
+    list.style.alignItems      = 'center';
+    list.style.justifyContent  = 'center';
     list.innerHTML =
-      '<div class="cc-empty-state">' +
+      '<div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;max-width:400px;">' +
         '<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">' +
           '<circle cx="60" cy="60" r="50" fill="#f5f3ff"/>' +
           '<rect x="35" y="40" width="50" height="35" rx="8" fill="#e9d5ff"/>' +
@@ -183,12 +187,16 @@ function renderCampaigns() {
           '<circle cx="72" cy="72" r="14" fill="#7c3aed"/>' +
           '<path d="M68 72h8M72 68v8" stroke="white" stroke-width="2.5" stroke-linecap="round"/>' +
         '</svg>' +
-        '<h3>Belum ada campaign yang berjalan</h3>' +
-        '<p>Launch campaign pertamamu dan pantau performanya secara real-time di sini!</p>' +
+        '<h3 style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0;font-family:var(--font,sans-serif);">Belum ada campaign yang berjalan</h3>' +
+        '<p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0;font-family:var(--font,sans-serif);">Launch campaign pertamamu dan pantau performanya secara real-time di sini!</p>' +
         '<button onclick="switchMenu(\'command\')" class="cc-empty-cta">🚀 Buat Campaign Pertama</button>' +
       '</div>';
     return;
   }
+  // Reset ke grid (CSS default) saat ada campaign
+  list.style.display        = '';
+  list.style.alignItems     = '';
+  list.style.justifyContent = '';
   filtered.forEach(function(c) {
     list.appendChild(buildCampaignCard(c));
     _loadAnalyticsForCard(c);

@@ -365,18 +365,20 @@ function renderAnalytics() {
         // Sisipkan empty state setelah greeting, sebelum upgrade card
         var upgradeCard = storyWrap.querySelector('.an-upgrade-card');
         var emptyDiv = document.createElement('div');
-        emptyDiv.className = 'an-empty-state';
+        emptyDiv.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:calc(100vh - 160px);';
         emptyDiv.innerHTML =
-          '<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-            '<circle cx="60" cy="60" r="50" fill="#f5f3ff"/>' +
-            '<rect x="30" y="75" width="12" height="20" rx="3" fill="#e9d5ff"/>' +
-            '<rect x="48" y="60" width="12" height="35" rx="3" fill="#c4b5fd"/>' +
-            '<rect x="66" y="45" width="12" height="50" rx="3" fill="#7c3aed"/>' +
-            '<path d="M28 40 Q45 25 60 35 Q75 45 88 28" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" fill="none" stroke-dasharray="4 3"/>' +
-          '</svg>' +
-          '<h3>Belum ada data untuk dianalisis</h3>' +
-          '<p>Mulai dengan launch campaign pertamamu — AI akan langsung analisis performa dan kasih rekomendasi terbaik untukmu!</p>' +
-          '<button onclick="switchMenu(\'command\')" class="an-empty-cta">🚀 Buat Campaign Pertama</button>';
+          '<div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;max-width:400px;">' +
+            '<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+              '<circle cx="60" cy="60" r="50" fill="#f5f3ff"/>' +
+              '<rect x="30" y="75" width="12" height="20" rx="3" fill="#e9d5ff"/>' +
+              '<rect x="48" y="60" width="12" height="35" rx="3" fill="#c4b5fd"/>' +
+              '<rect x="66" y="45" width="12" height="50" rx="3" fill="#7c3aed"/>' +
+              '<path d="M28 40 Q45 25 60 35 Q75 45 88 28" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" fill="none" stroke-dasharray="4 3"/>' +
+            '</svg>' +
+            '<h3 style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0;font-family:var(--font,sans-serif);">Belum ada data untuk dianalisis</h3>' +
+            '<p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0;font-family:var(--font,sans-serif);">Mulai dengan launch campaign pertamamu. AI akan langsung analisis performa dan kasih rekomendasi terbaik untukmu!</p>' +
+            '<button onclick="switchMenu(\'command\')" class="an-empty-cta">🚀 Buat Campaign Pertama</button>' +
+          '</div>';
         if (upgradeCard) {
           storyWrap.insertBefore(emptyDiv, upgradeCard);
         } else {
