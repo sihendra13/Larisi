@@ -710,15 +710,32 @@ function _stitchWrapText(ctx, text, maxWidth) {
   return result.length ? result : [''];
 }
 
+// Helper: apakah format ini vertical (9:16)?
+// Vertical → stitch bottom-CENTER (hindari area crop Instagram/TikTok)
+// Horizontal → stitch bottom-LEFT (aman untuk carousel/post)
+function _isVerticalFormat(fmt, platforms) {
+  var f = (fmt || '').toLowerCase();
+  if (f === 'story' || f === 'reel') return true;
+  var plats = Array.isArray(platforms) ? platforms : [];
+  return plats.some(function(p) {
+    var pl = (p || '').toLowerCase();
+    return pl === 'tiktok' || pl === 'youtube';
+  });
+}
+
 // Composite stitch text onto a dataUrl → returns Blob (or null on error)
-// Layout: bottom-left, proportional font, auto pill width, text wrap at 60% canvas width
-function _compositeStitchOnDataUrl(dataUrl) {
+// fmt + platforms menentukan posisi stitch:
+//   - POST/landscape → bottom-LEFT (5% dari kiri, 8% dari bawah)
+//   - STORY/REEL/TIKTOK/YOUTUBE (9:16) → bottom-CENTER (12% dari bawah, hindari UI platform)
+function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
   return new Promise(function(resolve) {
     var stitchEl = document.getElementById('phoneStitch');
     var text     = stitchEl
       ? (stitchEl.textContent || stitchEl.innerText || '').trim()
       : '';
     if (!text) { resolve(null); return; }
+
+    var vertical = _isVerticalFormat(fmt, platforms);
 
     var img = new Image();
     img.onload = function() {
@@ -732,15 +749,21 @@ function _compositeStitchOnDataUrl(dataUrl) {
       var ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, cw, ch);
 
-      // ── 2. Semua ukuran proporsional terhadap dimensi foto INI ──
-      var marginLeft   = Math.round(cw * 0.05);           // 5% lebar foto
-      var marginBottom = Math.round(ch * 0.08);           // 8% tinggi foto
-      var pad          = Math.round(cw * 0.016);          // ~padding pill
-      // 78% (lebih konservatif dari 85%) agar wrap lebih agresif dan measurement error tidak overflow
-      var maxTextW     = Math.round(cw * 0.78 - pad * 2);
-      var pillMaxW     = Math.round(cw - marginLeft * 2); // tidak boleh lebih lebar dari canvas - 2x margin
+      // ── 2. Ukuran dasar proporsional ──
+      var pad          = Math.round(cw * 0.016);
+      // Vertical (9:16): margin lebih tinggi agar tidak tertutup UI Story/Reel Instagram
+      var marginBottom = vertical
+        ? Math.round(ch * 0.12)   // 12% dari bawah untuk story/reel/tiktok
+        : Math.round(ch * 0.08);  // 8% dari bawah untuk post
 
-      // ── 3. Font size proporsional, shrink otomatis sampai semua baris muat ──
+      // maxTextW: 78% lebar canvas (konservatif, cegah overflow karena font measurement error)
+      var maxTextW = Math.round(cw * 0.78 - pad * 2);
+      // pillMaxW: batas maksimum lebar pill
+      // Vertical (center): full width minus 2x margin kiri-kanan (10% total)
+      // Horizontal (left): sama
+      var pillMaxW = Math.round(cw * 0.90 - pad * 2);
+
+      // ── 3. Font size proporsional, shrink sampai baris terpanjang muat ──
       var fontSize = Math.max(16, Math.round(cw * 0.038));
       var minFont  = Math.max(16, Math.round(cw * 0.018));
       var fontBase = '-apple-system, BlinkMacSystemFont, "Inter", Arial, sans-serif';
@@ -751,29 +774,38 @@ function _compositeStitchOnDataUrl(dataUrl) {
         lines      = _stitchWrapText(ctx, text, maxTextW);
         lineWidths = lines.map(function(l) { return ctx.measureText(l).width; });
         maxLineW   = Math.max.apply(null, lineWidths);
-        // Cek apakah semua baris + padding muat dalam pillMaxW
-        if (Math.round(maxLineW + pad * 2) <= pillMaxW) break;
+        if (Math.round(maxLineW * 1.08 + pad * 2) <= pillMaxW) break;
         fontSize -= Math.max(1, Math.round(fontSize * 0.06));
       }
 
       var lineHeight = Math.round(fontSize * 1.5);
 
-      // ── 4. Pill — lebar = max line width + 8% safety margin + padding
-      // Safety margin 8% mengakomodasi perbedaan antara ctx.measureText vs actual render
-      // (system font di berbagai OS bisa sedikit lebih lebar dari yang terukur)
+      // ── 4. Pill dimensions ──
+      // Safety margin 8% pada pillW mengakomodasi perbedaan measureText vs actual render
       var pillW  = Math.min(Math.round(maxLineW * 1.08 + pad * 2), pillMaxW);
       var pillH  = Math.round(lineHeight * lines.length + pad * 2);
       var radius = Math.round(fontSize * 0.35);
 
-      // ── 5. Posisi: marginLeft dari kiri, marginBottom dari bawah ──
-      //    pillX dijamin >= marginLeft (tidak pernah < 0)
-      var pillX  = Math.max(marginLeft, 0);
-      var pillY  = Math.max(ch - marginBottom - pillH, 0);
+      // ── 5. Posisi pill & text berdasarkan format ──
+      var pillX, textX, textAlign;
 
-      // Pastikan pill tidak overflow kanan
-      if (pillX + pillW > cw - marginLeft) {
-        pillW = cw - marginLeft - pillX;
+      if (vertical) {
+        // BOTTOM-CENTER: horizontal center di canvas
+        pillX     = Math.round((cw - pillW) / 2);
+        textX     = Math.round(cw / 2); // ctx.textAlign = 'center' → draw dari titik tengah
+        textAlign = 'center';
+      } else {
+        // BOTTOM-LEFT: 5% dari kiri
+        pillX     = Math.round(cw * 0.05);
+        textX     = pillX + pad;
+        textAlign = 'left';
       }
+
+      // Clamp agar tidak overflow kiri/kanan
+      pillX = Math.max(0, pillX);
+      if (pillX + pillW > cw) pillX = Math.max(0, cw - pillW);
+
+      var pillY = Math.max(ch - marginBottom - pillH, 0);
 
       // ── 6. Draw pill background ──
       ctx.globalAlpha = 0.75;
@@ -782,17 +814,14 @@ function _compositeStitchOnDataUrl(dataUrl) {
       ctx.fill();
       ctx.globalAlpha = 1.0;
 
-      // ── 7. Draw text — white, bold, left-aligned, dimulai dari pillX + pad ──
+      // ── 7. Draw text ──
       ctx.fillStyle    = '#ffffff';
       ctx.font         = 'bold ' + fontSize + 'px ' + fontBase;
-      ctx.textAlign    = 'left';
+      ctx.textAlign    = textAlign;
       ctx.textBaseline = 'top';
-
-      var textX = pillX + pad;  // selalu >= marginLeft + pad, tidak pernah < 0
       var textY = pillY + pad;
 
       lines.forEach(function(line, i) {
-        // Clip text ke dalam pill supaya tidak overflow kanan
         ctx.save();
         ctx.beginPath();
         ctx.rect(pillX, pillY, pillW, pillH);
@@ -801,10 +830,9 @@ function _compositeStitchOnDataUrl(dataUrl) {
         ctx.restore();
       });
 
-      console.log('[postforme] stitch ' + cw + 'x' + ch +
-        ' | font:' + fontSize + 'px | lines:' + lines.length +
-        ' | pillX:' + pillX + ' pillW:' + pillW + ' pillH:' + pillH +
-        ' | marginLeft:' + marginLeft + ' maxTextW:' + maxTextW);
+      console.log('[postforme] stitch ' + (vertical ? 'VERTICAL/center' : 'horizontal/left') +
+        ' | ' + cw + 'x' + ch + ' | font:' + fontSize + 'px | lines:' + lines.length +
+        ' | pillX:' + pillX + ' pillW:' + pillW + ' pillH:' + pillH + ' marginBottom:' + marginBottom);
 
       canvas.toBlob(function(blob) { resolve(blob); }, 'image/jpeg', 0.92);
     };
@@ -954,14 +982,11 @@ async function publishViaPostForMe(canvas, campaignData) {
         console.warn('[postforme] ⚠ uploadedDataURLs kosong — cek apakah FileReader selesai sebelum launch');
       }
 
-      // ── Geo-Stitch: hanya untuk format 'post' (carousel), foto pertama saja ──
-      // - Story: Instagram center-crop foto landscape ke 9:16 → stitch bottom-left
-      //   jatuh di area yang ter-crop → teks kacau/terpotong
-      // - Reel: konten video, tidak ada stitch
-      // - TikTok/YouTube: vertical format (9:16), same crop issue seperti Story
-      // - Post: foto ditampilkan sesuai aspect ratio asli → bottom-left aman ✓
-      var applyStitch = (typeof geoStitchVisible === 'undefined' || geoStitchVisible === true)
-                     && fmt === 'post';
+      // ── Geo-Stitch: foto pertama saja, posisi adaptif berdasarkan format ──
+      // Stitch diaktifkan untuk SEMUA format foto, posisi ditentukan oleh _isVerticalFormat():
+      // - POST → bottom-LEFT (5% kiri, 8% bawah)
+      // - STORY / REEL / TIKTOK / YOUTUBE → bottom-CENTER (12% bawah, hindari UI platform)
+      var applyStitch = (typeof geoStitchVisible === 'undefined' || geoStitchVisible === true);
 
       for (var d = 0; d < allPhotoURLs.length; d++) {
         try {
@@ -969,8 +994,8 @@ async function publishViaPostForMe(canvas, campaignData) {
           var blobToUpload = null;
 
           if (applyStitch && d === 0) {
-            // Composite stitch text HANYA ke foto pertama via Canvas API
-            var composited = await _compositeStitchOnDataUrl(dataUrl);
+            // Composite stitch text HANYA ke foto pertama, pass fmt + platforms untuk posisi
+            var composited = await _compositeStitchOnDataUrl(dataUrl, fmt, campaignData.platforms);
             if (composited) {
               blobToUpload = composited;
               console.log('[postforme] foto', d + 1, '— stitch composited, size:', composited.size);
