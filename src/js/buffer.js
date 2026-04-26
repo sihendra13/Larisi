@@ -747,7 +747,36 @@ async function publishViaPostForMe(canvas, campaignData) {
 
       console.log('[postforme] total foto:', allPhotoURLs.length);
 
-      for (var d = 0; d < allPhotoURLs.length; d++) {
+      // ── Geo-Stitch: burn canvas ke foto pertama jika toggle ON ──
+      // canvas = hasil exportCreativeCanvas() dari launch.js (sudah ada stitch text di dalamnya)
+      var useStitchedCanvas = canvas &&
+        (typeof geoStitchVisible === 'undefined' || geoStitchVisible === true);
+
+      var startIdx = 0; // index awal loop foto original
+      if (useStitchedCanvas) {
+        try {
+          var stBlob = await new Promise(function(resolve) {
+            canvas.toBlob(function(b) { resolve(b); }, 'image/jpeg', 0.92);
+          });
+          var stData   = await _pfmProxy('/v1/media/create-upload-url', 'POST', { content_type: 'image/jpeg' });
+          var stUpUrl  = stData.upload_url;
+          var stMedUrl = stData.media_url || stData.url;
+          if (!stUpUrl) throw new Error('No upload URL canvas stitch');
+
+          var stResp = await fetch(stUpUrl, { method: 'PUT', body: stBlob, headers: { 'Content-Type': 'image/jpeg' } });
+          if (!stResp.ok) throw new Error('Upload canvas stitch gagal: ' + stResp.status);
+
+          allMediaUrls.push(stMedUrl);
+          startIdx = 1; // foto pertama sudah dihandle via canvas, skip index 0
+          console.log('[postforme] foto 1 (geo-stitch burned) uploaded, size:', stBlob ? stBlob.size : 0);
+        } catch(e) {
+          console.warn('[postforme] canvas stitch upload error, fallback ke original:', e.message);
+          startIdx = 0; // fallback: upload semua dari original
+        }
+      }
+
+      // Sisa foto carousel (index startIdx+) pakai base64 asli
+      for (var d = startIdx; d < allPhotoURLs.length; d++) {
         try {
           var dataUrl = allPhotoURLs[d];
           var arrD    = dataUrl.split(',');
