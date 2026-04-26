@@ -954,8 +954,11 @@ async function publishViaPostForMe(canvas, campaignData) {
         console.warn('[postforme] ⚠ uploadedDataURLs kosong — cek apakah FileReader selesai sebelum launch');
       }
 
-      // ── Geo-Stitch: composite teks langsung di atas setiap foto asli ──
-      // Tidak pakai html2canvas — gambar asli di-draw ke canvas lalu stitch overlay di-render manual
+      // ── Geo-Stitch: hanya diterapkan ke FOTO PERTAMA (index 0) ──
+      // Foto ke-2 dst di-upload original tanpa overlay.
+      // Alasan: carousel Instagram menggunakan foto pertama sebagai cover (paling dilihat),
+      // stitch di foto pertama sudah cukup untuk geo-tagging. Overlay di semua foto
+      // berisiko kacau karena perbedaan dimensi/aspect ratio antar foto.
       var applyStitch = (typeof geoStitchVisible === 'undefined' || geoStitchVisible === true);
 
       for (var d = 0; d < allPhotoURLs.length; d++) {
@@ -963,8 +966,8 @@ async function publishViaPostForMe(canvas, campaignData) {
           var dataUrl = allPhotoURLs[d];
           var blobToUpload = null;
 
-          if (applyStitch) {
-            // Composite stitch text ke gambar asli via Canvas API
+          if (applyStitch && d === 0) {
+            // Composite stitch text HANYA ke foto pertama via Canvas API
             var composited = await _compositeStitchOnDataUrl(dataUrl);
             if (composited) {
               blobToUpload = composited;
@@ -972,7 +975,7 @@ async function publishViaPostForMe(canvas, campaignData) {
             }
           }
 
-          // Fallback: upload gambar original kalau stitch OFF atau composite gagal
+          // Foto ke-2 dst (atau fallback jika stitch OFF/gagal): upload original
           if (!blobToUpload) {
             var arrD  = dataUrl.split(',');
             var mimeD = (arrD[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
@@ -980,7 +983,7 @@ async function publishViaPostForMe(canvas, campaignData) {
             var u8D   = new Uint8Array(bstrD.length);
             for (var k = 0; k < bstrD.length; k++) u8D[k] = bstrD.charCodeAt(k);
             blobToUpload = new Blob([u8D], { type: mimeD });
-            console.log('[postforme] foto', d + 1, '— original (no stitch), size:', blobToUpload.size);
+            console.log('[postforme] foto', d + 1, '— original' + (d > 0 ? ' (stitch hanya di foto 1)' : ' (no stitch)') + ', size:', blobToUpload.size);
           }
 
           console.log('[postforme] upload foto ' + (d + 1) + ' dari ' + allPhotoURLs.length + ' ...');
