@@ -750,39 +750,38 @@ function _isVerticalFormat(fmt, platforms) {
   var verticalFmts = ['story', 'reel', 'ig-story', 'ig-reel', 'meta-story',
                       'meta-reel', 'stories', 'reels', 'short', 'shorts'];
 
-  // Cek dari fmt string
+  // Layer 1: dari fmt parameter
   var f = (fmt || '').toLowerCase();
   if (verticalFmts.indexOf(f) !== -1) {
-    console.log('[stitch] _isVerticalFormat: fmt=' + fmt + ' f=' + f + ' → vertical=true (fmt match)');
+    console.log('[stitch] _isVerticalFormat: fmt=' + fmt + ' → vertical=true (layer1)');
     return true;
   }
 
-  // Cek dari activePlatform global (fallback)
+  // Layer 2: dari activePlatform global (PALING RELIABLE)
   var ap = (typeof activePlatform !== 'undefined' ? activePlatform : '').toLowerCase();
-  if (ap === 'ig-story' || ap === 'ig-reel') {
-    console.log('[stitch] _isVerticalFormat: fmt=' + fmt + ' ap=' + ap + ' → vertical=true (activePlatform match)');
+  if (ap === 'ig-story' || ap === 'ig-reel' || ap === 'meta-story' ||
+      ap === 'meta-reel' || ap === 'tiktok' || ap === 'youtube') {
+    console.log('[stitch] _isVerticalFormat: activePlatform=' + ap + ' → vertical=true (layer2)');
     return true;
   }
 
-  // Cek dari activeFormat global (fallback kedua)
+  // Layer 3: dari activeFormat global
   var af = (typeof activeFormat !== 'undefined' ? activeFormat : '').toLowerCase();
   if (verticalFmts.indexOf(af) !== -1) {
-    console.log('[stitch] _isVerticalFormat: fmt=' + fmt + ' af=' + af + ' → vertical=true (activeFormat match)');
+    console.log('[stitch] _isVerticalFormat: activeFormat=' + af + ' → vertical=true (layer3)');
     return true;
   }
 
-  // Cek dari platforms array
+  // Layer 4: dari platforms array (tiktok/youtube)
   var plats = Array.isArray(platforms) ? platforms : [];
   if (plats.some(function(p) {
-    var pl = (p || '').toLowerCase();
-    return pl === 'tiktok' || pl === 'youtube';
+    return (p || '').toLowerCase() === 'tiktok' || (p || '').toLowerCase() === 'youtube';
   })) {
-    console.log('[stitch] _isVerticalFormat: fmt=' + fmt + ' platforms=' + JSON.stringify(platforms) + ' → vertical=true (platforms match)');
+    console.log('[stitch] _isVerticalFormat: platforms=' + platforms + ' → vertical=true (layer4)');
     return true;
   }
 
-  console.log('[stitch] _isVerticalFormat: fmt=' + fmt + ' f=' + f +
-    ' af=' + af + ' ap=' + ap + ' → vertical=false');
+  console.log('[stitch] _isVerticalFormat: fmt=' + fmt + ' ap=' + ap + ' af=' + af + ' → vertical=false');
   return false;
 }
 
