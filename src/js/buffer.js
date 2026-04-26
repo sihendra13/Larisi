@@ -275,33 +275,66 @@ async function connectPostForMe(platform) {
       window.removeEventListener('message', msgHandler);
       clearInterval(poll);
 
-      // Log lengkap struktur response PostForMe untuk debug
-      console.log('[postforme] OAuth callback event.data:', JSON.stringify(event.data));
+      // ── DEBUG LOGGING LENGKAP — jangan hapus sampai struktur OAuth jelas ──
+      console.log('[postforme] ===== OAuth callback diterima =====');
+      console.log('[postforme] event.origin:', event.origin);
+      console.log('[postforme] event.data (raw):', event.data);
+      try {
+        console.log('[postforme] event.data (JSON):', JSON.stringify(event.data, null, 2));
+      } catch(jsonErr) {
+        console.log('[postforme] event.data tidak bisa di-JSON.stringify:', jsonErr.message);
+      }
+      console.log('[postforme] event.data keys:', Object.keys(event.data || {}));
 
-      var accountIds = event.data.accountIds || event.data.account_ids || [];
-      var accountId  = accountIds[0] || null;
+      // Log semua field yang mungkin berisi accountId
+      var _d = event.data || {};
+      console.log('[postforme] field check:',{
+        type:           _d.type,
+        accountIds:     _d.accountIds,
+        account_ids:    _d.account_ids,
+        accountId:      _d.accountId,
+        account_id:     _d.account_id,
+        id:             _d.id,
+        accounts:       _d.accounts,
+        data:           _d.data,
+        payload:        _d.payload,
+        social_account: _d.social_account,
+        social_accounts:_d.social_accounts,
+        user:           _d.user,
+        token:          _d.token,
+        access_token:   _d.access_token
+      });
+      console.log('[postforme] ==========================================');
+
+      // Coba extract accountId dari semua kemungkinan field
+      var accountIds = _d.accountIds
+                    || _d.account_ids
+                    || (_d.accounts && _d.accounts.map(function(a){ return a.id || a; }))
+                    || (_d.data && _d.data.accountIds)
+                    || (_d.data && _d.data.account_ids)
+                    || (_d.payload && _d.payload.accountIds)
+                    || [];
+      var accountId  = accountIds[0]
+                    || _d.accountId
+                    || _d.account_id
+                    || _d.id
+                    || null;
+
+      console.log('[postforme] accountId extracted:', accountId, '| accountIds:', accountIds);
 
       if (!accountId) {
-        // Tidak ada accountId valid → jangan simpan, tampilkan error
-        console.error('[postforme] OAuth sukses tapi accountId tidak ditemukan. event.data:', JSON.stringify(event.data));
-        if (typeof showAnToast === 'function') {
-          showAnToast('⚠ Koneksi akun gagal, coba hubungkan ulang');
-        }
-        // Reset tombol
-        var btnReset = document.getElementById('pfm-btn-' + platform);
-        if (btnReset) {
-          var badgeReset = btnReset.querySelector('span:last-child');
-          if (badgeReset) badgeReset.textContent = 'Hubungkan';
-          btnReset.disabled = false;
-          btnReset.style.border = '1.5px solid #f0f0f0';
-          btnReset.style.background = '#fafafa';
-        }
-        return;
+        // FALLBACK: simpan dengan ID sementara agar user bisa tetap pakai app
+        // ID ini akan terdeteksi sebagai fake oleh fakePat = /^pfm_[a-z]+_\d+$/
+        // dan ditandai warning di UI — tapi publish tetap bisa dicoba
+        var fallbackId = 'pfm_' + platform + '_' + Date.now();
+        console.warn('[postforme] accountId tidak ditemukan — pakai fallback sementara:', fallbackId);
+        console.warn('[postforme] PERLU CEK: struktur response OAuth PostForMe di log di atas');
+        _saveAndUpdateUI(platform, fallbackId, null);
+      } else {
+        _saveAndUpdateUI(platform, accountId, null);
       }
 
-      _saveAndUpdateUI(platform, accountId, null);
-
-      // Fetch username real di background
+      // Fetch username real di background (juga log raw response untuk debug)
       _fetchConnectedAccounts();
     };
     window.addEventListener('message', msgHandler);
