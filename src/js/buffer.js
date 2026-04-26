@@ -275,8 +275,30 @@ async function connectPostForMe(platform) {
       window.removeEventListener('message', msgHandler);
       clearInterval(poll);
 
-      // Simpan seketika dari postMessage data (accountId + platform diketahui)
-      var accountId = (event.data.accountIds || [])[0] || ('pfm_' + platform + '_' + Date.now());
+      // Log lengkap struktur response PostForMe untuk debug
+      console.log('[postforme] OAuth callback event.data:', JSON.stringify(event.data));
+
+      var accountIds = event.data.accountIds || event.data.account_ids || [];
+      var accountId  = accountIds[0] || null;
+
+      if (!accountId) {
+        // Tidak ada accountId valid → jangan simpan, tampilkan error
+        console.error('[postforme] OAuth sukses tapi accountId tidak ditemukan. event.data:', JSON.stringify(event.data));
+        if (typeof showAnToast === 'function') {
+          showAnToast('⚠ Koneksi akun gagal, coba hubungkan ulang');
+        }
+        // Reset tombol
+        var btnReset = document.getElementById('pfm-btn-' + platform);
+        if (btnReset) {
+          var badgeReset = btnReset.querySelector('span:last-child');
+          if (badgeReset) badgeReset.textContent = 'Hubungkan';
+          btnReset.disabled = false;
+          btnReset.style.border = '1.5px solid #f0f0f0';
+          btnReset.style.background = '#fafafa';
+        }
+        return;
+      }
+
       _saveAndUpdateUI(platform, accountId, null);
 
       // Fetch username real di background
@@ -327,17 +349,27 @@ function renderConnectChannels() {
   // Set row style DULU sebelum loop
   if (row) row.style.cssText = 'display:flex;gap:12px;align-items:center;flex-wrap:wrap;';
 
+  var fakePat = /^pfm_[a-z]+_\d+$/;
+
   accounts.forEach(function(acc) {
-    var color = colors[acc.platform] || '#791ADB';
+    var isInvalid = !acc.id || fakePat.test(acc.id);
+    var color     = isInvalid ? '#f59e0b' : (colors[acc.platform] || '#791ADB');
+    var borderCol = isInvalid ? '#f59e0b' : color;
+    var titleText = isInvalid
+      ? '⚠ ' + acc.platform + ' belum terhubung dengan benar — klik untuk hubungkan ulang'
+      : '@' + (acc.username || acc.platform);
+
     var wrap = document.createElement('div');
     wrap.className = 'connected-avatar-wrap';
-    wrap.title = '@' + (acc.username || acc.platform);
+    wrap.title = titleText;
     wrap.style.cssText = 'position:relative;flex-shrink:0;cursor:pointer;width:56px;height:56px;';
+
     var box = document.createElement('div');
     box.style.cssText = 'width:56px;height:56px;border-radius:14px;' +
-      'border:2.5px solid ' + color + ';background:white;' +
+      'border:2.5px solid ' + borderCol + ';background:white;' +
       'display:flex;align-items:center;justify-content:center;overflow:hidden;';
-    if (acc.avatar_url) {
+
+    if (!isInvalid && acc.avatar_url) {
       var img = document.createElement('img');
       img.src = acc.avatar_url;
       img.alt = acc.username || acc.platform;
@@ -352,19 +384,32 @@ function renderConnectChannels() {
       };
       box.appendChild(img);
     } else {
-      box.style.background = color + '18';
-      box.style.fontSize = '20px';
+      box.style.background = isInvalid ? '#fef3c7' : (color + '18');
+      box.style.fontSize   = isInvalid ? '18px' : '20px';
       box.style.fontWeight = '700';
-      box.style.color = color;
-      box.textContent = (acc.username || acc.platform).charAt(0).toUpperCase();
+      box.style.color      = color;
+      box.textContent      = isInvalid ? '⚠' : (acc.username || acc.platform).charAt(0).toUpperCase();
     }
     wrap.appendChild(box);
+
+    // Badge: platform icon (hijau) atau warning (kuning)
     var badge = document.createElement('div');
-    badge.style.cssText = 'position:absolute;bottom:-3px;right:-3px;' +
-      'width:20px;height:20px;border-radius:50%;background:' + color + ';' +
-      'display:flex;align-items:center;justify-content:center;border:2px solid white;';
-    badge.innerHTML = badgeSVG[acc.platform] || '';
+    if (isInvalid) {
+      badge.style.cssText = 'position:absolute;bottom:-3px;right:-3px;' +
+        'width:20px;height:20px;border-radius:50%;background:#f59e0b;' +
+        'display:flex;align-items:center;justify-content:center;border:2px solid white;' +
+        'font-size:11px;line-height:1;';
+      badge.textContent = '!';
+      // Klik → langsung buka reconnect
+      wrap.onclick = function() { connectPostForMe(acc.platform); };
+    } else {
+      badge.style.cssText = 'position:absolute;bottom:-3px;right:-3px;' +
+        'width:20px;height:20px;border-radius:50%;background:' + color + ';' +
+        'display:flex;align-items:center;justify-content:center;border:2px solid white;';
+      badge.innerHTML = badgeSVG[acc.platform] || '';
+    }
     wrap.appendChild(badge);
+
     var addBtn = document.getElementById('addChannelBtn');
     row.insertBefore(wrap, addBtn);
   });
@@ -710,6 +755,19 @@ async function publishViaPostForMe(canvas, campaignData) {
     });
   });
   if (!filtered.length) filtered = accounts;
+
+  // ── Validasi accountId: tolak ID palsu sebelum request ke PostForMe ──
+  var fakePat = /^pfm_[a-z]+_\d+$/;
+  var invalidAccounts = filtered.filter(function(a) { return !a.id || fakePat.test(a.id); });
+  if (invalidAccounts.length) {
+    var badPlats = invalidAccounts.map(function(a) {
+      return a.platform.charAt(0).toUpperCase() + a.platform.slice(1);
+    }).join(', ');
+    var errMsg = 'Akun ' + badPlats + ' belum terhubung dengan benar. Silakan hubungkan ulang di Connect Channels.';
+    console.error('[postforme] accountId tidak valid:', invalidAccounts.map(function(a){ return a.id; }));
+    if (typeof showAnToast === 'function') showAnToast('⚠ ' + errMsg);
+    return { success: false, error: 'invalid_account_id', message: errMsg };
+  }
 
   var platNames = filtered.map(function(a) { return a.platform; }).join(', ');
 
