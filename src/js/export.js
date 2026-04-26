@@ -60,6 +60,17 @@ function exportCreativeCanvas() {
   // Minimal scale 1 untuk hindari capture buram
   if (scale < 1) scale = 1;
 
+  // Log status #phoneStitch sebelum capture
+  var stitchEl = shellEl.querySelector('#phoneStitch');
+  if (stitchEl) {
+    var stitchStyle = window.getComputedStyle(stitchEl);
+    console.log('[export] #phoneStitch ditemukan — display:', stitchStyle.display,
+      '| opacity:', stitchStyle.opacity,
+      '| text:', stitchEl.textContent.slice(0, 60));
+  } else {
+    console.warn('[export] #phoneStitch TIDAK ditemukan di dalam .phone-shell');
+  }
+
   // Sembunyikan chrome UI agar tidak ikut terkapture (icon TikTok, story bar, dll)
   var chromeEl = document.getElementById('phoneChrome');
   if (chromeEl) chromeEl.style.visibility = 'hidden';
@@ -105,6 +116,8 @@ function exportCreativeCanvas() {
     ctx.drawImage(rawCanvas, sx, sy, sw, sh, 0, 0, dim.w, dim.h);
 
     window.radarCreativeCanvas = outCanvas;
+    console.log('[export] canvas selesai — width:', outCanvas.width, '| height:', outCanvas.height,
+      '| rawCanvas:', rawCanvas.width, 'x', rawCanvas.height);
     return outCanvas;
   }).catch(function(err) {
     if (chromeEl) chromeEl.style.visibility = '';

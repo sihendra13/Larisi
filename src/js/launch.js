@@ -525,11 +525,29 @@ async function _doLaunch(campNameOverride) {
   freeCount = Math.max(0, freeCount - 1);
   document.getElementById('freeCount').textContent = freeCount;
 
-  // ── Export canvas di background ──
+  // ── Export canvas: pastikan #phoneStitch visible sebelum capture ──
   var canvasPromise = (typeof exportCreativeCanvas === 'function')
-    ? exportCreativeCanvas().catch(function(e) {
-        console.warn('[launch] exportCreativeCanvas error (lanjut):', e.message);
-        return null;
+    ? new Promise(function(resolve) {
+        // Kalau geo-stitch toggle ON → force visible agar html2canvas ikut capture
+        if (typeof geoStitchVisible === 'undefined' || geoStitchVisible === true) {
+          var stitchForExport = document.getElementById('phoneStitch');
+          if (stitchForExport) {
+            stitchForExport.style.display = 'block';
+            stitchForExport.style.opacity = '1';
+            console.log('[launch] phoneStitch forced visible for canvas capture. text:', stitchForExport.textContent.slice(0, 60));
+          } else {
+            console.warn('[launch] #phoneStitch tidak ditemukan di DOM');
+          }
+        }
+        // Delay 300ms agar DOM sempat repaint sebelum html2canvas capture
+        setTimeout(function() {
+          exportCreativeCanvas()
+            .then(resolve)
+            .catch(function(e) {
+              console.warn('[launch] exportCreativeCanvas error (lanjut):', e.message);
+              resolve(null);
+            });
+        }, 300);
       })
     : Promise.resolve(null);
 
