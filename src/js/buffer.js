@@ -948,23 +948,50 @@ async function publishViaPostForMe(canvas, campaignData) {
                   RADAR_CONFIG.FEATURES.social_publish !== false;
   if (!featureOn) return { success: true, skipped: true };
 
+  // ── DEBUG: log localStorage raw + parsed tepat sebelum build payload ──
+  var _rawLS = localStorage.getItem('radar_social_accounts');
+  console.log('[postforme] DEBUG localStorage key "radar_social_accounts" raw:', _rawLS);
+  try {
+    console.log('[postforme] DEBUG localStorage parsed:', JSON.parse(_rawLS || '[]'));
+  } catch(e) {
+    console.error('[postforme] DEBUG localStorage parse error:', e.message);
+  }
+
   var accounts = _getStoredAccounts();
-  if (!accounts.length) return { success: false, error: 'no_accounts' };
+  console.log('[postforme] DEBUG _getStoredAccounts() result:', JSON.stringify(accounts));
+  console.log('[postforme] DEBUG accounts.length:', accounts.length);
+
+  if (!accounts.length) {
+    console.error('[postforme] no accounts in localStorage — publish dibatalkan');
+    return { success: false, error: 'no_accounts' };
+  }
 
   // Filter sesuai platform yang dipilih user
   var selectedPlatforms = campaignData.platforms || [];
   var platMap = { ig: 'instagram', tiktok: 'tiktok', meta: 'facebook', youtube: 'youtube' };
+  console.log('[postforme] DEBUG selectedPlatforms:', selectedPlatforms);
+  console.log('[postforme] DEBUG platMap:', platMap);
+
   var filtered = accounts.filter(function(a) {
     if (!selectedPlatforms.length) return true;
     return selectedPlatforms.some(function(sp) {
-      return platMap[sp] === a.platform || sp === a.platform;
+      var match = platMap[sp] === a.platform || sp === a.platform;
+      console.log('[postforme] DEBUG filter: sp=' + sp + ' platMap[sp]=' + platMap[sp] +
+        ' a.platform=' + a.platform + ' a.id=' + a.id + ' → match=' + match);
+      return match;
     });
   });
-  if (!filtered.length) filtered = accounts;
+  console.log('[postforme] DEBUG filtered (setelah platform filter):', JSON.stringify(filtered));
+
+  if (!filtered.length) {
+    console.warn('[postforme] DEBUG filtered kosong → fallback ke semua accounts');
+    filtered = accounts;
+  }
 
   // ── Validasi accountId: tolak ID palsu sebelum request ke PostForMe ──
   var fakePat = /^pfm_[a-z]+_\d+$/;
   var invalidAccounts = filtered.filter(function(a) { return !a.id || fakePat.test(a.id); });
+  console.log('[postforme] DEBUG invalidAccounts (fakePat):', JSON.stringify(invalidAccounts));
   if (invalidAccounts.length) {
     var badPlats = invalidAccounts.map(function(a) {
       return a.platform.charAt(0).toUpperCase() + a.platform.slice(1);
@@ -1113,6 +1140,8 @@ async function publishViaPostForMe(canvas, campaignData) {
 
     // ── Validasi final: social_accounts harus ada dan valid ──
     var socialAccountIds = filtered.map(function(a){ return a.id; }).filter(Boolean);
+    console.log('[postforme] DEBUG socialAccountIds (final):', socialAccountIds);
+    console.log('[postforme] DEBUG filtered (final, sebelum map):', JSON.stringify(filtered));
     if (!socialAccountIds.length) {
       console.error('[postforme] social_accounts kosong — batalkan publish');
       if (typeof showAnToast === 'function') showAnToast('⚠ Hubungkan akun Instagram dulu di Connect Channels.');
