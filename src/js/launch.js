@@ -225,13 +225,13 @@ function _ensureConfirmModal() {
         </button>
         <button id="lcmLaunchBtn" onclick="_confirmAndLaunch()"
           style="flex:2;padding:12px;border-radius:12px;border:none;
-          background:linear-gradient(135deg,#791ADB,#a855f7);
+          background:#111827;
           color:#fff;font-size:14px;font-weight:700;
           cursor:pointer;font-family:var(--font,sans-serif);
           display:flex;align-items:center;justify-content:center;gap:8px;
-          transition:opacity 0.15s;"
-          onmouseover="this.style.opacity='0.9'"
-          onmouseout="this.style.opacity='1'">
+          transition:background 0.2s;"
+          onmouseover="this.style.background='#7C3AED'"
+          onmouseout="this.style.background='#111827'">
           🚀 Launch Sekarang →
         </button>
       </div>
