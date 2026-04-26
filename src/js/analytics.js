@@ -196,9 +196,11 @@ function _buildFallbackStory(campaigns) {
    lalu panggil callback(campaigns).
    ───────────────────────────────────────── */
 function waitForCampaigns(callback) {
-  if (window.CAMPAIGNS && window.CAMPAIGNS.length > 0) {
-    console.log('[analytics] waitForCampaigns: ready, campaigns:', window.CAMPAIGNS.length);
-    callback(window.CAMPAIGNS);
+  var loaded = window.CAMPAIGNS_LOADED === true;
+  var hasCampaigns = window.CAMPAIGNS && window.CAMPAIGNS.length > 0;
+  if (hasCampaigns || loaded) {
+    console.log('[analytics] waitForCampaigns: ready, campaigns:', (window.CAMPAIGNS || []).length);
+    callback(window.CAMPAIGNS || []);
   } else {
     console.log('[analytics] waitForCampaigns: belum siap, retry in 500ms...');
     setTimeout(function() {

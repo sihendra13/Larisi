@@ -160,7 +160,11 @@ async function loadCampaignsFromSupabase() {
 
   try {
     var rows = await getCampaigns();
-    if (!rows || !rows.length) return;
+    if (!rows || !rows.length) {
+      window.CAMPAIGNS_LOADED = true;
+      renderCampaigns();
+      return;
+    }
 
     var platMap = { ig: 'ig', tiktok: 'tiktok', meta: 'meta', youtube: 'youtube',
                     instagram: 'ig', facebook: 'meta' };
@@ -216,10 +220,12 @@ async function loadCampaignsFromSupabase() {
       });
     });
 
+    window.CAMPAIGNS_LOADED = true;
     renderCampaigns();
     startReachCounters();
     startPostUrlPolling();
   } catch(e) {
+    window.CAMPAIGNS_LOADED = true;
     console.warn('[monitor] loadCampaignsFromSupabase error:', e);
   }
 }
