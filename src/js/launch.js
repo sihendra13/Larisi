@@ -519,7 +519,17 @@ async function _doLaunch(campNameOverride) {
   });
 
   // ── Capture thumbnail dari video (jika ada uploadedVideoFile) ──
-  var thumbUrl = uploadedDataURL;
+  // JANGAN pakai uploadedDataURL langsung — setiap kali processFiles dipanggil (tambah foto),
+  // uploadedDataURL di-reset ke blob URL untuk preview. Gunakan uploadedDataURLs[0] (base64 stabil).
+  var thumbUrl;
+  if (typeof uploadedDataURLs !== 'undefined' && uploadedDataURLs[0] &&
+      uploadedDataURLs[0].startsWith('data:')) {
+    thumbUrl = uploadedDataURLs[0]; // base64 foto pertama — stabil, tidak ter-reset
+  } else if (typeof uploadedDataURL !== 'undefined' && uploadedDataURL) {
+    thumbUrl = uploadedDataURL; // fallback: blob URL (valid current session saja)
+  } else {
+    thumbUrl = null;
+  }
   if (typeof uploadedVideoFile !== 'undefined' && uploadedVideoFile) {
     var frameBase64 = await captureVideoFrame(uploadedVideoFile);
     if (frameBase64) {

@@ -546,7 +546,8 @@ function buildCampaignCard(c) {
     (c.format && (c.format === 'reel' || c.format === 'video')) ||
     (typeof uploadedVideoFile !== 'undefined' && uploadedVideoFile && c.id === (window._lastLaunchedId));
   var _isVideoPlaceholder = _isActualVideo && !_thumb.startsWith('data:image');
-  var _isImage = _thumb.startsWith('data:image') || _thumb.startsWith('https://');
+  // blob: URL valid untuk sesi saat ini (FileReader belum selesai atau processFiles reset)
+  var _isImage = _thumb.startsWith('data:image') || _thumb.startsWith('https://') || _thumb.startsWith('blob:');
   var _videoPlaceholderHTML =
     '<div class="cc-thumbnail-container" style="margin:0 12px 8px;height:240px;'
     + 'border-radius:8px;background:' + (c.thumbColor || '#1a1a2e') + ';'

@@ -736,7 +736,8 @@ function _compositeStitchOnDataUrl(dataUrl) {
       var marginLeft   = Math.round(cw * 0.05);           // 5% lebar foto
       var marginBottom = Math.round(ch * 0.08);           // 8% tinggi foto
       var pad          = Math.round(cw * 0.016);          // ~padding pill
-      var maxTextW     = Math.round(cw * 0.85 - pad * 2); // 85% lebar - padding
+      // 78% (lebih konservatif dari 85%) agar wrap lebih agresif dan measurement error tidak overflow
+      var maxTextW     = Math.round(cw * 0.78 - pad * 2);
       var pillMaxW     = Math.round(cw - marginLeft * 2); // tidak boleh lebih lebar dari canvas - 2x margin
 
       // ── 3. Font size proporsional, shrink otomatis sampai semua baris muat ──
@@ -757,8 +758,10 @@ function _compositeStitchOnDataUrl(dataUrl) {
 
       var lineHeight = Math.round(fontSize * 1.5);
 
-      // ── 4. Pill — lebar = max line width + padding, TIDAK pernah > pillMaxW ──
-      var pillW  = Math.min(Math.round(maxLineW + pad * 2), pillMaxW);
+      // ── 4. Pill — lebar = max line width + 8% safety margin + padding
+      // Safety margin 8% mengakomodasi perbedaan antara ctx.measureText vs actual render
+      // (system font di berbagai OS bisa sedikit lebih lebar dari yang terukur)
+      var pillW  = Math.min(Math.round(maxLineW * 1.08 + pad * 2), pillMaxW);
       var pillH  = Math.round(lineHeight * lines.length + pad * 2);
       var radius = Math.round(fontSize * 0.35);
 
