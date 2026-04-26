@@ -748,12 +748,21 @@ function _stitchWrapText(ctx, text, maxWidth) {
 // Horizontal → stitch bottom-LEFT (aman untuk carousel/post)
 function _isVerticalFormat(fmt, platforms) {
   var f = (fmt || '').toLowerCase();
-  if (f === 'story' || f === 'reel') return true;
-  var plats = Array.isArray(platforms) ? platforms : [];
-  return plats.some(function(p) {
-    var pl = (p || '').toLowerCase();
-    return pl === 'tiktok' || pl === 'youtube';
-  });
+  var result;
+  if (f === 'story' || f === 'reel' ||
+      f === 'ig-story' || f === 'ig-reel' ||
+      f === 'meta-story' || f === 'meta-reel' ||
+      f === 'stories' || f === 'reels') {
+    result = true;
+  } else {
+    var plats = Array.isArray(platforms) ? platforms : [];
+    result = plats.some(function(p) {
+      var pl = (p || '').toLowerCase();
+      return pl === 'tiktok' || pl === 'youtube';
+    });
+  }
+  console.log('[stitch] _isVerticalFormat: fmt=' + fmt + ' → vertical=' + result);
+  return result;
 }
 
 // Composite stitch text onto a dataUrl → returns Blob (or null on error)
