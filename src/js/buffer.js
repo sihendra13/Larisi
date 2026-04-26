@@ -725,64 +725,83 @@ function _compositeStitchOnDataUrl(dataUrl) {
       var cw = img.naturalWidth;
       var ch = img.naturalHeight;
 
-      // ── Canvas at exact original image dimensions ──
+      // ── 1. Canvas = dimensi PERSIS foto ini ──
       var canvas = document.createElement('canvas');
       canvas.width  = cw;
       canvas.height = ch;
       var ctx = canvas.getContext('2d');
-
-      // 1. Draw original image — full, no crop
       ctx.drawImage(img, 0, 0, cw, ch);
 
-      // 2. Typography — start at 4% of THIS foto's width, shrink if needed
-      var maxTextW  = cw * 0.70;  // text wrap target: 70% of foto width
-      var fontSize  = Math.round(cw * 0.04);
-      var minFont   = Math.round(cw * 0.02); // floor: 2% width
+      // ── 2. Semua ukuran proporsional terhadap dimensi foto INI ──
+      var marginLeft   = Math.round(cw * 0.05);           // 5% lebar foto
+      var marginBottom = Math.round(ch * 0.08);           // 8% tinggi foto
+      var pad          = Math.round(cw * 0.016);          // ~padding pill
+      var maxTextW     = Math.round(cw * 0.85 - pad * 2); // 85% lebar - padding
+      var pillMaxW     = Math.round(cw - marginLeft * 2); // tidak boleh lebih lebar dari canvas - 2x margin
+
+      // ── 3. Font size proporsional, shrink otomatis sampai semua baris muat ──
+      var fontSize = Math.max(16, Math.round(cw * 0.038));
+      var minFont  = Math.max(16, Math.round(cw * 0.018));
+      var fontBase = '-apple-system, BlinkMacSystemFont, "Inter", Arial, sans-serif';
       var lines, lineWidths, maxLineW;
 
-      // Shrink font until widest line fits within 70% canvas width
       while (fontSize >= minFont) {
-        ctx.font = 'bold ' + fontSize + 'px -apple-system, BlinkMacSystemFont, "Inter", Arial, sans-serif';
+        ctx.font = 'bold ' + fontSize + 'px ' + fontBase;
         lines      = _stitchWrapText(ctx, text, maxTextW);
         lineWidths = lines.map(function(l) { return ctx.measureText(l).width; });
         maxLineW   = Math.max.apply(null, lineWidths);
-        if (maxLineW <= maxTextW) break;
-        fontSize -= Math.max(1, Math.round(fontSize * 0.05));
+        // Cek apakah semua baris + padding muat dalam pillMaxW
+        if (Math.round(maxLineW + pad * 2) <= pillMaxW) break;
+        fontSize -= Math.max(1, Math.round(fontSize * 0.06));
       }
 
-      var lineHeight = fontSize * 1.5;
-      var pad        = Math.round(cw * 0.016); // ~16px at 1080px ref
+      var lineHeight = Math.round(fontSize * 1.5);
 
-      // 4. Pill dimensions — width = widest line + padding (per-foto, not fixed)
-      var pillW  = Math.round(maxLineW + pad * 2);
+      // ── 4. Pill — lebar = max line width + padding, TIDAK pernah > pillMaxW ──
+      var pillW  = Math.min(Math.round(maxLineW + pad * 2), pillMaxW);
       var pillH  = Math.round(lineHeight * lines.length + pad * 2);
-      var radius = Math.round(fontSize * 0.4);
+      var radius = Math.round(fontSize * 0.35);
 
-      // 5. Position: bottom-left — 5% from left, 8% from bottom
-      var pillX  = Math.round(cw * 0.05);
-      var pillY  = Math.round(ch * 0.92) - pillH;
+      // ── 5. Posisi: marginLeft dari kiri, marginBottom dari bawah ──
+      //    pillX dijamin >= marginLeft (tidak pernah < 0)
+      var pillX  = Math.max(marginLeft, 0);
+      var pillY  = Math.max(ch - marginBottom - pillH, 0);
 
-      // 6. Draw pill background — #000000, opacity 0.75
+      // Pastikan pill tidak overflow kanan
+      if (pillX + pillW > cw - marginLeft) {
+        pillW = cw - marginLeft - pillX;
+      }
+
+      // ── 6. Draw pill background ──
       ctx.globalAlpha = 0.75;
       ctx.fillStyle   = '#000000';
       _stitchRoundRect(ctx, pillX, pillY, pillW, pillH, radius);
       ctx.fill();
       ctx.globalAlpha = 1.0;
 
-      // 7. Draw text — white, bold, left-aligned inside pill
+      // ── 7. Draw text — white, bold, left-aligned, dimulai dari pillX + pad ──
       ctx.fillStyle    = '#ffffff';
+      ctx.font         = 'bold ' + fontSize + 'px ' + fontBase;
       ctx.textAlign    = 'left';
       ctx.textBaseline = 'top';
 
-      var textX  = pillX + pad;
-      var textY  = pillY + pad;
+      var textX = pillX + pad;  // selalu >= marginLeft + pad, tidak pernah < 0
+      var textY = pillY + pad;
+
       lines.forEach(function(line, i) {
+        // Clip text ke dalam pill supaya tidak overflow kanan
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(pillX, pillY, pillW, pillH);
+        ctx.clip();
         ctx.fillText(line, textX, textY + i * lineHeight);
+        ctx.restore();
       });
 
-      console.log('[postforme] stitch composite: ' + cw + 'x' + ch +
-        ' | font:' + fontSize + 'px (' + Math.round(fontSize/cw*100*10)/10 + '% width)' +
-        ' | lines:' + lines.length + ' | pill:' + pillW + 'x' + pillH);
+      console.log('[postforme] stitch ' + cw + 'x' + ch +
+        ' | font:' + fontSize + 'px | lines:' + lines.length +
+        ' | pillX:' + pillX + ' pillW:' + pillW + ' pillH:' + pillH +
+        ' | marginLeft:' + marginLeft + ' maxTextW:' + maxTextW);
 
       canvas.toBlob(function(blob) { resolve(blob); }, 'image/jpeg', 0.92);
     };
