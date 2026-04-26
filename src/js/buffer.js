@@ -901,7 +901,7 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
         console.log('[export] stitch post: pillWidth=' + pillW +
           ' fontSize=' + fontSize +
           ' | ' + cw + 'x' + ch + ' lines:' + lines.length +
-          ' pillX:' + pillX + ' marginBottom:' + marginBottom);
+          ' pillX:' + pillX + ' pillY:' + pillY);
       }
 
       canvas.toBlob(function(blob) { resolve(blob); }, 'image/jpeg', 0.92);
