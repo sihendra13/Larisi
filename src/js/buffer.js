@@ -734,20 +734,27 @@ function _compositeStitchOnDataUrl(dataUrl) {
       // 1. Draw original image — full, no crop
       ctx.drawImage(img, 0, 0, cw, ch);
 
-      // 2. Typography — 4% of canvas width, bold
-      var fontSize   = Math.round(cw * 0.04);
+      // 2. Typography — start at 4% of THIS foto's width, shrink if needed
+      var maxTextW  = cw * 0.70;  // text wrap target: 70% of foto width
+      var fontSize  = Math.round(cw * 0.04);
+      var minFont   = Math.round(cw * 0.02); // floor: 2% width
+      var lines, lineWidths, maxLineW;
+
+      // Shrink font until widest line fits within 70% canvas width
+      while (fontSize >= minFont) {
+        ctx.font = 'bold ' + fontSize + 'px -apple-system, BlinkMacSystemFont, "Inter", Arial, sans-serif';
+        lines      = _stitchWrapText(ctx, text, maxTextW);
+        lineWidths = lines.map(function(l) { return ctx.measureText(l).width; });
+        maxLineW   = Math.max.apply(null, lineWidths);
+        if (maxLineW <= maxTextW) break;
+        fontSize -= Math.max(1, Math.round(fontSize * 0.05));
+      }
+
       var lineHeight = fontSize * 1.5;
-      var fontStr    = 'bold ' + fontSize + 'px -apple-system, BlinkMacSystemFont, "Inter", Arial, sans-serif';
-      ctx.font = fontStr;
+      var pad        = Math.round(cw * 0.016); // ~16px at 1080px ref
 
-      // 3. Text wrap — max 60% of canvas width
-      var maxTextW = cw * 0.60;
-      var lines    = _stitchWrapText(ctx, text, maxTextW);
-
-      // 4. Pill dimensions — padding 16px, width = widest line + padding
-      var pad    = Math.round(cw * 0.016); // ~16px at 1080px ref
-      var lineWidths = lines.map(function(l) { return ctx.measureText(l).width; });
-      var pillW  = Math.round(Math.max.apply(null, lineWidths) + pad * 2);
+      // 4. Pill dimensions — width = widest line + padding (per-foto, not fixed)
+      var pillW  = Math.round(maxLineW + pad * 2);
       var pillH  = Math.round(lineHeight * lines.length + pad * 2);
       var radius = Math.round(fontSize * 0.4);
 
@@ -774,8 +781,8 @@ function _compositeStitchOnDataUrl(dataUrl) {
       });
 
       console.log('[postforme] stitch composite: ' + cw + 'x' + ch +
-        ' | font:' + fontSize + 'px | lines:' + lines.length +
-        ' | pill:' + pillW + 'x' + pillH);
+        ' | font:' + fontSize + 'px (' + Math.round(fontSize/cw*100*10)/10 + '% width)' +
+        ' | lines:' + lines.length + ' | pill:' + pillW + 'x' + pillH);
 
       canvas.toBlob(function(blob) { resolve(blob); }, 'image/jpeg', 0.92);
     };
