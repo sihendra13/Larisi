@@ -232,9 +232,13 @@ async function loadCampaignsFromSupabase() {
 
 /* ─── Auto-fetch post_url dari PostForMe ─── */
 
-async function fetchAndUpdatePostUrl(campaign) {
+async function fetchAndUpdatePostUrl(campaign, _attempt) {
   if (!campaign.post_id) return;
   if (campaign.post_url) return; // sudah ada, skip
+
+  var attempt = _attempt || 1;
+  var MAX_RETRIES = 3;
+  var RETRY_DELAY = 5000; // 5 detik
 
   try {
     var data = await _pfmProxy(
@@ -283,7 +287,30 @@ async function fetchAndUpdatePostUrl(campaign) {
       console.log('[monitor] post_url updated:', campaign.name, url);
     }
   } catch(e) {
-    console.warn('[monitor] fetchAndUpdatePostUrl error:', e.message);
+    var msg = e.message || '';
+
+    // CORS error → log warning saja, jangan crash, jangan retry
+    if (msg.toLowerCase().indexOf('cors') !== -1 ||
+        msg.toLowerCase().indexOf('failed to fetch') !== -1 ||
+        msg.toLowerCase().indexOf('networkerror') !== -1) {
+      console.warn('[monitor] fetchAndUpdatePostUrl CORS/network error (skip):', msg);
+      return;
+    }
+
+    // 503 → retry otomatis maksimal 3x dengan delay 5 detik
+    if (msg.indexOf('503') !== -1 || msg.indexOf('SUPABASE_EDGE_RUNTIME') !== -1) {
+      if (attempt < MAX_RETRIES) {
+        console.warn('[monitor] 503 dari postforme-proxy, retry ' + attempt + '/' + MAX_RETRIES + ' dalam 5 detik...');
+        setTimeout(function() {
+          fetchAndUpdatePostUrl(campaign, attempt + 1);
+        }, RETRY_DELAY);
+      } else {
+        console.warn('[monitor] fetchAndUpdatePostUrl gagal setelah ' + MAX_RETRIES + ' retry (503):', campaign.name);
+      }
+      return;
+    }
+
+    console.warn('[monitor] fetchAndUpdatePostUrl error:', msg);
   }
 }
 
