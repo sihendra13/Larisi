@@ -747,22 +747,43 @@ function _stitchWrapText(ctx, text, maxWidth) {
 // Vertical → stitch bottom-CENTER (hindari area crop Instagram/TikTok)
 // Horizontal → stitch bottom-LEFT (aman untuk carousel/post)
 function _isVerticalFormat(fmt, platforms) {
+  var verticalFmts = ['story', 'reel', 'ig-story', 'ig-reel', 'meta-story',
+                      'meta-reel', 'stories', 'reels', 'short', 'shorts'];
+
+  // Cek dari fmt string
   var f = (fmt || '').toLowerCase();
-  var result;
-  if (f === 'story' || f === 'reel' ||
-      f === 'ig-story' || f === 'ig-reel' ||
-      f === 'meta-story' || f === 'meta-reel' ||
-      f === 'stories' || f === 'reels') {
-    result = true;
-  } else {
-    var plats = Array.isArray(platforms) ? platforms : [];
-    result = plats.some(function(p) {
-      var pl = (p || '').toLowerCase();
-      return pl === 'tiktok' || pl === 'youtube';
-    });
+  if (verticalFmts.indexOf(f) !== -1) {
+    console.log('[stitch] _isVerticalFormat: fmt=' + fmt + ' f=' + f + ' → vertical=true (fmt match)');
+    return true;
   }
-  console.log('[stitch] _isVerticalFormat: fmt=' + fmt + ' → vertical=' + result);
-  return result;
+
+  // Cek dari activePlatform global (fallback)
+  var ap = (typeof activePlatform !== 'undefined' ? activePlatform : '').toLowerCase();
+  if (ap === 'ig-story' || ap === 'ig-reel') {
+    console.log('[stitch] _isVerticalFormat: fmt=' + fmt + ' ap=' + ap + ' → vertical=true (activePlatform match)');
+    return true;
+  }
+
+  // Cek dari activeFormat global (fallback kedua)
+  var af = (typeof activeFormat !== 'undefined' ? activeFormat : '').toLowerCase();
+  if (verticalFmts.indexOf(af) !== -1) {
+    console.log('[stitch] _isVerticalFormat: fmt=' + fmt + ' af=' + af + ' → vertical=true (activeFormat match)');
+    return true;
+  }
+
+  // Cek dari platforms array
+  var plats = Array.isArray(platforms) ? platforms : [];
+  if (plats.some(function(p) {
+    var pl = (p || '').toLowerCase();
+    return pl === 'tiktok' || pl === 'youtube';
+  })) {
+    console.log('[stitch] _isVerticalFormat: fmt=' + fmt + ' platforms=' + JSON.stringify(platforms) + ' → vertical=true (platforms match)');
+    return true;
+  }
+
+  console.log('[stitch] _isVerticalFormat: fmt=' + fmt + ' f=' + f +
+    ' af=' + af + ' ap=' + ap + ' → vertical=false');
+  return false;
 }
 
 // Composite stitch text onto a dataUrl → returns Blob (or null on error)
