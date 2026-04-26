@@ -954,12 +954,14 @@ async function publishViaPostForMe(canvas, campaignData) {
         console.warn('[postforme] ⚠ uploadedDataURLs kosong — cek apakah FileReader selesai sebelum launch');
       }
 
-      // ── Geo-Stitch: hanya diterapkan ke FOTO PERTAMA (index 0) ──
-      // Foto ke-2 dst di-upload original tanpa overlay.
-      // Alasan: carousel Instagram menggunakan foto pertama sebagai cover (paling dilihat),
-      // stitch di foto pertama sudah cukup untuk geo-tagging. Overlay di semua foto
-      // berisiko kacau karena perbedaan dimensi/aspect ratio antar foto.
-      var applyStitch = (typeof geoStitchVisible === 'undefined' || geoStitchVisible === true);
+      // ── Geo-Stitch: hanya untuk format 'post' (carousel), foto pertama saja ──
+      // - Story: Instagram center-crop foto landscape ke 9:16 → stitch bottom-left
+      //   jatuh di area yang ter-crop → teks kacau/terpotong
+      // - Reel: konten video, tidak ada stitch
+      // - TikTok/YouTube: vertical format (9:16), same crop issue seperti Story
+      // - Post: foto ditampilkan sesuai aspect ratio asli → bottom-left aman ✓
+      var applyStitch = (typeof geoStitchVisible === 'undefined' || geoStitchVisible === true)
+                     && fmt === 'post';
 
       for (var d = 0; d < allPhotoURLs.length; d++) {
         try {
