@@ -539,8 +539,12 @@ function buildCampaignCard(c) {
 
   // Thumbnail dari thumbUrl (foto yang diupload saat launch)
   var _thumb = c.thumbUrl || '';
-  var _isVideoPlaceholder = _thumb.startsWith('blob:') || _thumb.startsWith('data:video');
-  var _isImage = !_isVideoPlaceholder && (_thumb.startsWith('data:image') || _thumb.startsWith('https://'));
+  // blob: URLs bisa berupa gambar OR video — cek format campaign untuk menentukan
+  var _isActualVideo = _thumb.startsWith('data:video') ||
+    (c.format && (c.format === 'reel' || c.format === 'video')) ||
+    (typeof uploadedVideoFile !== 'undefined' && uploadedVideoFile && c.id === (window._lastLaunchedId));
+  var _isVideoPlaceholder = _isActualVideo && !_thumb.startsWith('data:image');
+  var _isImage = _thumb.startsWith('data:image') || _thumb.startsWith('https://');
   var _videoPlaceholderHTML =
     '<div class="cc-thumbnail-container" style="margin:0 12px 8px;height:240px;'
     + 'border-radius:8px;background:' + (c.thumbColor || '#1a1a2e') + ';'

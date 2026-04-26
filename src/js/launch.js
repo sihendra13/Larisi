@@ -170,7 +170,7 @@ function _ensureConfirmModal() {
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="
           width:40px;height:40px;border-radius:12px;
-          background:linear-gradient(135deg,#791ADB,#a855f7);
+          background:#111827;
           display:flex;align-items:center;justify-content:center;
           font-size:20px;flex-shrink:0;">🚀</div>
         <div>

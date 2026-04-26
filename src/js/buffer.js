@@ -189,11 +189,11 @@ function _saveAndUpdateUI(platform, accountId, username, avatarUrl) {
     var badge = btn.querySelector('span:last-child');
     if (badge) {
       badge.textContent    = username ? '✓ @' + username : '✓ Terhubung';
-      badge.style.background = 'rgba(34,197,94,0.12)';
-      badge.style.color    = '#15803d';
+      badge.style.background = '#f3f4f6';
+      badge.style.color    = '#374151';
     }
-    btn.style.border     = '1.5px solid rgba(34,197,94,0.5)';
-    btn.style.background = 'rgba(34,197,94,0.05)';
+    btn.style.border     = '1.5px solid #e5e7eb';
+    btn.style.background = '#f9fafb';
     btn.disabled = false;
     btn.onclick  = function() { _disconnectAccount(platform); };
   }
@@ -483,8 +483,8 @@ function showManageChannelsModal() {
       var logo  = _PFM_LOGOS[acc.platform] || '';
       var label = platLabel[acc.platform] || acc.platform;
       return '<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;' +
-        'margin-bottom:10px;border:1.5px solid rgba(34,197,94,0.4);border-radius:12px;' +
-        'background:rgba(34,197,94,0.04);">' +
+        'margin-bottom:10px;border:1.5px solid #e5e7eb;border-radius:12px;' +
+        'background:#f9fafb;">' +
         '<div style="width:40px;height:40px;border-radius:10px;background:' +
           (acc.platform === 'tiktok' ? '#f0f0f0' : color + '18') +
           ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
@@ -560,8 +560,8 @@ function showConnectAccountsFlow() {
       return '<button id="pfm-btn-' + p.id + '" ' +
         'onclick="' + (isConn ? '_disconnectAccount(\'' + p.id + '\')' : 'connectPostForMe(\'' + p.id + '\')') + '" ' +
         'style="display:flex;align-items:center;gap:14px;width:100%;padding:12px 16px;' +
-        'margin-bottom:10px;border:1.5px solid ' + (isConn ? 'rgba(34,197,94,0.5)' : '#f0f0f0') + ';' +
-        'border-radius:12px;background:' + (isConn ? 'rgba(34,197,94,0.05)' : '#fafafa') + ';' +
+        'margin-bottom:10px;border:1.5px solid ' + (isConn ? '#e5e7eb' : '#f0f0f0') + ';' +
+        'border-radius:12px;background:' + (isConn ? '#f9fafb' : '#fafafa') + ';' +
         'cursor:pointer;font-family:var(--font,sans-serif);transition:all 0.15s;">' +
         '<div style="width:40px;height:40px;border-radius:10px;background:' +
         (p.id === 'tiktok' ? '#f0f0f0' : color + '18') +
@@ -569,8 +569,8 @@ function showConnectAccountsFlow() {
         logo + '</div>' +
         '<span style="flex:1;font-size:14px;font-weight:600;color:#111827;text-align:left;">' + p.label + '</span>' +
         '<span style="font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;' +
-        'background:' + (isConn ? 'rgba(34,197,94,0.12)' : '#f0f0f0') + ';' +
-        'color:' + (isConn ? '#15803d' : '#6b7280') + ';">' + badge + '</span>' +
+        'background:' + (isConn ? '#f3f4f6' : '#f0f0f0') + ';' +
+        'color:' + (isConn ? '#374151' : '#6b7280') + ';">' + badge + '</span>' +
         '</button>';
     }).join('');
 
@@ -926,7 +926,8 @@ async function publishViaPostForMe(canvas, campaignData) {
         ? uploadedDataURLs.filter(Boolean)
         : (typeof uploadedDataURL !== 'undefined' && uploadedDataURL ? [uploadedDataURL] : []);
 
-      console.log('[postforme] total foto:', allPhotoURLs.length);
+      console.log('[postforme] total foto di-upload:', allPhotoURLs.length,
+        '| indices:', allPhotoURLs.map(function(u, i) { return i + ':' + (u ? u.slice(0,20) : 'null'); }));
 
       // ── Geo-Stitch: composite teks langsung di atas setiap foto asli ──
       // Tidak pakai html2canvas — gambar asli di-draw ke canvas lalu stitch overlay di-render manual
@@ -1020,9 +1021,17 @@ async function publishViaPostForMe(canvas, campaignData) {
 
     console.log('[postforme] platform_configurations:', JSON.stringify(platformConfigs, null, 2));
 
+    // ── Validasi final: social_accounts harus ada dan valid ──
+    var socialAccountIds = filtered.map(function(a){ return a.id; }).filter(Boolean);
+    if (!socialAccountIds.length) {
+      console.error('[postforme] social_accounts kosong — batalkan publish');
+      if (typeof showAnToast === 'function') showAnToast('⚠ Hubungkan akun Instagram dulu di Connect Channels.');
+      return { success: false, error: 'no_valid_social_accounts' };
+    }
+
     var payload = {
       caption:         campaignData.caption || '',
-      social_accounts: filtered.map(function(a){ return a.id; })
+      social_accounts: socialAccountIds
     };
 
     if (allMediaUrls.length) {
