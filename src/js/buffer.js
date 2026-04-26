@@ -671,6 +671,94 @@ function _disconnectAccount(platform) {
   };
 }
 
+/* ─── Geo-Stitch Canvas Compositing ───────────────────────── */
+
+// Helper: rounded rect path
+function _stitchRoundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y,     x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h,     x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y,         x + r, y);
+  ctx.closePath();
+}
+
+// Composite stitch text onto a dataUrl → returns Blob (or null on error)
+function _compositeStitchOnDataUrl(dataUrl) {
+  return new Promise(function(resolve) {
+    var stitchEl = document.getElementById('phoneStitch');
+    var shellEl  = document.querySelector('.phone-shell');
+
+    // No stitch element or no text → return null (use original)
+    if (!stitchEl || !shellEl) { resolve(null); return; }
+    var text = (stitchEl.textContent || stitchEl.innerText || '').trim();
+    if (!text) { resolve(null); return; }
+
+    var img = new Image();
+    img.onload = function() {
+      var iw = img.naturalWidth;
+      var ih = img.naturalHeight;
+
+      // Get rendered positions via getBoundingClientRect
+      var shellRect  = shellEl.getBoundingClientRect();
+      var stitchRect = stitchEl.getBoundingClientRect();
+
+      // Scale: rendered shell px → full-res image px
+      var scaleX = iw / (shellRect.width  || 1);
+      var scaleY = ih / (shellRect.height || 1);
+
+      // Pill bounds in full-res coords
+      var px = (stitchRect.left - shellRect.left) * scaleX;
+      var py = (stitchRect.top  - shellRect.top)  * scaleY;
+      var pw = stitchRect.width  * scaleX;
+      var ph = stitchRect.height * scaleY;
+
+      // Canvas at full image resolution
+      var canvas = document.createElement('canvas');
+      canvas.width  = iw;
+      canvas.height = ih;
+      var ctx = canvas.getContext('2d');
+
+      // 1. Draw original image
+      ctx.drawImage(img, 0, 0, iw, ih);
+
+      // 2. Draw pill background — rgba(0,0,0,0.6), border-radius 8px scaled
+      var radius = Math.round(8 * Math.min(scaleX, scaleY));
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      _stitchRoundRect(ctx, px, py, pw, ph, radius);
+      ctx.fill();
+
+      // 3. Draw text — white, centered, multi-line, font size 8px scaled
+      var fontSize   = Math.max(20, Math.round(8 * scaleY));
+      var lineHeight = fontSize * 1.45;
+      ctx.fillStyle    = '#ffffff';
+      ctx.font         = '600 ' + fontSize + 'px -apple-system, BlinkMacSystemFont, "Inter", sans-serif';
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+
+      var lines  = text.split('\n');
+      var totalH = lineHeight * lines.length;
+      var startY = py + ph / 2 - totalH / 2 + lineHeight / 2;
+
+      lines.forEach(function(line, i) {
+        ctx.fillText(line.trim(), px + pw / 2, startY + i * lineHeight);
+      });
+
+      canvas.toBlob(function(blob) { resolve(blob); }, 'image/jpeg', 0.92);
+    };
+    img.onerror = function() {
+      console.warn('[postforme] _compositeStitchOnDataUrl: gagal load image');
+      resolve(null);
+    };
+    img.src = dataUrl;
+  });
+}
+
 /* ─── Upload Media via PostForMe ───────────────────────────── */
 
 // Upload raw blob URL (foto ke-2 dst dari carousel) tanpa overlay
@@ -805,55 +893,43 @@ async function publishViaPostForMe(canvas, campaignData) {
 
       console.log('[postforme] total foto:', allPhotoURLs.length);
 
-      // ── Geo-Stitch: burn canvas ke foto pertama jika toggle ON ──
-      // canvas = hasil exportCreativeCanvas() dari launch.js (sudah ada stitch text di dalamnya)
-      var useStitchedCanvas = canvas &&
-        (typeof geoStitchVisible === 'undefined' || geoStitchVisible === true);
+      // ── Geo-Stitch: composite teks langsung di atas setiap foto asli ──
+      // Tidak pakai html2canvas — gambar asli di-draw ke canvas lalu stitch overlay di-render manual
+      var applyStitch = (typeof geoStitchVisible === 'undefined' || geoStitchVisible === true);
 
-      var startIdx = 0; // index awal loop foto original
-      if (useStitchedCanvas) {
-        try {
-          var stBlob = await new Promise(function(resolve) {
-            canvas.toBlob(function(b) { resolve(b); }, 'image/jpeg', 0.92);
-          });
-          var stData   = await _pfmProxy('/v1/media/create-upload-url', 'POST', { content_type: 'image/jpeg' });
-          var stUpUrl  = stData.upload_url;
-          var stMedUrl = stData.media_url || stData.url;
-          if (!stUpUrl) throw new Error('No upload URL canvas stitch');
-
-          var stResp = await fetch(stUpUrl, { method: 'PUT', body: stBlob, headers: { 'Content-Type': 'image/jpeg' } });
-          if (!stResp.ok) throw new Error('Upload canvas stitch gagal: ' + stResp.status);
-
-          allMediaUrls.push(stMedUrl);
-          startIdx = 1; // foto pertama sudah dihandle via canvas, skip index 0
-          console.log('[postforme] foto 1 (geo-stitch burned) uploaded, size:', stBlob ? stBlob.size : 0);
-        } catch(e) {
-          console.warn('[postforme] canvas stitch upload error, fallback ke original:', e.message);
-          startIdx = 0; // fallback: upload semua dari original
-        }
-      }
-
-      // Sisa foto carousel (index startIdx+) pakai base64 asli
-      for (var d = startIdx; d < allPhotoURLs.length; d++) {
+      for (var d = 0; d < allPhotoURLs.length; d++) {
         try {
           var dataUrl = allPhotoURLs[d];
-          var arrD    = dataUrl.split(',');
-          var mimeD   = (arrD[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
+          var blobToUpload = null;
 
-          var bstrD   = atob(arrD[1]);
-          var u8D     = new Uint8Array(bstrD.length);
-          for (var k = 0; k < bstrD.length; k++) u8D[k] = bstrD.charCodeAt(k);
-          var blobD   = new Blob([u8D], { type: mimeD });
+          if (applyStitch) {
+            // Composite stitch text ke gambar asli via Canvas API
+            var composited = await _compositeStitchOnDataUrl(dataUrl);
+            if (composited) {
+              blobToUpload = composited;
+              console.log('[postforme] foto', d + 1, '— stitch composited, size:', composited.size);
+            }
+          }
 
-          var dataUp  = await _pfmProxy('/v1/media/create-upload-url', 'POST', { content_type: mimeD });
-          var upUrl   = dataUp.upload_url;
-          var medUrl  = dataUp.media_url || dataUp.url;
+          // Fallback: upload gambar original kalau stitch OFF atau composite gagal
+          if (!blobToUpload) {
+            var arrD  = dataUrl.split(',');
+            var mimeD = (arrD[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
+            var bstrD = atob(arrD[1]);
+            var u8D   = new Uint8Array(bstrD.length);
+            for (var k = 0; k < bstrD.length; k++) u8D[k] = bstrD.charCodeAt(k);
+            blobToUpload = new Blob([u8D], { type: mimeD });
+            console.log('[postforme] foto', d + 1, '— original (no stitch), size:', blobToUpload.size);
+          }
+
+          var dataUp = await _pfmProxy('/v1/media/create-upload-url', 'POST', { content_type: 'image/jpeg' });
+          var upUrl  = dataUp.upload_url;
+          var medUrl = dataUp.media_url || dataUp.url;
           if (!upUrl) throw new Error('No upload URL foto ' + (d + 1));
 
-          var upResp  = await fetch(upUrl, { method: 'PUT', body: blobD, headers: { 'Content-Type': mimeD } });
+          var upResp = await fetch(upUrl, { method: 'PUT', body: blobToUpload, headers: { 'Content-Type': 'image/jpeg' } });
           if (!upResp.ok) throw new Error('Upload foto ' + (d + 1) + ' gagal: ' + upResp.status);
           allMediaUrls.push(medUrl);
-          console.log('[postforme] foto', d + 1, 'uploaded, size:', blobD.size);
         } catch(e) {
           console.warn('[postforme] foto', d + 1, 'error:', e.message);
         }
