@@ -2,62 +2,7 @@
 // Campaign Live Monitor: view switching, campaign cards, AI chat
 
 /* ─── Campaign Data ─── */
-var CAMPAIGNS = [
-  {
-    id: 1,
-    isDemo: true,
-    name: 'Retro Automotive · tes campaign 3',
-    status: 'running',
-    platforms: ['ig'],
-    reach: 695,
-    reachTarget: 1000,
-    budget: 500000,
-    budgetUsed: 234000,
-    sparkData: [20, 35, 40, 45, 60, 72],
-    thumbColor: '#fbbf24',
-    thumbUrl: 'Assets/demo/automotive.png',
-    launchTime: 'Jumat, 25 Apr 2026 · 13.10',
-    aiOpening: 'Campaign <strong>Retro Automotive</strong> · Running\n\nReach saat ini <strong>695</strong>. Performa iklan stabil dengan engagement yang menjanjikan.',
-    aiChips: ['Lihat detail', 'Optimalkan', 'Nanti'],
-    aiChipResponses: {}
-  },
-  {
-    id: 2,
-    isDemo: true,
-    name: 'tes kuliner 2',
-    status: 'running',
-    platforms: ['ig'],
-    reach: 728,
-    reachTarget: 1500,
-    budget: 300000,
-    budgetUsed: 87000,
-    sparkData: [10, 12, 18, 22, 28, 31],
-    thumbColor: '#ef4444',
-    thumbUrl: 'Assets/demo/culinary.png',
-    launchTime: 'Jumat, 25 Apr 2026 · 12.45',
-    aiOpening: 'Campaign <strong>tes kuliner 2</strong> · Running\n\nReach mencapai <strong>728</strong>. Audiens sangat tertarik dengan visual produk yang Anda gunakan.',
-    aiChips: ['Analisis budget', 'Cek area', 'Oke'],
-    aiChipResponses: {}
-  },
-  {
-    id: 3,
-    isDemo: true,
-    name: 'test posting only 1 IG Post',
-    status: 'running',
-    platforms: ['ig'],
-    reach: 597,
-    reachTarget: 1200,
-    budget: 200000,
-    budgetUsed: 112000,
-    sparkData: [5, 12, 16, 18, 18, 18],
-    thumbColor: '#791ADB',
-    thumbUrl: 'Assets/demo/fashion.png',
-    launchTime: 'Rabu, 22 Apr 2026 · 10.15',
-    aiOpening: 'Campaign <strong>test posting only 1 IG Post</strong> · Running\n\nReach: <strong>597</strong>. Postingan fashion ini mendapatkan respon positif di area target.',
-    aiChips: ['Scale up', 'Cek engagement', 'Selesai'],
-    aiChipResponses: {}
-  }
-];
+var CAMPAIGNS = [];
 
 /* ─── State ─── */
 var activeCampaignId = null;
