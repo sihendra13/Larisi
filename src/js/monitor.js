@@ -289,6 +289,23 @@ async function fetchAndUpdatePostUrl(campaign, _attempt) {
   } catch(e) {
     var msg = e.message || '';
 
+    // 401 → stop polling immediately, tandai auth_error, tampilkan UI warning
+    if (msg.indexOf('401') !== -1) {
+      console.error('[monitor] 401 Unauthorized untuk campaign:', campaign.name, '— stop polling.');
+      campaign._postUrlError = true;
+      campaign._authError    = true;
+      var authCard = document.querySelector('[data-id="' + campaign.id + '"]');
+      if (authCard) {
+        var authTs = authCard.querySelector('.cc-timestamp');
+        if (authTs) {
+          authTs.style.color = '#f59e0b';
+          authTs.title       = 'Akun perlu dihubungkan ulang.';
+          authTs.textContent = 'Akun perlu dihubungkan ulang';
+        }
+      }
+      return;
+    }
+
     // CORS error → log warning saja, jangan crash, jangan retry
     if (msg.toLowerCase().indexOf('cors') !== -1 ||
         msg.toLowerCase().indexOf('failed to fetch') !== -1 ||
