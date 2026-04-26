@@ -15,6 +15,20 @@ function toggleTravelerFn() {
   updateReach();
 }
 
+var geoStitchVisible = true;
+function toggleStitchFn() {
+  geoStitchVisible = !geoStitchVisible;
+  var t = document.getElementById('toggleStitch');
+  var stitch = document.getElementById('phoneStitch');
+  if (geoStitchVisible) {
+    t.classList.add('on');
+    if (stitch) stitch.style.display = 'block';
+  } else {
+    t.classList.remove('on');
+    if (stitch) stitch.style.display = 'none';
+  }
+}
+
 function showLaunchModal() {
   var hasAsset    = !!uploadedDataURL;
   var hasAudience = audLocal || audTraveler;
