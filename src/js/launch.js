@@ -632,6 +632,10 @@ async function _doLaunch(campNameOverride) {
     }
 
     if (typeof publishViaBuffer === 'function') {
+      // Pastikan format selalu ter-isi sebelum publish (guard terakhir)
+      campaignData.format = campaignData.format
+        || (typeof activeFormat !== 'undefined' ? activeFormat : 'post');
+      console.log('[launch] campaignData.format sebelum publishViaBuffer:', campaignData.format);
       publishViaBuffer(canvas, campaignData).then(function(result) {
         if (result && result.postId) {
           // Simpan post_id ke newCamp → chip langsung aktif di Monitor

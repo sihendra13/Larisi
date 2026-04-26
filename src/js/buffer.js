@@ -1053,8 +1053,13 @@ async function publishViaPostForMe(canvas, campaignData) {
   try {
     // Tentukan format dari campaignData SEBELUM upload loop (dipakai oleh _compositeStitchOnDataUrl)
     var fmt = campaignData.format
-           || (typeof activeFormat !== 'undefined' ? activeFormat : 'post');
-    console.log('[postforme] fmt (early):', fmt, '| platforms:', campaignData.platforms);
+           || campaignData.activeFormat
+           || (typeof activeFormat !== 'undefined' ? activeFormat : null)
+           || (typeof activePlatform !== 'undefined' ? activePlatform : null)
+           || 'post';
+    console.log('[postforme] fmt resolved:', fmt,
+      '| campaignData.format:', campaignData.format,
+      '| activeFormat:', typeof activeFormat !== 'undefined' ? activeFormat : 'UNDEFINED');
 
     // Upload semua foto dari uploadedDataURLs array (base64 asli, full resolution)
     var allMediaUrls = [];
