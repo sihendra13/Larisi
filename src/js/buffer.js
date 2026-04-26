@@ -782,31 +782,41 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
       var ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, cw, ch);
 
-      // ── 2. Ukuran dasar proporsional ──
-      var pad          = Math.round(cw * 0.016);
-      // Vertical (9:16): margin lebih tinggi agar tidak tertutup UI Story/Reel Instagram
-      var marginBottom = vertical
-        ? Math.round(ch * 0.12)   // 12% dari bawah untuk story/reel/tiktok
-        : Math.round(ch * 0.08);  // 8% dari bawah untuk post
+      // ── 2. Parameter berbeda per format ──
+      var pad = Math.round(cw * 0.016);
 
-      // maxTextW: 78% lebar canvas (konservatif, cegah overflow karena font measurement error)
-      var maxTextW = Math.round(cw * 0.78 - pad * 2);
-      // pillMaxW: batas maksimum lebar pill
-      // Vertical (center): full width minus 2x margin kiri-kanan (10% total)
-      // Horizontal (left): sama
-      var pillMaxW = Math.round(cw * 0.90 - pad * 2);
+      var marginBottom, maxTextW, pillMaxW, fontSize, minFont;
 
-      // ── 3. Font size proporsional, shrink sampai baris terpanjang muat ──
-      var fontSize = Math.max(16, Math.round(cw * 0.038));
-      var minFont  = Math.max(16, Math.round(cw * 0.018));
+      if (vertical) {
+        // STORY / REEL / TIKTOK / YOUTUBE (9:16):
+        // - font lebih besar (proporsional ke layar penuh vertikal)
+        // - maxTextW lebih ketat (75%) agar tidak overflow saat center-align
+        // - pillMaxW hard-cap 75% lebar canvas
+        // - marginBottom lebih tinggi (15%) agar tidak tertutup UI platform
+        marginBottom = Math.round(ch * 0.15);
+        maxTextW     = Math.round(cw * 0.75 - pad * 2);
+        pillMaxW     = Math.round(cw * 0.75);          // hard cap: TIDAK melebihi 75% lebar
+        fontSize     = Math.max(16, Math.round(cw * 0.055));
+        minFont      = Math.max(16, Math.round(cw * 0.028));
+      } else {
+        // POST / carousel (landscape / 4:5 / 1:1):
+        marginBottom = Math.round(ch * 0.08);
+        maxTextW     = Math.round(cw * 0.78 - pad * 2);
+        pillMaxW     = Math.round(cw * 0.90 - pad * 2);
+        fontSize     = Math.max(16, Math.round(cw * 0.038));
+        minFont      = Math.max(16, Math.round(cw * 0.018));
+      }
+
       var fontBase = '-apple-system, BlinkMacSystemFont, "Inter", Arial, sans-serif';
       var lines, lineWidths, maxLineW;
 
+      // ── 3. Shrink font sampai baris terpanjang muat dalam pillMaxW ──
       while (fontSize >= minFont) {
         ctx.font = 'bold ' + fontSize + 'px ' + fontBase;
         lines      = _stitchWrapText(ctx, text, maxTextW);
         lineWidths = lines.map(function(l) { return ctx.measureText(l).width; });
         maxLineW   = Math.max.apply(null, lineWidths);
+        // Safety margin 8% → cek apakah muat dalam pillMaxW
         if (Math.round(maxLineW * 1.08 + pad * 2) <= pillMaxW) break;
         fontSize -= Math.max(1, Math.round(fontSize * 0.06));
       }
@@ -814,7 +824,7 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
       var lineHeight = Math.round(fontSize * 1.5);
 
       // ── 4. Pill dimensions ──
-      // Safety margin 8% pada pillW mengakomodasi perbedaan measureText vs actual render
+      // pillW TIDAK pernah melebihi pillMaxW (hard cap)
       var pillW  = Math.min(Math.round(maxLineW * 1.08 + pad * 2), pillMaxW);
       var pillH  = Math.round(lineHeight * lines.length + pad * 2);
       var radius = Math.round(fontSize * 0.35);
@@ -863,9 +873,18 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
         ctx.restore();
       });
 
-      console.log('[postforme] stitch ' + (vertical ? 'VERTICAL/center' : 'horizontal/left') +
-        ' | ' + cw + 'x' + ch + ' | font:' + fontSize + 'px | lines:' + lines.length +
-        ' | pillX:' + pillX + ' pillW:' + pillW + ' pillH:' + pillH + ' marginBottom:' + marginBottom);
+      if (vertical) {
+        console.log('[export] stitch story: pillWidth=' + pillW +
+          ' maxAllowed=' + Math.round(cw * 0.75) +
+          ' fontSize=' + fontSize +
+          ' | ' + cw + 'x' + ch + ' lines:' + lines.length +
+          ' pillX:' + pillX + ' marginBottom:' + marginBottom);
+      } else {
+        console.log('[export] stitch post: pillWidth=' + pillW +
+          ' fontSize=' + fontSize +
+          ' | ' + cw + 'x' + ch + ' lines:' + lines.length +
+          ' pillX:' + pillX + ' marginBottom:' + marginBottom);
+      }
 
       canvas.toBlob(function(blob) { resolve(blob); }, 'image/jpeg', 0.92);
     };
