@@ -782,73 +782,91 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
       var ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, cw, ch);
 
-      // ── 2. Parameter berbeda per format ──
-      var pad = Math.round(cw * 0.016);
-
-      var marginBottom, maxTextW, pillMaxW, fontSize, minFont;
+      var fontBase = '-apple-system, BlinkMacSystemFont, "Inter", Arial, sans-serif';
+      var pillX, pillY, pillW, pillH, pillPadX, pillPadY, textX, textAlign, radius;
+      var lines, lineWidths, maxLineW, fontSize, lineHeight;
 
       if (vertical) {
-        // STORY / REEL / TIKTOK / YOUTUBE (9:16):
-        // - font lebih besar (proporsional ke layar penuh vertikal)
-        // - maxTextW lebih ketat (75%) agar tidak overflow saat center-align
-        // - pillMaxW hard-cap 75% lebar canvas
-        // - marginBottom lebih tinggi (15%) agar tidak tertutup UI platform
-        marginBottom = Math.round(ch * 0.15);
-        maxTextW     = Math.round(cw * 0.75 - pad * 2);
-        pillMaxW     = Math.round(cw * 0.75);          // hard cap: TIDAK melebihi 75% lebar
-        fontSize     = Math.max(16, Math.round(cw * 0.055));
-        minFont      = Math.max(16, Math.round(cw * 0.028));
-      } else {
-        // POST / carousel (landscape / 4:5 / 1:1):
-        marginBottom = Math.round(ch * 0.08);
-        maxTextW     = Math.round(cw * 0.78 - pad * 2);
-        pillMaxW     = Math.round(cw * 0.90 - pad * 2);
-        fontSize     = Math.max(16, Math.round(cw * 0.038));
-        minFont      = Math.max(16, Math.round(cw * 0.018));
-      }
+        // ════════════════════════════════════════════════
+        // VERTICAL (story/reel/tiktok/youtube) — rewrite total
+        // Pill di-CENTER horizontal, text LEFT-ALIGN dalam pill
+        // ════════════════════════════════════════════════
 
-      var fontBase = '-apple-system, BlinkMacSystemFont, "Inter", Arial, sans-serif';
-      var lines, lineWidths, maxLineW;
+        // ── Step 1: font & wrap ──
+        fontSize           = Math.max(28, Math.round(cw * 0.05));
+        var maxLineWidthV  = Math.round(cw * 0.70);   // max 70% lebar canvas per baris
+        ctx.font           = 'bold ' + fontSize + 'px ' + fontBase;
+        lines              = _stitchWrapText(ctx, text, maxLineWidthV);
 
-      // ── 3. Shrink font sampai baris terpanjang muat dalam pillMaxW ──
-      while (fontSize >= minFont) {
-        ctx.font = 'bold ' + fontSize + 'px ' + fontBase;
-        lines      = _stitchWrapText(ctx, text, maxTextW);
+        // Shrink font sampai semua baris benar-benar ≤ maxLineWidthV
+        var minFontV = Math.max(28, Math.round(cw * 0.025));
+        while (fontSize > minFontV) {
+          ctx.font  = 'bold ' + fontSize + 'px ' + fontBase;
+          lines     = _stitchWrapText(ctx, text, maxLineWidthV);
+          lineWidths = lines.map(function(l) { return ctx.measureText(l).width; });
+          maxLineW  = Math.max.apply(null, lineWidths);
+          if (maxLineW <= maxLineWidthV) break;
+          fontSize -= Math.max(1, Math.round(fontSize * 0.05));
+        }
         lineWidths = lines.map(function(l) { return ctx.measureText(l).width; });
         maxLineW   = Math.max.apply(null, lineWidths);
-        // Safety margin 8% → cek apakah muat dalam pillMaxW
-        if (Math.round(maxLineW * 1.08 + pad * 2) <= pillMaxW) break;
-        fontSize -= Math.max(1, Math.round(fontSize * 0.06));
-      }
+        lineHeight = Math.round(fontSize * 1.5);
 
-      var lineHeight = Math.round(fontSize * 1.5);
+        // ── Step 2: pill dimensions ──
+        pillPadX = Math.round(cw * 0.04);
+        pillPadY = Math.round(ch * 0.015);
+        pillW    = Math.min(Math.round(maxLineW) + pillPadX * 2, Math.round(cw * 0.70) + pillPadX * 2);
+        pillH    = Math.round(lines.length * lineHeight + pillPadY * 2);
+        radius   = Math.round(fontSize * 0.35);
 
-      // ── 4. Pill dimensions ──
-      // pillW TIDAK pernah melebihi pillMaxW (hard cap)
-      var pillW  = Math.min(Math.round(maxLineW * 1.08 + pad * 2), pillMaxW);
-      var pillH  = Math.round(lineHeight * lines.length + pad * 2);
-      var radius = Math.round(fontSize * 0.35);
+        // ── Step 3: posisi CENTER horizontal ──
+        pillX = Math.round((cw - pillW) / 2);
+        pillY = Math.round(ch * 0.82);         // ~82% dari atas = 18% dari bawah
 
-      // ── 5. Posisi pill & text berdasarkan format ──
-      var pillX, textX, textAlign;
+        // ── Step 4: clamp ketat ──
+        if (pillX < 0) pillX = 0;
+        if (pillX + pillW > cw) pillW = cw - pillX;
+        if (pillY + pillH > ch) pillY = ch - pillH;
 
-      if (vertical) {
-        // BOTTOM-CENTER: horizontal center di canvas
-        pillX     = Math.round((cw - pillW) / 2);
-        textX     = Math.round(cw / 2); // ctx.textAlign = 'center' → draw dari titik tengah
-        textAlign = 'center';
-      } else {
-        // BOTTOM-LEFT: 5% dari kiri
-        pillX     = Math.round(cw * 0.05);
-        textX     = pillX + pad;
+        // textX = kiri pill + padding (LEFT-ALIGN dalam pill, BUKAN center)
+        textX     = pillX + pillPadX;
         textAlign = 'left';
+
+        console.log('[stitch] pillX=' + pillX + ' pillW=' + pillW +
+          ' canvas.width=' + cw + ' overflow=' + (pillX + pillW > cw) +
+          ' | maxLineW=' + Math.round(maxLineW) + ' maxAllowed=' + maxLineWidthV +
+          ' fontSize=' + fontSize + ' lines=' + lines.length);
+
+      } else {
+        // ════════════════════════════════════════════════
+        // HORIZONTAL (post/carousel) — tidak berubah
+        // ════════════════════════════════════════════════
+        var pad      = Math.round(cw * 0.016);
+        var maxTextW = Math.round(cw * 0.78 - pad * 2);
+        var pillMaxW = Math.round(cw * 0.90 - pad * 2);
+        fontSize     = Math.max(16, Math.round(cw * 0.038));
+        var minFont  = Math.max(16, Math.round(cw * 0.018));
+
+        while (fontSize >= minFont) {
+          ctx.font   = 'bold ' + fontSize + 'px ' + fontBase;
+          lines      = _stitchWrapText(ctx, text, maxTextW);
+          lineWidths = lines.map(function(l) { return ctx.measureText(l).width; });
+          maxLineW   = Math.max.apply(null, lineWidths);
+          if (Math.round(maxLineW * 1.08 + pad * 2) <= pillMaxW) break;
+          fontSize  -= Math.max(1, Math.round(fontSize * 0.06));
+        }
+        lineHeight = Math.round(fontSize * 1.5);
+        pillPadX   = pad;
+        pillPadY   = pad;
+        pillW      = Math.min(Math.round(maxLineW * 1.08 + pad * 2), pillMaxW);
+        pillH      = Math.round(lineHeight * lines.length + pad * 2);
+        radius     = Math.round(fontSize * 0.35);
+        pillX      = Math.round(cw * 0.05);
+        pillY      = Math.max(ch - Math.round(ch * 0.08) - pillH, 0);
+        if (pillX + pillW > cw - Math.round(cw * 0.05)) pillW = cw - Math.round(cw * 0.05) - pillX;
+        textX      = pillX + pillPadX;
+        textAlign  = 'left';
       }
-
-      // Clamp agar tidak overflow kiri/kanan
-      pillX = Math.max(0, pillX);
-      if (pillX + pillW > cw) pillX = Math.max(0, cw - pillW);
-
-      var pillY = Math.max(ch - marginBottom - pillH, 0);
 
       // ── 6. Draw pill background ──
       ctx.globalAlpha = 0.75;
@@ -862,7 +880,7 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
       ctx.font         = 'bold ' + fontSize + 'px ' + fontBase;
       ctx.textAlign    = textAlign;
       ctx.textBaseline = 'top';
-      var textY = pillY + pad;
+      var textY = pillY + pillPadY;
 
       lines.forEach(function(line, i) {
         ctx.save();
@@ -875,10 +893,10 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
 
       if (vertical) {
         console.log('[export] stitch story: pillWidth=' + pillW +
-          ' maxAllowed=' + Math.round(cw * 0.75) +
+          ' maxAllowed=' + Math.round(cw * 0.70) +
           ' fontSize=' + fontSize +
           ' | ' + cw + 'x' + ch + ' lines:' + lines.length +
-          ' pillX:' + pillX + ' marginBottom:' + marginBottom);
+          ' pillX:' + pillX + ' pillY:' + pillY);
       } else {
         console.log('[export] stitch post: pillWidth=' + pillW +
           ' fontSize=' + fontSize +
