@@ -306,6 +306,18 @@ async function fetchAndUpdatePostUrl(campaign, _attempt) {
         }, RETRY_DELAY);
       } else {
         console.warn('[monitor] fetchAndUpdatePostUrl gagal setelah ' + MAX_RETRIES + ' retry (503):', campaign.name);
+        // Tandai campaign sebagai error agar polling interval skip dia
+        campaign._postUrlError = true;
+        // Tampilkan indikator error di card
+        var errCard = document.querySelector('[data-id="' + campaign.id + '"]');
+        if (errCard) {
+          var tsEl = errCard.querySelector('.cc-timestamp');
+          if (tsEl) {
+            tsEl.style.color  = '#ef4444';
+            tsEl.title        = 'Gagal ambil link postingan (server error). Coba refresh halaman.';
+            tsEl.textContent  = (tsEl.textContent || '') + ' ⚠';
+          }
+        }
       }
       return;
     }
@@ -332,7 +344,7 @@ function startPostUrlPolling() {
 
   _postUrlPollInterval = setInterval(function() {
     var pending = CAMPAIGNS.filter(function(c) {
-      return !c.post_url && c.post_id;
+      return !c.post_url && c.post_id && !c._postUrlError;
     });
 
     if (!pending.length) {
