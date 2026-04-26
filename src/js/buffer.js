@@ -673,81 +673,109 @@ function _disconnectAccount(platform) {
 
 /* ─── Geo-Stitch Canvas Compositing ───────────────────────── */
 
-// Helper: rounded rect path
+// Helper: draw rounded rect path
 function _stitchRoundRect(ctx, x, y, w, h, r) {
+  var rr = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y,     x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h,     x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y,         x + r, y);
+  ctx.moveTo(x + rr, y);
+  ctx.lineTo(x + w - rr, y);
+  ctx.quadraticCurveTo(x + w, y,     x + w, y + rr);
+  ctx.lineTo(x + w, y + h - rr);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+  ctx.lineTo(x + rr, y + h);
+  ctx.quadraticCurveTo(x, y + h,     x, y + h - rr);
+  ctx.lineTo(x, y + rr);
+  ctx.quadraticCurveTo(x, y,         x + rr, y);
   ctx.closePath();
 }
 
+// Helper: word-wrap text to fit maxWidth, returns array of lines
+function _stitchWrapText(ctx, text, maxWidth) {
+  var rawLines = text.split('\n');
+  var result   = [];
+  rawLines.forEach(function(raw) {
+    var words = raw.trim().split(' ');
+    var cur   = '';
+    words.forEach(function(word) {
+      var test = cur ? cur + ' ' + word : word;
+      if (ctx.measureText(test).width > maxWidth && cur) {
+        result.push(cur);
+        cur = word;
+      } else {
+        cur = test;
+      }
+    });
+    if (cur) result.push(cur);
+  });
+  return result.length ? result : [''];
+}
+
 // Composite stitch text onto a dataUrl → returns Blob (or null on error)
+// Layout: bottom-left, proportional font, auto pill width, text wrap at 60% canvas width
 function _compositeStitchOnDataUrl(dataUrl) {
   return new Promise(function(resolve) {
     var stitchEl = document.getElementById('phoneStitch');
-    var shellEl  = document.querySelector('.phone-shell');
-
-    // No stitch element or no text → return null (use original)
-    if (!stitchEl || !shellEl) { resolve(null); return; }
-    var text = (stitchEl.textContent || stitchEl.innerText || '').trim();
+    var text     = stitchEl
+      ? (stitchEl.textContent || stitchEl.innerText || '').trim()
+      : '';
     if (!text) { resolve(null); return; }
 
     var img = new Image();
     img.onload = function() {
-      var iw = img.naturalWidth;
-      var ih = img.naturalHeight;
+      var cw = img.naturalWidth;
+      var ch = img.naturalHeight;
 
-      // Get rendered positions via getBoundingClientRect
-      var shellRect  = shellEl.getBoundingClientRect();
-      var stitchRect = stitchEl.getBoundingClientRect();
-
-      // Scale: rendered shell px → full-res image px
-      var scaleX = iw / (shellRect.width  || 1);
-      var scaleY = ih / (shellRect.height || 1);
-
-      // Pill bounds in full-res coords
-      var px = (stitchRect.left - shellRect.left) * scaleX;
-      var py = (stitchRect.top  - shellRect.top)  * scaleY;
-      var pw = stitchRect.width  * scaleX;
-      var ph = stitchRect.height * scaleY;
-
-      // Canvas at full image resolution
+      // ── Canvas at exact original image dimensions ──
       var canvas = document.createElement('canvas');
-      canvas.width  = iw;
-      canvas.height = ih;
+      canvas.width  = cw;
+      canvas.height = ch;
       var ctx = canvas.getContext('2d');
 
-      // 1. Draw original image
-      ctx.drawImage(img, 0, 0, iw, ih);
+      // 1. Draw original image — full, no crop
+      ctx.drawImage(img, 0, 0, cw, ch);
 
-      // 2. Draw pill background — rgba(0,0,0,0.6), border-radius 8px scaled
-      var radius = Math.round(8 * Math.min(scaleX, scaleY));
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      _stitchRoundRect(ctx, px, py, pw, ph, radius);
+      // 2. Typography — 4% of canvas width, bold
+      var fontSize   = Math.round(cw * 0.04);
+      var lineHeight = fontSize * 1.5;
+      var fontStr    = 'bold ' + fontSize + 'px -apple-system, BlinkMacSystemFont, "Inter", Arial, sans-serif';
+      ctx.font = fontStr;
+
+      // 3. Text wrap — max 60% of canvas width
+      var maxTextW = cw * 0.60;
+      var lines    = _stitchWrapText(ctx, text, maxTextW);
+
+      // 4. Pill dimensions — padding 16px, width = widest line + padding
+      var pad    = Math.round(cw * 0.016); // ~16px at 1080px ref
+      var lineWidths = lines.map(function(l) { return ctx.measureText(l).width; });
+      var pillW  = Math.round(Math.max.apply(null, lineWidths) + pad * 2);
+      var pillH  = Math.round(lineHeight * lines.length + pad * 2);
+      var radius = Math.round(fontSize * 0.4);
+
+      // 5. Position: bottom-left — 5% from left, 8% from bottom
+      var pillX  = Math.round(cw * 0.05);
+      var pillY  = Math.round(ch * 0.92) - pillH;
+
+      // 6. Draw pill background — #000000, opacity 0.75
+      ctx.globalAlpha = 0.75;
+      ctx.fillStyle   = '#000000';
+      _stitchRoundRect(ctx, pillX, pillY, pillW, pillH, radius);
       ctx.fill();
+      ctx.globalAlpha = 1.0;
 
-      // 3. Draw text — white, centered, multi-line, font size 8px scaled
-      var fontSize   = Math.max(20, Math.round(8 * scaleY));
-      var lineHeight = fontSize * 1.45;
+      // 7. Draw text — white, bold, left-aligned inside pill
       ctx.fillStyle    = '#ffffff';
-      ctx.font         = '600 ' + fontSize + 'px -apple-system, BlinkMacSystemFont, "Inter", sans-serif';
-      ctx.textAlign    = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.textAlign    = 'left';
+      ctx.textBaseline = 'top';
 
-      var lines  = text.split('\n');
-      var totalH = lineHeight * lines.length;
-      var startY = py + ph / 2 - totalH / 2 + lineHeight / 2;
-
+      var textX  = pillX + pad;
+      var textY  = pillY + pad;
       lines.forEach(function(line, i) {
-        ctx.fillText(line.trim(), px + pw / 2, startY + i * lineHeight);
+        ctx.fillText(line, textX, textY + i * lineHeight);
       });
+
+      console.log('[postforme] stitch composite: ' + cw + 'x' + ch +
+        ' | font:' + fontSize + 'px | lines:' + lines.length +
+        ' | pill:' + pillW + 'x' + pillH);
 
       canvas.toBlob(function(blob) { resolve(blob); }, 'image/jpeg', 0.92);
     };
