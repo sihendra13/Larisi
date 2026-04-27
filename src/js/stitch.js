@@ -25,18 +25,36 @@ function updateStitch() {
   s.style.display = 'block'; s.textContent = txt;
 }
 
-/* ─── Phone Stitch: Fixed Position + Inline Edit ─── */
+/* ─── Phone Stitch: Dynamic Position + Inline Edit ─── */
 (function initStitchDrag() {
   var stitch = document.getElementById('phoneStitch');
   if (!stitch) return;
 
-  // Posisi fixed — tidak bisa di-drag
-  // Center horizontal, 75% tinggi shell (sama dengan canvas composite)
-  stitch.style.position  = 'absolute';
-  stitch.style.bottom    = 'auto';
-  stitch.style.top       = '75%';
-  stitch.style.left      = '50%';
-  stitch.style.transform = 'translateX(-50%)';
+  function updateStitchPosition() {
+    var fmt = (typeof activeFormat !== 'undefined' ? activeFormat : 'post').toLowerCase();
+    var isVertical = fmt === 'story' || fmt === 'reel';
+    stitch.style.position  = 'absolute';
+    stitch.style.top       = 'auto';
+    stitch.style.transform = '';
+    if (isVertical) {
+      // Story/Reel: bottom-center, 18% dari bawah
+      stitch.style.bottom    = '18%';
+      stitch.style.left      = '50%';
+      stitch.style.transform = 'translateX(-50%)';
+      stitch.style.textAlign = 'center';
+    } else {
+      // Post: bottom-left, 10% dari bawah, 5% dari kiri
+      stitch.style.bottom    = '10%';
+      stitch.style.left      = '5%';
+      stitch.style.textAlign = 'left';
+    }
+  }
+
+  updateStitchPosition();
+
+  // Update posisi saat format berubah
+  document.addEventListener('formatChanged', updateStitchPosition);
+  setInterval(updateStitchPosition, 500);
 
   // Click → edit text
   stitch.addEventListener('click', function() {
