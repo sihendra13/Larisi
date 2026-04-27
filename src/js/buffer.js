@@ -1066,6 +1066,13 @@ async function publishViaPostForMe(canvas, campaignData) {
   var platNames = filtered.map(function(a) { return a.platform; }).join(', ');
 
   try {
+    // Tentukan format SEBELUM upload loop — dipakai _compositeStitchOnDataUrl via _isVerticalFormat
+    var fmt = campaignData.format
+           || campaignData.activeFormat
+           || (typeof activeFormat !== 'undefined' ? activeFormat : null)
+           || 'post';
+    console.log('[postforme] fmt (early):', fmt, '| campaignData.format:', campaignData.format);
+
     // Upload semua foto dari uploadedDataURLs array (base64 asli, full resolution)
     var allMediaUrls = [];
 
@@ -1151,10 +1158,6 @@ async function publishViaPostForMe(canvas, campaignData) {
     }
 
     var hasVideo = hasVideoUpload;
-
-    // Tentukan format dari campaignData (disimpan saat launch) — fallback ke global
-    var fmt = campaignData.format
-           || (typeof activeFormat !== 'undefined' ? activeFormat : 'post');
 
     var placementMap = {
       post:  'timeline',
