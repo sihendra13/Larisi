@@ -864,7 +864,7 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
         textX     = Math.round(cw / 2);
         textAlign = 'center';
         // pillY relatif ke area foto: 82% dari tinggi foto + offset foto
-        pillY = Math.round(photoOffY + photoH * 0.82);
+        pillY = Math.round(photoOffY + photoH * 0.70);
       } else {
         pillX     = Math.round(cw * 0.05);
         textX     = pillX + pad;
