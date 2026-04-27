@@ -747,42 +747,13 @@ function _stitchWrapText(ctx, text, maxWidth) {
 // Vertical → stitch bottom-CENTER (hindari area crop Instagram/TikTok)
 // Horizontal → stitch bottom-LEFT (aman untuk carousel/post)
 function _isVerticalFormat(fmt, platforms) {
-  var verticalFmts = ['story', 'reel', 'ig-story', 'ig-reel', 'meta-story',
-                      'meta-reel', 'stories', 'reels', 'short', 'shorts'];
-
-  // Layer 1: dari fmt parameter
   var f = (fmt || '').toLowerCase();
-  if (verticalFmts.indexOf(f) !== -1) {
-    console.log('[stitch] _isVerticalFormat: fmt=' + fmt + ' → vertical=true (layer1)');
-    return true;
-  }
-
-  // Layer 2: dari activePlatform global (PALING RELIABLE)
-  var ap = (typeof activePlatform !== 'undefined' ? activePlatform : '').toLowerCase();
-  if (ap === 'ig-story' || ap === 'ig-reel' || ap === 'meta-story' ||
-      ap === 'meta-reel' || ap === 'tiktok' || ap === 'youtube') {
-    console.log('[stitch] _isVerticalFormat: activePlatform=' + ap + ' → vertical=true (layer2)');
-    return true;
-  }
-
-  // Layer 3: dari activeFormat global
-  var af = (typeof activeFormat !== 'undefined' ? activeFormat : '').toLowerCase();
-  if (verticalFmts.indexOf(af) !== -1) {
-    console.log('[stitch] _isVerticalFormat: activeFormat=' + af + ' → vertical=true (layer3)');
-    return true;
-  }
-
-  // Layer 4: dari platforms array (tiktok/youtube)
+  if (f === 'story' || f === 'reel') return true;
   var plats = Array.isArray(platforms) ? platforms : [];
-  if (plats.some(function(p) {
-    return (p || '').toLowerCase() === 'tiktok' || (p || '').toLowerCase() === 'youtube';
-  })) {
-    console.log('[stitch] _isVerticalFormat: platforms=' + platforms + ' → vertical=true (layer4)');
-    return true;
-  }
-
-  console.log('[stitch] _isVerticalFormat: fmt=' + fmt + ' ap=' + ap + ' af=' + af + ' → vertical=false');
-  return false;
+  return plats.some(function(p) {
+    var pl = (p || '').toLowerCase();
+    return pl === 'tiktok' || pl === 'youtube';
+  });
 }
 
 // Composite stitch text onto a dataUrl → returns Blob (or null on error)
@@ -811,118 +782,73 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
       var ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, cw, ch);
 
-      // ── Scale down canvas ke max resolusi target ──
-      // IG Story/Reel target: 1080x1920, Post: 1080x1350
-      // Foto resolusi tinggi (>1080px) harus di-scale dulu biar stitch proporsional
-      var MAX_W = vertical ? 1080 : 1080;
-      var MAX_H = vertical ? 1920 : 1350;
+      // ── 2. Parameter berbeda per format ──
+      var pad = Math.round(cw * 0.016);
 
-      if (cw > MAX_W || ch > MAX_H) {
-        var scaleW = MAX_W / cw;
-        var scaleH = MAX_H / ch;
-        var scale  = Math.min(scaleW, scaleH);
-        var newW   = Math.round(cw * scale);
-        var newH   = Math.round(ch * scale);
+      var marginBottom, maxTextW, pillMaxW, fontSize, minFont;
 
-        // Buat canvas baru dengan ukuran scaled
-        var scaledCanvas = document.createElement('canvas');
-        scaledCanvas.width  = newW;
-        scaledCanvas.height = newH;
-        var scaledCtx = scaledCanvas.getContext('2d');
-        scaledCtx.drawImage(img, 0, 0, newW, newH);
-
-        // Ganti canvas, ctx, cw, ch dengan yang sudah di-scale
-        canvas = scaledCanvas;
-        ctx    = scaledCtx;
-        cw     = newW;
-        ch     = newH;
+      if (vertical) {
+        // STORY / REEL / TIKTOK / YOUTUBE (9:16):
+        // - font lebih besar (proporsional ke layar penuh vertikal)
+        // - maxTextW lebih ketat (75%) agar tidak overflow saat center-align
+        // - pillMaxW hard-cap 75% lebar canvas
+        // - marginBottom lebih tinggi (15%) agar tidak tertutup UI platform
+        marginBottom = Math.round(ch * 0.15);
+        maxTextW     = Math.round(cw * 0.75 - pad * 2);
+        pillMaxW     = Math.round(cw * 0.75);          // hard cap: TIDAK melebihi 75% lebar
+        fontSize     = Math.max(16, Math.round(cw * 0.055));
+        minFont      = Math.max(16, Math.round(cw * 0.028));
+      } else {
+        // POST / carousel (landscape / 4:5 / 1:1):
+        marginBottom = Math.round(ch * 0.08);
+        maxTextW     = Math.round(cw * 0.78 - pad * 2);
+        pillMaxW     = Math.round(cw * 0.90 - pad * 2);
+        fontSize     = Math.max(16, Math.round(cw * 0.038));
+        minFont      = Math.max(16, Math.round(cw * 0.018));
       }
 
       var fontBase = '-apple-system, BlinkMacSystemFont, "Inter", Arial, sans-serif';
-      var pillX, pillY, pillW, pillH, pillPadX, pillPadY, textX, textAlign, radius;
-      var lines, lineWidths, maxLineW, fontSize, lineHeight;
+      var lines, lineWidths, maxLineW;
 
-      if (vertical) {
-        // ════════════════════════════════════════════════
-        // VERTICAL (story/reel/tiktok/youtube) — rewrite total
-        // Pill di-CENTER horizontal, text LEFT-ALIGN dalam pill
-        // ════════════════════════════════════════════════
-
-        // ── Step 1: font & wrap ──
-        fontSize           = Math.max(28, Math.round(cw * 0.05));
-        var maxLineWidthV  = Math.round(cw * 0.70);   // max 70% lebar canvas per baris
-        ctx.font           = 'bold ' + fontSize + 'px ' + fontBase;
-        lines              = _stitchWrapText(ctx, text, maxLineWidthV);
-
-        // Shrink font sampai semua baris benar-benar ≤ maxLineWidthV
-        var minFontV = Math.max(28, Math.round(cw * 0.025));
-        while (fontSize > minFontV) {
-          ctx.font  = 'bold ' + fontSize + 'px ' + fontBase;
-          lines     = _stitchWrapText(ctx, text, maxLineWidthV);
-          lineWidths = lines.map(function(l) { return ctx.measureText(l).width; });
-          maxLineW  = Math.max.apply(null, lineWidths);
-          if (maxLineW <= maxLineWidthV) break;
-          fontSize -= Math.max(1, Math.round(fontSize * 0.05));
-        }
+      // ── 3. Shrink font sampai baris terpanjang muat dalam pillMaxW ──
+      while (fontSize >= minFont) {
+        ctx.font = 'bold ' + fontSize + 'px ' + fontBase;
+        lines      = _stitchWrapText(ctx, text, maxTextW);
         lineWidths = lines.map(function(l) { return ctx.measureText(l).width; });
         maxLineW   = Math.max.apply(null, lineWidths);
-        lineHeight = Math.round(fontSize * 1.5);
-
-        // ── Step 2: pill dimensions ──
-        pillPadX = Math.round(cw * 0.04);
-        pillPadY = Math.round(ch * 0.015);
-        pillW    = Math.min(Math.round(maxLineW) + pillPadX * 2, Math.round(cw * 0.70) + pillPadX * 2);
-        pillH    = Math.round(lines.length * lineHeight + pillPadY * 2);
-        radius   = Math.round(fontSize * 0.35);
-
-        // ── Step 3: posisi CENTER horizontal ──
-        pillX = Math.round((cw - pillW) / 2);
-        pillY = Math.round(ch * 0.82);         // ~82% dari atas = 18% dari bawah
-
-        // ── Step 4: clamp ketat ──
-        if (pillX < 0) pillX = 0;
-        if (pillX + pillW > cw) pillW = cw - pillX;
-        if (pillY + pillH > ch) pillY = ch - pillH;
-
-        // textX = kiri pill + padding (LEFT-ALIGN dalam pill, BUKAN center)
-        textX     = pillX + pillPadX;
-        textAlign = 'left';
-
-        console.log('[stitch] pillX=' + pillX + ' pillW=' + pillW +
-          ' canvas.width=' + cw + ' overflow=' + (pillX + pillW > cw) +
-          ' | maxLineW=' + Math.round(maxLineW) + ' maxAllowed=' + maxLineWidthV +
-          ' fontSize=' + fontSize + ' lines=' + lines.length);
-
-      } else {
-        // ════════════════════════════════════════════════
-        // HORIZONTAL (post/carousel) — tidak berubah
-        // ════════════════════════════════════════════════
-        var pad      = Math.round(cw * 0.016);
-        var maxTextW = Math.round(cw * 0.78 - pad * 2);
-        var pillMaxW = Math.round(cw * 0.90 - pad * 2);
-        fontSize     = Math.max(16, Math.round(cw * 0.038));
-        var minFont  = Math.max(16, Math.round(cw * 0.018));
-
-        while (fontSize >= minFont) {
-          ctx.font   = 'bold ' + fontSize + 'px ' + fontBase;
-          lines      = _stitchWrapText(ctx, text, maxTextW);
-          lineWidths = lines.map(function(l) { return ctx.measureText(l).width; });
-          maxLineW   = Math.max.apply(null, lineWidths);
-          if (Math.round(maxLineW * 1.08 + pad * 2) <= pillMaxW) break;
-          fontSize  -= Math.max(1, Math.round(fontSize * 0.06));
-        }
-        lineHeight = Math.round(fontSize * 1.5);
-        pillPadX   = pad;
-        pillPadY   = pad;
-        pillW      = Math.min(Math.round(maxLineW * 1.08 + pad * 2), pillMaxW);
-        pillH      = Math.round(lineHeight * lines.length + pad * 2);
-        radius     = Math.round(fontSize * 0.35);
-        pillX      = Math.round(cw * 0.05);
-        pillY      = Math.max(ch - Math.round(ch * 0.08) - pillH, 0);
-        if (pillX + pillW > cw - Math.round(cw * 0.05)) pillW = cw - Math.round(cw * 0.05) - pillX;
-        textX      = pillX + pillPadX;
-        textAlign  = 'left';
+        // Safety margin 8% → cek apakah muat dalam pillMaxW
+        if (Math.round(maxLineW * 1.08 + pad * 2) <= pillMaxW) break;
+        fontSize -= Math.max(1, Math.round(fontSize * 0.06));
       }
+
+      var lineHeight = Math.round(fontSize * 1.5);
+
+      // ── 4. Pill dimensions ──
+      // pillW TIDAK pernah melebihi pillMaxW (hard cap)
+      var pillW  = Math.min(Math.round(maxLineW * 1.08 + pad * 2), pillMaxW);
+      var pillH  = Math.round(lineHeight * lines.length + pad * 2);
+      var radius = Math.round(fontSize * 0.35);
+
+      // ── 5. Posisi pill & text berdasarkan format ──
+      var pillX, textX, textAlign;
+
+      if (vertical) {
+        // BOTTOM-CENTER: horizontal center di canvas
+        pillX     = Math.round((cw - pillW) / 2);
+        textX     = Math.round(cw / 2); // ctx.textAlign = 'center' → draw dari titik tengah
+        textAlign = 'center';
+      } else {
+        // BOTTOM-LEFT: 5% dari kiri
+        pillX     = Math.round(cw * 0.05);
+        textX     = pillX + pad;
+        textAlign = 'left';
+      }
+
+      // Clamp agar tidak overflow kiri/kanan
+      pillX = Math.max(0, pillX);
+      if (pillX + pillW > cw) pillX = Math.max(0, cw - pillW);
+
+      var pillY = Math.max(ch - marginBottom - pillH, 0);
 
       // ── 6. Draw pill background ──
       ctx.globalAlpha = 0.75;
@@ -936,7 +862,7 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
       ctx.font         = 'bold ' + fontSize + 'px ' + fontBase;
       ctx.textAlign    = textAlign;
       ctx.textBaseline = 'top';
-      var textY = pillY + pillPadY;
+      var textY = pillY + pad;
 
       lines.forEach(function(line, i) {
         ctx.save();
@@ -949,15 +875,15 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
 
       if (vertical) {
         console.log('[export] stitch story: pillWidth=' + pillW +
-          ' maxAllowed=' + Math.round(cw * 0.70) +
+          ' maxAllowed=' + Math.round(cw * 0.75) +
           ' fontSize=' + fontSize +
           ' | ' + cw + 'x' + ch + ' lines:' + lines.length +
-          ' pillX:' + pillX + ' pillY:' + pillY);
+          ' pillX:' + pillX + ' marginBottom:' + marginBottom);
       } else {
         console.log('[export] stitch post: pillWidth=' + pillW +
           ' fontSize=' + fontSize +
           ' | ' + cw + 'x' + ch + ' lines:' + lines.length +
-          ' pillX:' + pillX + ' pillY:' + pillY);
+          ' pillX:' + pillX + ' marginBottom:' + marginBottom);
       }
 
       canvas.toBlob(function(blob) { resolve(blob); }, 'image/jpeg', 0.92);
@@ -1098,16 +1024,6 @@ async function publishViaPostForMe(canvas, campaignData) {
   var platNames = filtered.map(function(a) { return a.platform; }).join(', ');
 
   try {
-    // Tentukan format dari campaignData SEBELUM upload loop (dipakai oleh _compositeStitchOnDataUrl)
-    var fmt = campaignData.format
-           || campaignData.activeFormat
-           || (typeof activeFormat !== 'undefined' ? activeFormat : null)
-           || (typeof activePlatform !== 'undefined' ? activePlatform : null)
-           || 'post';
-    console.log('[postforme] fmt resolved:', fmt,
-      '| campaignData.format:', campaignData.format,
-      '| activeFormat:', typeof activeFormat !== 'undefined' ? activeFormat : 'UNDEFINED');
-
     // Upload semua foto dari uploadedDataURLs array (base64 asli, full resolution)
     var allMediaUrls = [];
 
@@ -1194,6 +1110,10 @@ async function publishViaPostForMe(canvas, campaignData) {
 
     var hasVideo = hasVideoUpload;
 
+    // Tentukan format dari campaignData (disimpan saat launch) — fallback ke global
+    var fmt = campaignData.format
+           || (typeof activeFormat !== 'undefined' ? activeFormat : 'post');
+
     var placementMap = {
       post:  'timeline',
       reel:  'reels',
@@ -1209,6 +1129,7 @@ async function publishViaPostForMe(canvas, campaignData) {
     var platformConfigs = {};
     if (igAccounts.length) {
       platformConfigs.instagram = { placement: placement };
+      // Pastikan video selalu pakai placement yang sesuai format
       if (hasVideo && platformConfigs.instagram) {
         platformConfigs.instagram.placement = placement;
       }
@@ -1260,7 +1181,6 @@ async function publishViaPostForMe(canvas, campaignData) {
     }
 
     console.log('[postforme] final payload:', JSON.stringify(payload, null, 2));
-    console.log('[postforme] FINAL CHECK — fmt:', fmt, '| media count:', allMediaUrls.length, '| placement:', placement, '| platformConfigs:', JSON.stringify(platformConfigs));
 
     var data;
     if (fmt === 'story' && allMediaUrls.length > 1) {
