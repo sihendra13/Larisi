@@ -23,7 +23,7 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Authorization, Content-Type",
 };
 
-const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_MODEL = "gemini-1.5-flash";
 const GEMINI_URL   = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 serve(async (req: Request) => {
@@ -74,17 +74,31 @@ serve(async (req: Request) => {
   // Convert to Gemini format:
   // - roles: 'user' stays 'user', 'ai'/'assistant' becomes 'model'
   // - content string → parts array
-  const contents = messages.map((m) => ({
+  const rawContents = messages.map((m) => ({
     role:  (m.role === "user") ? "user" : "model",
     parts: [{ text: m.content }],
   }));
 
-  // Gemini requires first message to be from 'user'
-  // and alternating user/model roles
-  const validContents = contents.filter((_, i) => {
-    if (i === 0) return contents[0].role === "user";
-    return true;
-  });
+  // Gemini requires:
+  // 1. First message must be from 'user'
+  // 2. Roles must alternate (user, model, user, model...)
+  // Skip leading non-user messages, then deduplicate consecutive same roles
+  let startIdx = 0;
+  while (startIdx < rawContents.length && rawContents[startIdx].role !== "user") {
+    startIdx++;
+  }
+  const trimmed = rawContents.slice(startIdx);
+
+  // Collapse consecutive same-role messages into one (merge their text)
+  const validContents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
+  for (const msg of trimmed) {
+    const last = validContents[validContents.length - 1];
+    if (last && last.role === msg.role) {
+      last.parts[0].text += "\n" + msg.parts[0].text;
+    } else {
+      validContents.push({ role: msg.role, parts: [{ text: msg.parts[0].text }] });
+    }
+  }
 
   try {
     const geminiResp = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
