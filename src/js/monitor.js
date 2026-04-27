@@ -1033,7 +1033,7 @@ async function sendChatMessage(overrideText) {
   showTypingIndicator();
 
   var campaign = activeCampaignId
-    ? (allCampaigns || []).find(function(c) { return c.id === activeCampaignId; })
+    ? (CAMPAIGNS || []).find(function(c) { return c.id === activeCampaignId; })
     : null;
 
   var systemPrompt = 'Kamu adalah SiLaris, co-pilot marketing AI untuk UMKM Indonesia di platform Larisi. Gunakan bahasa Indonesia santai, singkat, dan actionable. Selalu berikan rekomendasi spesifik dan praktis.'
