@@ -1208,7 +1208,10 @@ async function publishViaPostForMe(canvas, campaignData) {
 
     var platformConfigs = {};
     if (igAccounts.length) {
-      platformConfigs.instagram = { placement: placement };
+      platformConfigs.instagram = {
+        placement: placement,
+        media: allMediaUrls.map(function(u) { return { url: u }; })
+      };
       // Pastikan video selalu pakai placement yang sesuai format
       if (hasVideo && platformConfigs.instagram) {
         platformConfigs.instagram.placement = placement;
