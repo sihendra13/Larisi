@@ -1,21 +1,14 @@
 // RADAR — Edge Function: silaris-chat
-// Supabase Edge Function (Deno runtime)
+// Supabase Edge Function (Deno runtime) — powered by Google Gemini
 //
 // ─── Deploy Instructions ──────────────────────────────────────────────────────
-// 1. Install Supabase CLI:
-//      brew install supabase/tap/supabase
+// 1. Set secret API key (JANGAN pernah taruh di frontend):
+//      supabase secrets set GEMINI_API_KEY=AIzaSy...
 //
-// 2. Login & link project:
-//      supabase login
-//      supabase link --project-ref mojzmlrdihenvfhrwopd
-//
-// 3. Set secret API key (JANGAN pernah taruh di frontend):
-//      supabase secrets set CLAUDE_API_KEY=sk-ant-api03-xxx
-//
-// 4. Deploy function:
+// 2. Deploy function:
 //      supabase functions deploy silaris-chat --no-verify-jwt
 //
-// 5. Test dari terminal:
+// 3. Test dari terminal:
 //      curl -X POST https://mojzmlrdihenvfhrwopd.supabase.co/functions/v1/silaris-chat \
 //        -H "Authorization: Bearer <SUPABASE_ANON_KEY>" \
 //        -H "Content-Type: application/json" \
@@ -30,6 +23,9 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Authorization, Content-Type",
 };
 
+const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_URL   = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
 serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -43,16 +39,16 @@ serve(async (req: Request) => {
     });
   }
 
-  const CLAUDE_API_KEY = Deno.env.get("CLAUDE_API_KEY");
-  if (!CLAUDE_API_KEY) {
-    return new Response(JSON.stringify({ error: "CLAUDE_API_KEY not set" }), {
+  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+  if (!GEMINI_API_KEY) {
+    return new Response(JSON.stringify({ error: "GEMINI_API_KEY not set" }), {
       status: 500,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
 
   let body: {
-    messages?:    Array<{ role: string; content: string }>;
+    messages?:     Array<{ role: string; content: string }>;
     systemPrompt?: string;
   };
 
@@ -65,7 +61,7 @@ serve(async (req: Request) => {
     });
   }
 
-  const messages    = body.messages    || [];
+  const messages     = body.messages     || [];
   const systemPrompt = body.systemPrompt || "Kamu adalah SiLaris, co-pilot marketing AI untuk UMKM Indonesia di platform Larisi. Gunakan bahasa Indonesia santai, singkat, dan actionable.";
 
   if (!messages.length) {
@@ -75,37 +71,46 @@ serve(async (req: Request) => {
     });
   }
 
-  // Normalize roles: chatHistory uses 'ai', Claude API needs 'assistant'
-  const normalizedMessages = messages.map((m) => ({
-    role:    m.role === "ai" ? "assistant" : m.role,
-    content: m.content,
+  // Convert to Gemini format:
+  // - roles: 'user' stays 'user', 'ai'/'assistant' becomes 'model'
+  // - content string → parts array
+  const contents = messages.map((m) => ({
+    role:  (m.role === "user") ? "user" : "model",
+    parts: [{ text: m.content }],
   }));
 
+  // Gemini requires first message to be from 'user'
+  // and alternating user/model roles
+  const validContents = contents.filter((_, i) => {
+    if (i === 0) return contents[0].role === "user";
+    return true;
+  });
+
   try {
-    const claudeResp = await fetch("https://api.anthropic.com/v1/messages", {
+    const geminiResp = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
       method: "POST",
-      headers: {
-        "x-api-key":         CLAUDE_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "Content-Type":      "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model:      "claude-haiku-4-5-20251001",
-        max_tokens: 1000,
-        system:     systemPrompt,
-        messages:   normalizedMessages,
+        system_instruction: {
+          parts: [{ text: systemPrompt }],
+        },
+        contents: validContents,
+        generationConfig: {
+          maxOutputTokens: 1000,
+          temperature:     0.7,
+        },
       }),
     });
 
-    if (!claudeResp.ok) {
-      const errText = await claudeResp.text();
-      throw new Error(`Claude API error ${claudeResp.status}: ${errText}`);
+    if (!geminiResp.ok) {
+      const errText = await geminiResp.text();
+      throw new Error(`Gemini API error ${geminiResp.status}: ${errText}`);
     }
 
-    const claudeData = await claudeResp.json();
-    const reply = claudeData?.content?.[0]?.text?.trim() || "";
+    const geminiData = await geminiResp.json();
+    const reply = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
 
-    if (!reply) throw new Error("Empty response from Claude");
+    if (!reply) throw new Error("Empty response from Gemini");
 
     return new Response(JSON.stringify({ reply }), {
       status: 200,
@@ -114,13 +119,10 @@ serve(async (req: Request) => {
 
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("[silaris-chat] Claude API error:", msg);
+    console.error("[silaris-chat] Gemini API error:", msg);
 
     return new Response(
-      JSON.stringify({
-        reply: null,
-        error: msg,
-      }),
+      JSON.stringify({ reply: null, error: msg }),
       {
         status: 200, // return 200 so frontend handles fallback gracefully
         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
