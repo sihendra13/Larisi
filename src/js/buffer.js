@@ -1208,20 +1208,13 @@ async function publishViaPostForMe(canvas, campaignData) {
 
     var platformConfigs = {};
     if (igAccounts.length) {
-      platformConfigs.instagram = {
-        placement: placement,
-        media: allMediaUrls.map(function(u) { return { url: u }; })
-      };
-      // Pastikan video selalu pakai placement yang sesuai format
+      platformConfigs.instagram = { placement: placement };
       if (hasVideo && platformConfigs.instagram) {
         platformConfigs.instagram.placement = placement;
       }
     }
     if (fbAccounts.length) {
-      platformConfigs.facebook = {
-        placement: placement,
-        media: allMediaUrls.map(function(u) { return { url: u }; })
-      };
+      platformConfigs.facebook = { placement: placement };
       if (hasVideo && platformConfigs.facebook) {
         platformConfigs.facebook.placement = placement;
       }
@@ -1267,6 +1260,7 @@ async function publishViaPostForMe(canvas, campaignData) {
     }
 
     console.log('[postforme] final payload:', JSON.stringify(payload, null, 2));
+    console.log('[postforme] FINAL CHECK — fmt:', fmt, '| media count:', allMediaUrls.length, '| placement:', placement, '| platformConfigs:', JSON.stringify(platformConfigs));
 
     var data;
     if (fmt === 'story' && allMediaUrls.length > 1) {
