@@ -773,25 +773,24 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
       var origW = img.naturalWidth;
       var origH = img.naturalHeight;
 
-      // ── Scale down foto ke max resolusi target ──
-      var MAX_W = 1080;
-      var MAX_H = vertical ? 1920 : 1350;
-      var scale = Math.min(MAX_W / origW, MAX_H / origH, 1);
-      var photoW = Math.round(origW * scale);
-      var photoH = Math.round(origH * scale);
+      var cw, ch, photoOffX, photoOffY, photoW, photoH;
 
-      // ── Buat canvas final ──
-      // Untuk story/reel: canvas 1080x1920 (9:16 penuh)
-      // Untuk post: canvas = ukuran foto (setelah scale)
-      var cw, ch, photoOffX, photoOffY;
       if (vertical) {
+        // Story: canvas fix 1080x1920, foto di-COVER (scale max, crop sisa)
         cw = 1080;
         ch = 1920;
+        var coverScale = Math.max(cw / origW, ch / origH);
+        photoW    = Math.round(origW * coverScale);
+        photoH    = Math.round(origH * coverScale);
         photoOffX = Math.round((cw - photoW) / 2);
         photoOffY = Math.round((ch - photoH) / 2);
       } else {
-        cw = photoW;
-        ch = photoH;
+        // Post: canvas = ukuran foto, scale contain ke max 1080x1350
+        var postScale = Math.min(1080 / origW, 1350 / origH, 1);
+        photoW    = Math.round(origW * postScale);
+        photoH    = Math.round(origH * postScale);
+        cw        = photoW;
+        ch        = photoH;
         photoOffX = 0;
         photoOffY = 0;
       }
@@ -801,23 +800,7 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
       canvas.height = ch;
       var ctx = canvas.getContext('2d');
 
-      // Background blur untuk story (foto landscape → ada area kosong)
-      if (vertical && (photoW < cw || photoH < ch)) {
-        // Gambar foto blur sebagai background (cover)
-        var bgScale = Math.max(cw / photoW, ch / photoH);
-        var bgW = Math.round(photoW * bgScale);
-        var bgH = Math.round(photoH * bgScale);
-        var bgX = Math.round((cw - bgW) / 2);
-        var bgY = Math.round((ch - bgH) / 2);
-        ctx.filter = 'blur(20px) brightness(0.5)';
-        ctx.drawImage(img, bgX, bgY, bgW, bgH);
-        ctx.filter = 'none';
-      } else {
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, cw, ch);
-      }
-
-      // Gambar foto asli di tengah canvas
+      // Gambar foto — untuk story otomatis ter-crop jika lebih besar dari canvas
       ctx.drawImage(img, photoOffX, photoOffY, photoW, photoH);
 
       console.log('[stitch] canvas=' + cw + 'x' + ch + ' photo=' + photoW + 'x' + photoH + ' offset=' + photoOffX + ',' + photoOffY);
