@@ -782,6 +782,48 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
       var ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, cw, ch);
 
+      // ── Pad foto ke 9:16 jika format vertical (story/reel) ──
+      if (vertical) {
+        var targetRatio  = 9 / 16;
+        var currentRatio = cw / ch;
+
+        if (Math.abs(currentRatio - targetRatio) > 0.01) {
+          var padW, padH;
+          if (currentRatio > targetRatio) {
+            // Foto terlalu lebar → pad atas bawah
+            padW = cw;
+            padH = Math.round(cw / targetRatio);
+          } else {
+            // Foto terlalu tinggi → pad kiri kanan
+            padH = ch;
+            padW = Math.round(ch * targetRatio);
+          }
+
+          // Buat canvas baru dengan ukuran 9:16
+          var paddedCanvas = document.createElement('canvas');
+          paddedCanvas.width  = padW;
+          paddedCanvas.height = padH;
+          var paddedCtx = paddedCanvas.getContext('2d');
+
+          // Background hitam
+          paddedCtx.fillStyle = '#000000';
+          paddedCtx.fillRect(0, 0, padW, padH);
+
+          // Gambar foto di tengah
+          var offsetX = Math.round((padW - cw) / 2);
+          var offsetY = Math.round((padH - ch) / 2);
+          paddedCtx.drawImage(canvas, offsetX, offsetY, cw, ch);
+
+          // Ganti canvas dengan yang sudah di-pad
+          canvas = paddedCanvas;
+          ctx    = paddedCtx;
+          cw     = padW;
+          ch     = padH;
+
+          console.log('[stitch] pad to 9:16: ' + padW + 'x' + padH + ' offset:' + offsetX + ',' + offsetY);
+        }
+      }
+
       // ── 2. Parameter berbeda per format ──
       var pad = Math.round(cw * 0.016);
 
