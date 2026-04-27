@@ -763,143 +763,129 @@ function _isVerticalFormat(fmt, platforms) {
 function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
   return new Promise(function(resolve) {
     var stitchEl = document.getElementById('phoneStitch');
-    var text     = stitchEl
-      ? (stitchEl.textContent || stitchEl.innerText || '').trim()
-      : '';
+    var text     = stitchEl ? (stitchEl.textContent || stitchEl.innerText || '').trim() : '';
     if (!text) { resolve(null); return; }
 
     var vertical = _isVerticalFormat(fmt, platforms);
 
     var img = new Image();
     img.onload = function() {
-      var cw = img.naturalWidth;
-      var ch = img.naturalHeight;
+      var origW = img.naturalWidth;
+      var origH = img.naturalHeight;
 
-      // ── 1. Canvas = dimensi PERSIS foto ini ──
+      // ── Scale down foto ke max resolusi target ──
+      var MAX_W = 1080;
+      var MAX_H = vertical ? 1920 : 1350;
+      var scale = Math.min(MAX_W / origW, MAX_H / origH, 1);
+      var photoW = Math.round(origW * scale);
+      var photoH = Math.round(origH * scale);
+
+      // ── Buat canvas final ──
+      // Untuk story/reel: canvas 1080x1920 (9:16 penuh)
+      // Untuk post: canvas = ukuran foto (setelah scale)
+      var cw, ch, photoOffX, photoOffY;
+      if (vertical) {
+        cw = 1080;
+        ch = 1920;
+        photoOffX = Math.round((cw - photoW) / 2);
+        photoOffY = Math.round((ch - photoH) / 2);
+      } else {
+        cw = photoW;
+        ch = photoH;
+        photoOffX = 0;
+        photoOffY = 0;
+      }
+
       var canvas = document.createElement('canvas');
       canvas.width  = cw;
       canvas.height = ch;
       var ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, cw, ch);
 
-      // ── Pad foto ke 9:16 jika format vertical (story/reel) ──
-      if (vertical) {
-        var pad9TargetRatio  = 9 / 16;
-        var pad9CurrentRatio = cw / ch;
-
-        if (Math.abs(pad9CurrentRatio - pad9TargetRatio) > 0.01) {
-          var pad9W, pad9H;
-          if (pad9CurrentRatio > pad9TargetRatio) {
-            // Foto terlalu lebar → pad atas bawah
-            pad9W = cw;
-            pad9H = Math.round(cw / pad9TargetRatio);
-          } else {
-            // Foto terlalu tinggi → pad kiri kanan
-            pad9H = ch;
-            pad9W = Math.round(ch * pad9TargetRatio);
-          }
-
-          // Buat canvas baru dengan ukuran 9:16
-          var pad9Canvas = document.createElement('canvas');
-          pad9Canvas.width  = pad9W;
-          pad9Canvas.height = pad9H;
-          var pad9Ctx = pad9Canvas.getContext('2d');
-
-          // Background hitam
-          pad9Ctx.fillStyle = '#000000';
-          pad9Ctx.fillRect(0, 0, pad9W, pad9H);
-
-          // Gambar foto di tengah
-          var pad9OffX = Math.round((pad9W - cw) / 2);
-          var pad9OffY = Math.round((pad9H - ch) / 2);
-          pad9Ctx.drawImage(canvas, pad9OffX, pad9OffY, cw, ch);
-
-          // Ganti canvas dengan yang sudah di-pad
-          canvas = pad9Canvas;
-          ctx    = pad9Ctx;
-          cw     = pad9W;
-          ch     = pad9H;
-
-          console.log('[stitch] pad to 9:16: ' + pad9W + 'x' + pad9H + ' offset:' + pad9OffX + ',' + pad9OffY);
-        }
-      }
-
-      // ── 2. Parameter berbeda per format ──
-      var pad = Math.round(cw * 0.016);
-
-      var marginBottom, maxTextW, pillMaxW, fontSize, minFont;
-
-      if (vertical) {
-        // STORY / REEL / TIKTOK / YOUTUBE (9:16):
-        // - font lebih besar (proporsional ke layar penuh vertikal)
-        // - maxTextW lebih ketat (75%) agar tidak overflow saat center-align
-        // - pillMaxW hard-cap 75% lebar canvas
-        // - marginBottom lebih tinggi (15%) agar tidak tertutup UI platform
-        marginBottom = Math.round(ch * 0.15);
-        maxTextW     = Math.round(cw * 0.75 - pad * 2);
-        pillMaxW     = Math.round(cw * 0.75);          // hard cap: TIDAK melebihi 75% lebar
-        fontSize     = Math.max(16, Math.round(cw * 0.055));
-        minFont      = Math.max(16, Math.round(cw * 0.028));
+      // Background blur untuk story (foto landscape → ada area kosong)
+      if (vertical && (photoW < cw || photoH < ch)) {
+        // Gambar foto blur sebagai background (cover)
+        var bgScale = Math.max(cw / photoW, ch / photoH);
+        var bgW = Math.round(photoW * bgScale);
+        var bgH = Math.round(photoH * bgScale);
+        var bgX = Math.round((cw - bgW) / 2);
+        var bgY = Math.round((ch - bgH) / 2);
+        ctx.filter = 'blur(20px) brightness(0.5)';
+        ctx.drawImage(img, bgX, bgY, bgW, bgH);
+        ctx.filter = 'none';
       } else {
-        // POST / carousel (landscape / 4:5 / 1:1):
-        marginBottom = Math.round(ch * 0.08);
-        maxTextW     = Math.round(cw * 0.78 - pad * 2);
-        pillMaxW     = Math.round(cw * 0.90 - pad * 2);
-        fontSize     = Math.max(16, Math.round(cw * 0.038));
-        minFont      = Math.max(16, Math.round(cw * 0.018));
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, cw, ch);
       }
 
-      var fontBase = '-apple-system, BlinkMacSystemFont, "Inter", Arial, sans-serif';
-      var lines, lineWidths, maxLineW;
+      // Gambar foto asli di tengah canvas
+      ctx.drawImage(img, photoOffX, photoOffY, photoW, photoH);
 
-      // ── 3. Shrink font sampai baris terpanjang muat dalam pillMaxW ──
+      console.log('[stitch] canvas=' + cw + 'x' + ch + ' photo=' + photoW + 'x' + photoH + ' offset=' + photoOffX + ',' + photoOffY);
+
+      // ── Parameter stitch text ──
+      var pad = Math.round(cw * 0.016);
+      var fontBase = '-apple-system, BlinkMacSystemFont, "Inter", Arial, sans-serif';
+      var fontSize, minFont, maxTextW, pillMaxW;
+
+      if (vertical) {
+        fontSize  = Math.max(16, Math.round(cw * 0.055));
+        minFont   = Math.max(16, Math.round(cw * 0.028));
+        maxTextW  = Math.round(cw * 0.75 - pad * 2);
+        pillMaxW  = Math.round(cw * 0.75);
+      } else {
+        fontSize  = Math.max(16, Math.round(cw * 0.038));
+        minFont   = Math.max(16, Math.round(cw * 0.018));
+        maxTextW  = Math.round(cw * 0.78 - pad * 2);
+        pillMaxW  = Math.round(cw * 0.90 - pad * 2);
+      }
+
+      // Shrink font sampai muat
+      var lines, lineWidths, maxLineW;
       while (fontSize >= minFont) {
         ctx.font = 'bold ' + fontSize + 'px ' + fontBase;
         lines      = _stitchWrapText(ctx, text, maxTextW);
         lineWidths = lines.map(function(l) { return ctx.measureText(l).width; });
         maxLineW   = Math.max.apply(null, lineWidths);
-        // Safety margin 8% → cek apakah muat dalam pillMaxW
         if (Math.round(maxLineW * 1.08 + pad * 2) <= pillMaxW) break;
         fontSize -= Math.max(1, Math.round(fontSize * 0.06));
       }
 
       var lineHeight = Math.round(fontSize * 1.5);
-
-      // ── 4. Pill dimensions ──
-      // pillW TIDAK pernah melebihi pillMaxW (hard cap)
       var pillW  = Math.min(Math.round(maxLineW * 1.08 + pad * 2), pillMaxW);
       var pillH  = Math.round(lineHeight * lines.length + pad * 2);
       var radius = Math.round(fontSize * 0.35);
 
-      // ── 5. Posisi pill & text berdasarkan format ──
-      var pillX, textX, textAlign;
+      // ── Posisi pill: selalu relatif ke FOTO, bukan canvas ──
+      // Stitch di 82% tinggi foto, dihitung dari photoOffY
+      var pillX, textX, textAlign, pillY;
 
       if (vertical) {
-        // BOTTOM-CENTER: horizontal center di canvas
         pillX     = Math.round((cw - pillW) / 2);
-        textX     = Math.round(cw / 2); // ctx.textAlign = 'center' → draw dari titik tengah
+        textX     = Math.round(cw / 2);
         textAlign = 'center';
+        // pillY relatif ke area foto: 82% dari tinggi foto + offset foto
+        pillY = Math.round(photoOffY + photoH * 0.82);
       } else {
-        // BOTTOM-LEFT: 5% dari kiri
         pillX     = Math.round(cw * 0.05);
         textX     = pillX + pad;
         textAlign = 'left';
+        pillY     = Math.max(ch - Math.round(ch * 0.08) - pillH, 0);
       }
 
-      // Clamp agar tidak overflow kiri/kanan
+      // Clamp agar tidak keluar canvas
       pillX = Math.max(0, pillX);
       if (pillX + pillW > cw) pillX = Math.max(0, cw - pillW);
+      if (pillY + pillH > photoOffY + photoH) pillY = Math.max(photoOffY, photoOffY + photoH - pillH);
+      if (pillY < photoOffY) pillY = photoOffY;
 
-      var pillY = Math.max(ch - marginBottom - pillH, 0);
-
-      // ── 6. Draw pill background ──
+      // ── Draw pill background ──
       ctx.globalAlpha = 0.75;
       ctx.fillStyle   = '#000000';
       _stitchRoundRect(ctx, pillX, pillY, pillW, pillH, radius);
       ctx.fill();
       ctx.globalAlpha = 1.0;
 
-      // ── 7. Draw text ──
+      // ── Draw text ──
       ctx.fillStyle    = '#ffffff';
       ctx.font         = 'bold ' + fontSize + 'px ' + fontBase;
       ctx.textAlign    = textAlign;
@@ -915,29 +901,17 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
         ctx.restore();
       });
 
-      if (vertical) {
-        console.log('[export] stitch story: pillWidth=' + pillW +
-          ' maxAllowed=' + Math.round(cw * 0.75) +
-          ' fontSize=' + fontSize +
-          ' | ' + cw + 'x' + ch + ' lines:' + lines.length +
-          ' pillX:' + pillX + ' marginBottom:' + marginBottom);
-      } else {
-        console.log('[export] stitch post: pillWidth=' + pillW +
-          ' fontSize=' + fontSize +
-          ' | ' + cw + 'x' + ch + ' lines:' + lines.length +
-          ' pillX:' + pillX + ' marginBottom:' + marginBottom);
-      }
+      console.log('[stitch] pill: x=' + pillX + ' y=' + pillY + ' w=' + pillW + ' h=' + pillH + ' fontSize=' + fontSize);
 
       canvas.toBlob(function(blob) { resolve(blob); }, 'image/jpeg', 0.92);
     };
     img.onerror = function() {
-      console.warn('[postforme] _compositeStitchOnDataUrl: gagal load image');
+      console.warn('[stitch] gagal load image');
       resolve(null);
     };
     img.src = dataUrl;
   });
 }
-
 /* ─── Upload Media via PostForMe ───────────────────────────── */
 
 // Upload raw blob URL (foto ke-2 dst dari carousel) tanpa overlay
