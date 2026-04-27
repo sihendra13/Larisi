@@ -784,43 +784,43 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
 
       // ── Pad foto ke 9:16 jika format vertical (story/reel) ──
       if (vertical) {
-        var targetRatio  = 9 / 16;
-        var currentRatio = cw / ch;
+        var pad9TargetRatio  = 9 / 16;
+        var pad9CurrentRatio = cw / ch;
 
-        if (Math.abs(currentRatio - targetRatio) > 0.01) {
-          var padW, padH;
-          if (currentRatio > targetRatio) {
+        if (Math.abs(pad9CurrentRatio - pad9TargetRatio) > 0.01) {
+          var pad9W, pad9H;
+          if (pad9CurrentRatio > pad9TargetRatio) {
             // Foto terlalu lebar → pad atas bawah
-            padW = cw;
-            padH = Math.round(cw / targetRatio);
+            pad9W = cw;
+            pad9H = Math.round(cw / pad9TargetRatio);
           } else {
             // Foto terlalu tinggi → pad kiri kanan
-            padH = ch;
-            padW = Math.round(ch * targetRatio);
+            pad9H = ch;
+            pad9W = Math.round(ch * pad9TargetRatio);
           }
 
           // Buat canvas baru dengan ukuran 9:16
-          var paddedCanvas = document.createElement('canvas');
-          paddedCanvas.width  = padW;
-          paddedCanvas.height = padH;
-          var paddedCtx = paddedCanvas.getContext('2d');
+          var pad9Canvas = document.createElement('canvas');
+          pad9Canvas.width  = pad9W;
+          pad9Canvas.height = pad9H;
+          var pad9Ctx = pad9Canvas.getContext('2d');
 
           // Background hitam
-          paddedCtx.fillStyle = '#000000';
-          paddedCtx.fillRect(0, 0, padW, padH);
+          pad9Ctx.fillStyle = '#000000';
+          pad9Ctx.fillRect(0, 0, pad9W, pad9H);
 
           // Gambar foto di tengah
-          var offsetX = Math.round((padW - cw) / 2);
-          var offsetY = Math.round((padH - ch) / 2);
-          paddedCtx.drawImage(canvas, offsetX, offsetY, cw, ch);
+          var pad9OffX = Math.round((pad9W - cw) / 2);
+          var pad9OffY = Math.round((pad9H - ch) / 2);
+          pad9Ctx.drawImage(canvas, pad9OffX, pad9OffY, cw, ch);
 
           // Ganti canvas dengan yang sudah di-pad
-          canvas = paddedCanvas;
-          ctx    = paddedCtx;
-          cw     = padW;
-          ch     = padH;
+          canvas = pad9Canvas;
+          ctx    = pad9Ctx;
+          cw     = pad9W;
+          ch     = pad9H;
 
-          console.log('[stitch] pad to 9:16: ' + padW + 'x' + padH + ' offset:' + offsetX + ',' + offsetY);
+          console.log('[stitch] pad to 9:16: ' + pad9W + 'x' + pad9H + ' offset:' + pad9OffX + ',' + pad9OffY);
         }
       }
 
