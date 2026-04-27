@@ -998,26 +998,10 @@ function appendMsgDOM(role, text, chips, chipsUsed) {
 
 function useChatChip(btn, chipText) {
   if (!activeCampaignId) return;
-  // Only mark the clicked chip as used — other chips stay active
+  // Mark clicked chip as used
   btn.classList.add('used');
-  addUserMessage(chipText);
-
-  var campaign = null;
-  for (var i = 0; i < CAMPAIGNS.length; i++) {
-    if (CAMPAIGNS[i].id === activeCampaignId) { campaign = CAMPAIGNS[i]; break; }
-  }
-  var response = (campaign && campaign.aiChipResponses[chipText]) || defaultAIResponse(chipText, campaign);
-  var capId = activeCampaignId;
-  setTimeout(function() {
-    showTypingIndicator();
-    setTimeout(function() {
-      removeTypingIndicator();
-      addAIMessage(capId, response, null);
-      if (response.indexOf('Buka') !== -1 || response.indexOf('langkah') !== -1) {
-        setTimeout(function() { appendNotifButtons(capId, response); }, 100);
-      }
-    }, 1200);
-  }, 200);
+  // Delegate to sendChatMessage with chip text as override
+  sendChatMessage(chipText);
 }
 
 function addUserMessage(text) {
@@ -1028,14 +1012,24 @@ function addUserMessage(text) {
   scrollChatToBottom();
 }
 
-async function sendChatMessage() {
+async function sendChatMessage(overrideText) {
   var input = document.getElementById('chatInput');
-  if (!input) return;
-  var text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-  input.style.height = '';
-  addUserMessage(text);
+  var text;
+
+  if (overrideText) {
+    // Called from chip button — text provided directly
+    text = overrideText.trim();
+    addUserMessage(text);
+  } else {
+    // Called from input box
+    if (!input) return;
+    text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    input.style.height = '';
+    addUserMessage(text);
+  }
+
   showTypingIndicator();
 
   var campaign = activeCampaignId
@@ -1044,43 +1038,46 @@ async function sendChatMessage() {
 
   var systemPrompt = 'Kamu adalah SiLaris, co-pilot marketing AI untuk UMKM Indonesia di platform Larisi. Gunakan bahasa Indonesia santai, singkat, dan actionable. Selalu berikan rekomendasi spesifik dan praktis.'
     + (campaign ? '\n\nData campaign aktif:'
-    + '\n- Nama: ' + (campaign.name || '-')
-    + '\n- Platform: ' + (campaign.platform || '-')
+    + '\n- Nama: ' + (campaign.name || campaign.nama_campaign || '-')
+    + '\n- Platform: ' + (Array.isArray(campaign.platforms) ? campaign.platforms.join(', ') : (campaign.platform || '-'))
     + '\n- Format: ' + (campaign.format || '-')
-    + '\n- Lokasi: ' + (campaign.location || campaign.kecamatan || '-')
+    + '\n- Lokasi: ' + (campaign.kecamatan || campaign.location || '-')
     + '\n- Radius: ' + (campaign.radius || '-') + ' km'
-    + '\n- Reach: ' + (campaign.reach || 0)
-    + '\n- Reactions: ' + (campaign.reactions || 0)
-    + '\n- Comments: ' + (campaign.comments || 0)
+    + '\n- Reach: ' + (campaign.estimated_reach_max || campaign.reach || 0)
     + '\n- Status: ' + (campaign.status || 'running')
     + '\n- Caption: ' + (campaign.caption || '').slice(0, 200)
     : '\nTidak ada campaign yang dipilih.');
 
+  // Build conversation history for context
+  var history = (chatHistory[activeCampaignId] || []).map(function(m) {
+    return { role: m.role === 'ai' ? 'assistant' : 'user', content: m.text };
+  });
+
+  var supabaseUrl = (typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.SUPABASE_URL)
+    || 'https://mojzmlrdihenvfhrwopd.supabase.co';
+  var supabaseKey = (typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.SUPABASE_ANON_KEY) || '';
+  var edgeUrl = supabaseUrl + '/functions/v1/silaris-chat';
+
   try {
-    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+    var resp = await fetch(edgeUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': (typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.ANTHROPIC_API_KEY) || '',
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-calls': 'true'
+        'Authorization': 'Bearer ' + supabaseKey
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: text }]
+        messages:     history,
+        systemPrompt: systemPrompt
       })
     });
     var data = await resp.json();
-    var aiText = (data.content && data.content[0] && data.content[0].text)
-      ? data.content[0].text
-      : 'Maaf, tidak bisa merespons saat ini.';
+    var aiText = data.reply || 'Maaf, tidak bisa merespons saat ini.';
     removeTypingIndicator();
     addAIMessage(activeCampaignId, aiText, null);
   } catch(e) {
     removeTypingIndicator();
-    addAIMessage(activeCampaignId, 'Error: ' + e.message, null);
+    addAIMessage(activeCampaignId, 'Gagal terhubung ke SiLaris. Coba lagi ya!', null);
+    console.error('[silaris-chat] error:', e);
   }
 }
 
