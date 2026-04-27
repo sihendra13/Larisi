@@ -811,6 +811,33 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
       var ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, cw, ch);
 
+      // ── Scale down canvas ke max resolusi target ──
+      // IG Story/Reel target: 1080x1920, Post: 1080x1350
+      // Foto resolusi tinggi (>1080px) harus di-scale dulu biar stitch proporsional
+      var MAX_W = vertical ? 1080 : 1080;
+      var MAX_H = vertical ? 1920 : 1350;
+
+      if (cw > MAX_W || ch > MAX_H) {
+        var scaleW = MAX_W / cw;
+        var scaleH = MAX_H / ch;
+        var scale  = Math.min(scaleW, scaleH);
+        var newW   = Math.round(cw * scale);
+        var newH   = Math.round(ch * scale);
+
+        // Buat canvas baru dengan ukuran scaled
+        var scaledCanvas = document.createElement('canvas');
+        scaledCanvas.width  = newW;
+        scaledCanvas.height = newH;
+        var scaledCtx = scaledCanvas.getContext('2d');
+        scaledCtx.drawImage(img, 0, 0, newW, newH);
+
+        // Ganti canvas, ctx, cw, ch dengan yang sudah di-scale
+        canvas = scaledCanvas;
+        ctx    = scaledCtx;
+        cw     = newW;
+        ch     = newH;
+      }
+
       var fontBase = '-apple-system, BlinkMacSystemFont, "Inter", Arial, sans-serif';
       var pillX, pillY, pillW, pillH, pillPadX, pillPadY, textX, textAlign, radius;
       var lines, lineWidths, maxLineW, fontSize, lineHeight;
