@@ -984,7 +984,7 @@ function appendMsgDOM(role, text, chips, chipsUsed) {
       chipsHTML += '</div>';
     }
     div.innerHTML =
-      '<div class="chat-sender ai-label">RADAR AI</div>'
+      '<div class="chat-sender ai-label">SiLaris</div>'
       + '<div class="chat-bubble ai-bubble">' + text.replace(/\n/g, '<br>') + '</div>'
       + chipsHTML;
   } else {
@@ -1028,40 +1028,66 @@ function addUserMessage(text) {
   scrollChatToBottom();
 }
 
-function sendChatMessage() {
+async function sendChatMessage() {
   var input = document.getElementById('chatInput');
   if (!input) return;
   var text = input.value.trim();
-  if (!text || !activeCampaignId) return;
+  if (!text) return;
   input.value = '';
   input.style.height = '';
   addUserMessage(text);
-
-  var campaign = null;
-  for (var i = 0; i < CAMPAIGNS.length; i++) {
-    if (CAMPAIGNS[i].id === activeCampaignId) { campaign = CAMPAIGNS[i]; break; }
-  }
   showTypingIndicator();
-  setTimeout(function() {
+
+  var campaign = activeCampaignId
+    ? (allCampaigns || []).find(function(c) { return c.id === activeCampaignId; })
+    : null;
+
+  var systemPrompt = 'Kamu adalah SiLaris, co-pilot marketing AI untuk UMKM Indonesia di platform Larisi. Gunakan bahasa Indonesia santai, singkat, dan actionable. Selalu berikan rekomendasi spesifik dan praktis.'
+    + (campaign ? '\n\nData campaign aktif:'
+    + '\n- Nama: ' + (campaign.name || '-')
+    + '\n- Platform: ' + (campaign.platform || '-')
+    + '\n- Format: ' + (campaign.format || '-')
+    + '\n- Lokasi: ' + (campaign.location || campaign.kecamatan || '-')
+    + '\n- Radius: ' + (campaign.radius || '-') + ' km'
+    + '\n- Reach: ' + (campaign.reach || 0)
+    + '\n- Reactions: ' + (campaign.reactions || 0)
+    + '\n- Comments: ' + (campaign.comments || 0)
+    + '\n- Status: ' + (campaign.status || 'running')
+    + '\n- Caption: ' + (campaign.caption || '').slice(0, 200)
+    : '\nTidak ada campaign yang dipilih.');
+
+  try {
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': (typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.ANTHROPIC_API_KEY) || '',
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-calls': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: text }]
+      })
+    });
+    var data = await resp.json();
+    var aiText = (data.content && data.content[0] && data.content[0].text)
+      ? data.content[0].text
+      : 'Maaf, tidak bisa merespons saat ini.';
     removeTypingIndicator();
-    addAIMessage(activeCampaignId, defaultAIResponse(text, campaign), null);
-  }, 1400);
+    addAIMessage(activeCampaignId, aiText, null);
+  } catch(e) {
+    removeTypingIndicator();
+    addAIMessage(activeCampaignId, 'Error: ' + e.message, null);
+  }
 }
 
-var _aiReplyIdx = 0;
-function defaultAIResponse(userText, campaign) {
-  var t    = userText.toLowerCase().trim();
-  var name = campaign ? campaign.name : 'campaign ini';
-  var loc  = (campaign && campaign.name.indexOf('·') !== -1) ? campaign.name.split('·')[1].trim() : 'area target';
-  var plat = campaign ? campaign.platforms.map(function(p) { return p.toUpperCase(); }).join(', ') : 'platform';
-  var reachNow = formatReach(campaign ? campaign.reach : 0);
-  var reachTgt = formatReach(campaign ? campaign.reachTarget : 0);
-  var isRunning = campaign && campaign.status === 'running';
+// ── defaultAIResponse removed — replaced by Claude API in sendChatMessage() ──
 
-  /* ── GREETING ── */
-  if (/^(halo|hai|hi|hey|hei|selamat pagi|selamat sore|selamat malam|pagi|sore|malam|assalamu|assalam|permisi|excuse)/.test(t)) {
-    return 'Halo! Saya RADAR AI, co-pilot campaign kamu 👋\n\nCampaign <strong>' + name + '</strong> sedang saya pantau secara real-time. Kamu bisa tanya apa saja — performa, strategi, budget, atau cara optimasi targeting.';
-  }
+  /* placeholder removed */
+  if (false) {
 
   /* ── AFIRMASI ── */
   if (/^(ya|iya|oke|ok|siap|lanjut|gas|gaskeun|boleh|setuju|mau|deal|yep|yap|sure|fix|sip)/.test(t)) {
@@ -1231,7 +1257,7 @@ function defaultAIResponse(userText, campaign) {
 
   /* ── NOTIFIKASI / ALERT ── */
   if (/notif|notifikasi|alert|pemberitahuan|kasih tahu|ingatkan/.test(t)) {
-    return 'RADAR AI akan otomatis notify kamu di sini kalau:\n\n🔔 Reach melebihi 50% target\n🔔 Ada lonjakan atau penurunan drastis\n🔔 Budget hampir habis\n🔔 Campaign mendekati target audiens\n\nUntuk notifikasi ke WhatsApp/Email, gunakan tombol kirim yang muncul setelah saya berikan panduan. Fitur push notification ke HP sedang dalam pengembangan!';
+    return 'SiLaris akan otomatis notify kamu di sini kalau:\n\n🔔 Reach melebihi 50% target\n🔔 Ada lonjakan atau penurunan drastis\n🔔 Budget hampir habis\n🔔 Campaign mendekati target audiens\n\nUntuk notifikasi ke WhatsApp/Email, gunakan tombol kirim yang muncul setelah saya berikan panduan. Fitur push notification ke HP sedang dalam pengembangan!';
   }
 
   /* ── FREKUENSI / FREQUENCY ── */
@@ -1264,9 +1290,9 @@ function defaultAIResponse(userText, campaign) {
     return 'Saat ini RADAR masih dalam mode manual guide — panduan langkah disiapkan untuk kamu eksekusi di platform masing-masing.\n\nKalau akun ' + plat + ' sudah terhubung ke RADAR:\n\n⚡ <strong>Yang bisa otomatis</strong>:\n• Pause/resume campaign dari sini\n• Ubah budget tanpa buka Ads Manager\n• Naikkan/turunkan radius\n• Realokasi budget antar platform\n• Alert real-time kalau ada anomali\n\nFitur koneksi API sedang dalam pengembangan dan akan hadir segera!';
   }
 
-  /* ── RADAR AI / FITUR RADAR ── */
+  /* ── SiLaris / FITUR RADAR ── */
   if (/radar|fitur|bisa apa|kemampuan|fungsi|cara kerja|bagaimana cara/.test(t)) {
-    return 'RADAR AI adalah co-pilot campaign iklan lokal kamu. Saya bisa:\n\n🧠 <strong>Analisis</strong>: Pantau performa real-time dan detect anomali\n💡 <strong>Rekomendasi</strong>: Saran optimasi targeting, budget, dan creative\n📋 <strong>Panduan</strong>: Langkah-langkah manual yang sudah disiapkan\n📤 <strong>Share</strong>: Kirim update ke WhatsApp/Email tim\n\nKe depannya (setelah API terkoneksi): eksekusi otomatis perubahan tanpa kamu perlu buka platform lain.';
+    return 'SiLaris adalah co-pilot campaign iklan lokal kamu. Saya bisa:\n\n🧠 <strong>Analisis</strong>: Pantau performa real-time dan detect anomali\n💡 <strong>Rekomendasi</strong>: Saran optimasi targeting, budget, dan creative\n📋 <strong>Panduan</strong>: Langkah-langkah manual yang sudah disiapkan\n📤 <strong>Share</strong>: Kirim update ke WhatsApp/Email tim\n\nKe depannya (setelah API terkoneksi): eksekusi otomatis perubahan tanpa kamu perlu buka platform lain.';
   }
 
   /* ── BANTUAN / HELP ── */
@@ -1289,20 +1315,7 @@ function defaultAIResponse(userText, campaign) {
     return 'Untuk kirim update atau panduan ke tim:\n\n📱 Gunakan link <strong>Kirim ke WhatsApp</strong> yang muncul di bawah respons saya setelah ada panduan manual.\n📧 Atau gunakan link <strong>Kirim ke Email</strong> untuk kirim ke email tim.\n\nTombol ini muncul otomatis setiap saya berikan langkah manual. Coba klik salah satu chip rekomendasi di atas untuk memunculkannya!';
   }
 
-  /* ── GENERIC FALLBACK — rotate 8 variasi ── */
-  var fallbacks = [
-    'Saya sedang analisis data <strong>' + name + '</strong> lebih dalam. Tidak ada anomali yang terdeteksi saat ini. Ada aspek spesifik — reach, targeting, atau konten — yang ingin kamu eksplorasi?',
-    'Campaign <strong>' + name + '</strong> di <strong>' + loc + '</strong> berjalan sesuai proyeksi. Mau saya rekomendasikan langkah optimasi berikutnya untuk boost hasil?',
-    'Data <strong>' + name + '</strong> terlihat stabil. Reach saat ini <strong>' + reachNow + '</strong>. Kamu bisa tanya soal budget, targeting, konten, atau strategi — saya siap bantu.',
-    'Performa <strong>' + name + '</strong> masih dalam range normal. Saya pantau terus — kalau ada spike atau penurunan signifikan, saya langsung notify di sini.',
-    'Belum ada red flag untuk <strong>' + name + '</strong>. Kalau kamu punya pertanyaan spesifik soal reach, CTR, budget, atau strategi konten — langsung tanya saja!',
-    'Saya monitor <strong>' + name + '</strong> secara real-time di <strong>' + loc + '</strong>. Ada yang ingin dioptimalkan? Targeting, budget, atau creative-nya?',
-    'Campaign <strong>' + name + '</strong> berjalan di ' + plat + '. Mau saya breakdown performa per platform atau area geografis yang paling responsif?',
-    'Insight terbaru untuk <strong>' + name + '</strong>: audiens di <strong>' + loc + '</strong> paling aktif di rentang 19.00–22.00. Pastikan budget tidak habis sebelum prime time itu.'
-  ];
-  var reply = fallbacks[_aiReplyIdx % fallbacks.length];
-  _aiReplyIdx++;
-  return reply;
+  }
 }
 
 function showTypingIndicator() {
@@ -1312,7 +1325,7 @@ function showTypingIndicator() {
   div.className = 'chat-msg ai';
   div.id = 'ai-typing';
   div.innerHTML =
-    '<div class="chat-sender ai-label">RADAR AI</div>'
+    '<div class="chat-sender ai-label">SiLaris</div>'
     + '<div class="chat-bubble ai-bubble" style="padding:12px 14px;">'
     + '<span class="scan-dot" style="display:inline-block;margin:0 2px;"></span>'
     + '<span class="scan-dot" style="display:inline-block;margin:0 2px;"></span>'
