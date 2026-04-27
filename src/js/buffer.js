@@ -1218,7 +1218,10 @@ async function publishViaPostForMe(canvas, campaignData) {
       }
     }
     if (fbAccounts.length) {
-      platformConfigs.facebook = { placement: placement };
+      platformConfigs.facebook = {
+        placement: placement,
+        media: allMediaUrls.map(function(u) { return { url: u }; })
+      };
       if (hasVideo && platformConfigs.facebook) {
         platformConfigs.facebook.placement = placement;
       }
