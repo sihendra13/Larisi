@@ -248,18 +248,25 @@ async function fetchAndUpdatePostUrl(campaign, _attempt) {
       'GET', null
     );
 
+    console.log('[monitor] fetchAndUpdatePostUrl keys:', Object.keys(data || {}));
+    console.log('[monitor] social_accounts sample:', JSON.stringify(
+      (data.social_accounts || []).map(function(a) {
+        return { id: a.id, platform: a.platform, post_url: a.post_url, permalink: a.permalink };
+      })
+    ));
+
     var url = null;
-    if (data.posts && data.posts.length) {
-      url = data.posts[0].post_url
-         || data.posts[0].platform_url
-         || data.posts[0].permalink
-         || null;
+    // PostForMe menyimpan post_url per akun di social_accounts
+    if (data.social_accounts && data.social_accounts.length) {
+      for (var i = 0; i < data.social_accounts.length; i++) {
+        var sa = data.social_accounts[i];
+        url = sa.post_url || sa.permalink || sa.platform_url || sa.url || null;
+        if (url) break;
+      }
     }
+    // Fallback root level
     if (!url) {
-      url = data.post_url
-         || data.platform_url
-         || data.permalink
-         || null;
+      url = data.post_url || data.platform_url || data.permalink || null;
     }
 
     if (url) {
@@ -747,6 +754,11 @@ async function _loadAnalyticsForCard(campaign) {
           '/v1/social-account-feeds/' + acc.id + '?expand=metrics&limit=50',
           'GET', null
         );
+        console.log('[analytics] response type:', Array.isArray(data) ? 'array' : typeof data);
+        console.log('[analytics] keys:', Object.keys(data || {}));
+        if (data && !Array.isArray(data)) {
+          console.log('[analytics] sample:', JSON.stringify(data).slice(0, 400));
+        }
         var posts = (data && (
           data.posts
           || data.data
