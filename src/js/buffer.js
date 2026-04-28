@@ -227,6 +227,22 @@ async function connectPostForMe(platform) {
     var redirectUri = window.location.origin + '/postforme-callback';
     var externalId  = getUserExternalId();
 
+    // Auto-disconnect akun lama platform yang sama (fire-and-forget, tidak block popup)
+    // Harus dilakukan SEBELUM window.open() agar tetap dalam user gesture context
+    var _existingAccs = _getStoredAccounts();
+    var _existingAcc  = _existingAccs.filter(function(a){ return a.platform === platform; })[0];
+    if (_existingAcc && _existingAcc.id && !/^pfm_[a-z]+_\d+$/.test(_existingAcc.id)) {
+      console.log('[postforme] auto-disconnect', platform, _existingAcc.id, '— fire-and-forget');
+      _pfmProxy('/v1/social-accounts/' + _existingAcc.id, 'DELETE', null).catch(function(e){
+        console.warn('[postforme] auto-disconnect failed (non-blocking):', e.message);
+      });
+    }
+    // Hapus dari localStorage sekarang agar tidak duplikat setelah OAuth selesai
+    if (_existingAcc) {
+      var _remaining = _existingAccs.filter(function(a){ return a.platform !== platform; });
+      localStorage.setItem('radar_social_accounts', JSON.stringify(_remaining));
+    }
+
     // Buka popup SEBELUM await — browser hanya izinkan window.open() dari user gesture langsung
     // Jika dibuka setelah await, browser anggap bukan user gesture → popup diblokir
     var popup = window.open('about:blank', 'postforme_oauth', 'width=600,height=700,left=200,top=80');
