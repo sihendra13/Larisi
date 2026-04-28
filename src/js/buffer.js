@@ -1228,21 +1228,43 @@ async function publishViaPostForMe(canvas, campaignData) {
     console.log('[postforme] raw response keys:', Object.keys(data));
     console.log('[postforme] data.posts:', JSON.stringify(data.posts));
 
+    // ── Ekstrak postId dari semua kemungkinan struktur response PostForMe ──
     var postId = data.id
       || data.post_id
+      || data.postId
       || (data.posts && data.posts[0] && (data.posts[0].id || data.posts[0].post_id))
+      || (data.data && data.data.id)
+      || (data.result && data.result.id)
       || null;
 
-    // Coba ekstrak URL postingan langsung dari response (untuk chip)
+    // ── Ekstrak postUrl ──
     var postUrl = null;
+    // Coba dari data.posts array
     if (data.posts && Array.isArray(data.posts) && data.posts.length) {
       var pp0 = data.posts[0];
       postUrl = pp0.post_url || pp0.platform_url || pp0.permalink || pp0.url || null;
     }
+    // Coba dari root response
     if (!postUrl) {
-      postUrl = data.post_url || data.platform_url || data.permalink || null;
+      postUrl = data.post_url
+        || data.platform_url
+        || data.permalink
+        || data.url
+        || (data.data && (data.data.post_url || data.data.permalink || data.data.url))
+        || (data.result && (data.result.post_url || data.result.permalink))
+        || null;
     }
+    // Coba dari account_configurations (PostForMe v1 format baru)
+    if (!postUrl && data.account_configurations && Array.isArray(data.account_configurations)) {
+      var cfg = data.account_configurations[0];
+      if (cfg) postUrl = cfg.post_url || cfg.permalink || cfg.platform_url || null;
+    }
+
     console.log('[postforme] postId:', postId, '| postUrl:', postUrl);
+    console.log('[postforme] DEBUG full data keys:', Object.keys(data));
+    if (data.account_configurations) {
+      console.log('[postforme] account_configurations[0]:', JSON.stringify(data.account_configurations[0]));
+    }
 
     // Simpan post_id ke Supabase jika ada supabase_id di campaign
     if (postId && campaignData && campaignData.supabase_id) {
