@@ -298,11 +298,12 @@ async function fetchAndUpdatePostUrl(campaign, _attempt) {
   } catch(e) {
     var msg = e.message || '';
 
-    // 401 → stop polling immediately, tandai auth_error, tampilkan UI warning
+    // 401 → stop polling untuk campaign ini saja, tandai auth_error
     if (msg.indexOf('401') !== -1) {
-      console.error('[monitor] 401 Unauthorized untuk campaign:', campaign.name, '— stop polling.');
+      console.error('[monitor] 401 Unauthorized untuk campaign:', campaign.name, '— stop polling campaign ini.');
       campaign._postUrlError = true;
       campaign._authError    = true;
+      // Jangan stop semua campaign — hanya skip campaign ini di polling berikutnya
       var authCard = document.querySelector('[data-id="' + campaign.id + '"]');
       if (authCard) {
         var authTs = authCard.querySelector('.cc-timestamp');
@@ -547,14 +548,16 @@ function buildCampaignCard(c) {
   var platName = platLabels[c.platforms[0]] || 'Platform';
 
   // Thumbnail dari thumbUrl (foto yang diupload saat launch)
-  var _thumb = c.thumbUrl || '';
+  // blob: URL tidak valid antar sesi — buang agar tidak tampil blur setelah refresh
+  var _thumbRaw = c.thumbUrl || '';
+  var _thumb = _thumbRaw.startsWith('blob:') ? '' : _thumbRaw;
   // blob: URLs bisa berupa gambar OR video — cek format campaign untuk menentukan
   var _isActualVideo = _thumb.startsWith('data:video') ||
     (c.format && (c.format === 'reel' || c.format === 'video')) ||
     (typeof uploadedVideoFile !== 'undefined' && uploadedVideoFile && c.id === (window._lastLaunchedId));
   var _isVideoPlaceholder = _isActualVideo && !_thumb.startsWith('data:image');
-  // blob: URL valid untuk sesi saat ini (FileReader belum selesai atau processFiles reset)
-  var _isImage = _thumb.startsWith('data:image') || _thumb.startsWith('https://') || _thumb.startsWith('blob:');
+  // Hanya pakai data: atau https: — blob: sudah dibuang di atas
+  var _isImage = _thumb.startsWith('data:image') || _thumb.startsWith('https://');
   var _videoPlaceholderHTML =
     '<div class="cc-thumbnail-container" style="margin:0 12px 8px;height:240px;'
     + 'border-radius:8px;background:' + (c.thumbColor || '#1a1a2e') + ';'
@@ -730,6 +733,8 @@ function _engRow2(label, elId, defaultVal, isLive) {
 
 /* ─── Load Analytics for Card ─── */
 async function _loadAnalyticsForCard(campaign) {
+  // Skip campaign yang sudah diketahui auth error
+  if (campaign._authError) return;
   try {
     var accounts = typeof _getStoredAccounts === 'function'
       ? _getStoredAccounts() : [];
