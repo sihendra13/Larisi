@@ -792,22 +792,35 @@ async function _loadAnalyticsForCard(campaign) {
     var posts = _analyticsCache[cacheKey] || [];
     if (!posts.length) return;
 
+    console.log('[analytics] total posts di cache:', posts.length);
+    console.log('[analytics] campaign.post_id:', campaign.post_id);
+    if (posts[0]) {
+      console.log('[analytics] posts[0] keys:', Object.keys(posts[0]));
+      console.log('[analytics] posts[0].id:', posts[0].id);
+      console.log('[analytics] posts[0].platform_post_id:', posts[0].platform_post_id);
+      console.log('[analytics] posts[0].metrics:', JSON.stringify(posts[0].metrics || {}));
+    }
+
     // Cari post yang match dengan campaign.post_id
-    // Kalau tidak ada post_id, pakai post paling recent dari platform
+    // PostForMe menyimpan ID di field 'id' (format sp_xxx) atau 'platform_post_id'
     var targetPost = null;
     if (campaign.post_id) {
       for (var k = 0; k < posts.length; k++) {
-        if (posts[k].platform_post_id === campaign.post_id ||
-            posts[k].id === campaign.post_id) {
-          targetPost = posts[k]; break;
+        var p = posts[k];
+        if (p.id               === campaign.post_id ||
+            p.platform_post_id === campaign.post_id ||
+            p.post_id          === campaign.post_id) {
+          targetPost = p;
+          console.log('[analytics] ✅ post match ditemukan di index', k);
+          break;
         }
       }
     }
     // Fallback: pakai post pertama (paling recent)
-    if (!targetPost && posts.length > 0) {
+    if (!targetPost) {
       targetPost = posts[0];
+      console.log('[analytics] fallback ke posts[0]');
     }
-    if (!targetPost) return;
 
     // Debug: log struktur targetPost untuk verifikasi
     console.log('[analytics] targetPost keys:', Object.keys(targetPost));
