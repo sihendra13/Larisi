@@ -194,15 +194,18 @@ async function getCampaigns() {
   }
 }
 
-async function updateCampaignPostId(campaignSupabaseId, postId) {
+async function updateCampaignPostId(campaignSupabaseId, postId, postUrl, platformPostId) {
   var client = getSupabaseClient();
   if (!client || !campaignSupabaseId || !postId) return;
   try {
+    var fields = { post_id: postId };
+    if (postUrl)        fields.post_url          = postUrl;
+    if (platformPostId) fields.platform_post_id  = platformPostId;
     await client
       .from('campaigns')
-      .update({ post_id: postId })
+      .update(fields)
       .eq('id', campaignSupabaseId);
-    console.log('[supabase] post_id updated:', postId);
+    console.log('[supabase] post_id updated:', postId, '| post_url:', postUrl, '| platform_post_id:', platformPostId);
   } catch(e) {
     console.warn('[supabase] updateCampaignPostId error:', e.message);
   }

@@ -1266,7 +1266,12 @@ async function publishViaPostForMe(canvas, campaignData) {
       if (cfg) postUrl = cfg.post_url || cfg.permalink || cfg.platform_url || null;
     }
 
-    console.log('[postforme] postId:', postId, '| postUrl:', postUrl);
+    // ── Ekstrak platform_post_id dari social_accounts ──
+    var platformPostId = null;
+    if (data.social_accounts && data.social_accounts.length) {
+      platformPostId = data.social_accounts[0].platform_post_id || null;
+    }
+    console.log('[postforme] postId:', postId, '| postUrl:', postUrl, '| platformPostId:', platformPostId);
 
     // ── Polling status post sampai published, lalu ambil post_url ──
     if (postId) {
@@ -1283,13 +1288,16 @@ async function publishViaPostForMe(canvas, campaignData) {
               || statusData.permalink
               || (statusData.social_accounts && statusData.social_accounts[0] && statusData.social_accounts[0].post_url)
               || null;
-            if (resolvedUrl) {
-              console.log('[postforme] ✅ post_url resolved:', resolvedUrl);
-              // Update Supabase dengan post_url
+            // Ambil platform_post_id dari polling jika belum ada
+            var resolvedPlatformPostId = platformPostId
+              || (statusData.social_accounts && statusData.social_accounts[0] && statusData.social_accounts[0].platform_post_id)
+              || null;
+            if (resolvedUrl || resolvedPlatformPostId) {
+              console.log('[postforme] ✅ resolved — post_url:', resolvedUrl, '| platform_post_id:', resolvedPlatformPostId);
               if (campaignData && campaignData.supabase_id && typeof updateCampaignPostId === 'function') {
-                updateCampaignPostId(campaignData.supabase_id, postId, resolvedUrl);
+                updateCampaignPostId(campaignData.supabase_id, postId, resolvedUrl, resolvedPlatformPostId);
               }
-              break;
+              if (resolvedUrl) break;
             }
             if (statusData.status === 'failed' || statusData.status === 'error') {
               console.warn('[postforme] post gagal:', statusData.status);
@@ -1308,10 +1316,10 @@ async function publishViaPostForMe(canvas, campaignData) {
       console.log('[postforme] account_configurations[0]:', JSON.stringify(data.account_configurations[0]));
     }
 
-    // Simpan post_id ke Supabase jika ada supabase_id di campaign
+    // Simpan post_id + platform_post_id ke Supabase segera setelah publish
     if (postId && campaignData && campaignData.supabase_id) {
       if (typeof updateCampaignPostId === 'function') {
-        updateCampaignPostId(campaignData.supabase_id, postId);
+        updateCampaignPostId(campaignData.supabase_id, postId, postUrl, platformPostId);
       }
     }
 

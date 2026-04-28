@@ -801,8 +801,9 @@ async function _loadAnalyticsForCard(campaign) {
       // Coba exact match dulu
       for (var k = 0; k < posts.length; k++) {
         var p = posts[k];
-        if (p.id               === campaign.post_id ||
+        if ((campaign.platform_post_id && p.platform_post_id === campaign.platform_post_id) ||
             p.platform_post_id === campaign.post_id ||
+            p.id               === campaign.post_id ||
             p.post_id          === campaign.post_id) {
           targetPost = p;
           console.log('[analytics] ✅ exact match di index', k);
