@@ -1231,6 +1231,7 @@ async function publishViaPostForMe(canvas, campaignData) {
 
     console.log('[postforme] publish result full:', JSON.stringify(data));
     console.log('[postforme] raw response keys:', Object.keys(data));
+    console.log('[postforme] FULL DATA DUMP:', JSON.stringify(data).slice(0, 2000));
     console.log('[postforme] data.posts:', JSON.stringify(data.posts));
 
     // ── Ekstrak postId dari semua kemungkinan struktur response PostForMe ──
