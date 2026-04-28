@@ -809,14 +809,29 @@ async function _loadAnalyticsForCard(campaign) {
     }
     if (!targetPost) return;
 
-    // Extract metrics
-    var m = targetPost.metrics || {};
-    var likes    = parseInt(m.like_count    || m.likes    || m.reactions || m.favorite_count || 0);
-    var comments = parseInt(m.comment_count || m.comments || m.reply_count || 0);
+    // Debug: log struktur targetPost untuk verifikasi
+    console.log('[analytics] targetPost keys:', Object.keys(targetPost));
+    console.log('[analytics] targetPost.metrics:', JSON.stringify(targetPost.metrics || {}));
+    console.log('[analytics] targetPost.platform_post_id:', targetPost.platform_post_id);
+    console.log('[analytics] targetPost.media:', JSON.stringify((targetPost.media || []).slice(0,1)));
+
+    // Extract metrics — PostForMe menyimpan di targetPost.metrics
+    var m = targetPost.metrics || targetPost || {};
+    var likes    = parseInt(m.like_count    || m.likes    || m.reactions    || m.favorite_count || 0);
+    var comments = parseInt(m.comment_count || m.comments || m.reply_count  || 0);
     var shares   = parseInt(m.share_count   || m.shares   || m.retweet_count || 0);
-    var views    = parseInt(m.view_count || m.views || m.video_views ||
-                           m.ig_reels_video_view_total_time && 0 ||
-                           m.play_count || m.impressions || 0);
+    var views    = parseInt(m.view_count    || m.views    || m.video_views  ||
+                           m.play_count     || m.impressions || 0);
+
+    // Ambil thumbnail dari media PostForMe (gambar asli, bukan blob)
+    var mediaUrl = null;
+    if (targetPost.media && targetPost.media.length && targetPost.media[0].url) {
+      mediaUrl = targetPost.media[0].url;
+      // Simpan ke campaign object agar persistent
+      if (!campaign.thumbUrl || campaign.thumbUrl.startsWith('blob:')) {
+        campaign.thumbUrl = mediaUrl;
+      }
+    }
 
     var fmt = function(n) {
       return n >= 1000 ? (n/1000).toFixed(1)+'K' : n.toString();
@@ -881,13 +896,13 @@ async function _loadAnalyticsForCard(campaign) {
       if (mediaUrl) {
         var thumbContainer = cardEl.querySelector('.cc-thumbnail-container');
         if (thumbContainer) {
-          // Jika tadi placeholder, ganti jadi gambar
           var img = thumbContainer.querySelector('.cc-thumbnail-img');
           if (img) {
-            img.src = mediaUrl;
+            // Update src hanya kalau berbeda (hindari flicker)
+            if (img.src !== mediaUrl) img.src = mediaUrl;
           } else {
-            thumbContainer.innerHTML = '<img src="' + mediaUrl + '" class="cc-thumbnail-img" style="width:100%;height:180px;'
-              + 'object-fit:cover;border-radius:12px;display:block;box-shadow: 0 4px 12px rgba(0,0,0,0.08);">';
+            thumbContainer.innerHTML = '<img src="' + mediaUrl + '" class="cc-thumbnail-img" '
+              + 'style="width:100%;height:100%;object-fit:cover;object-position:top;display:block;">';
             thumbContainer.style.background = 'none';
             thumbContainer.style.border = 'none';
           }
