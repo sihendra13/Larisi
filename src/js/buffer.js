@@ -1267,6 +1267,42 @@ async function publishViaPostForMe(canvas, campaignData) {
     }
 
     console.log('[postforme] postId:', postId, '| postUrl:', postUrl);
+
+    // ── Polling status post sampai published, lalu ambil post_url ──
+    if (postId) {
+      (async function pollPostUrl() {
+        var maxTry = 10;
+        var delay  = 5000; // 5 detik per coba
+        for (var t = 0; t < maxTry; t++) {
+          await new Promise(function(r){ setTimeout(r, delay); });
+          try {
+            var statusData = await _pfmProxy('/v1/social-posts/' + postId, 'GET', null);
+            console.log('[postforme] poll status', t+1, ':', statusData.status, '| keys:', Object.keys(statusData));
+            var resolvedUrl = statusData.post_url
+              || statusData.platform_url
+              || statusData.permalink
+              || (statusData.social_accounts && statusData.social_accounts[0] && statusData.social_accounts[0].post_url)
+              || null;
+            if (resolvedUrl) {
+              console.log('[postforme] ✅ post_url resolved:', resolvedUrl);
+              // Update Supabase dengan post_url
+              if (campaignData && campaignData.supabase_id && typeof updateCampaignPostId === 'function') {
+                updateCampaignPostId(campaignData.supabase_id, postId, resolvedUrl);
+              }
+              break;
+            }
+            if (statusData.status === 'failed' || statusData.status === 'error') {
+              console.warn('[postforme] post gagal:', statusData.status);
+              break;
+            }
+          } catch(e) {
+            console.warn('[postforme] poll error:', e.message);
+            break;
+          }
+        }
+      })();
+    }
+
     console.log('[postforme] DEBUG full data keys:', Object.keys(data));
     if (data.account_configurations) {
       console.log('[postforme] account_configurations[0]:', JSON.stringify(data.account_configurations[0]));
