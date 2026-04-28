@@ -792,34 +792,28 @@ async function _loadAnalyticsForCard(campaign) {
     var posts = _analyticsCache[cacheKey] || [];
     if (!posts.length) return;
 
-    console.log('[analytics] total posts di cache:', posts.length);
-    console.log('[analytics] campaign.post_id:', campaign.post_id);
-    if (posts[0]) {
-      console.log('[analytics] posts[0] keys:', Object.keys(posts[0]));
-      console.log('[analytics] posts[0].id:', posts[0].id);
-      console.log('[analytics] posts[0].platform_post_id:', posts[0].platform_post_id);
-      console.log('[analytics] posts[0].metrics:', JSON.stringify(posts[0].metrics || {}));
-    }
-
     // Cari post yang match dengan campaign.post_id
-    // PostForMe menyimpan ID di field 'id' (format sp_xxx) atau 'platform_post_id'
+    // PostForMe: campaign.post_id = "sp_xxx" (format PostForMe)
+    // posts[].id = undefined, posts[].platform_post_id = "accountId_postId" (format platform)
+    // Solusi: pakai post terbaru (posts[0]) karena ID format berbeda tidak bisa dicocokkan langsung
     var targetPost = null;
-    if (campaign.post_id) {
+    if (campaign.post_id && posts.length) {
+      // Coba exact match dulu
       for (var k = 0; k < posts.length; k++) {
         var p = posts[k];
         if (p.id               === campaign.post_id ||
             p.platform_post_id === campaign.post_id ||
             p.post_id          === campaign.post_id) {
           targetPost = p;
-          console.log('[analytics] ✅ post match ditemukan di index', k);
+          console.log('[analytics] ✅ exact match di index', k);
           break;
         }
       }
     }
-    // Fallback: pakai post pertama (paling recent)
+    // Fallback: pakai post pertama (paling recent) — sudah pasti post terbaru dari akun ini
     if (!targetPost) {
       targetPost = posts[0];
-      console.log('[analytics] fallback ke posts[0]');
+      console.log('[analytics] fallback ke posts[0] —', targetPost ? 'ok' : 'null');
     }
 
     // Debug: log struktur targetPost untuk verifikasi
@@ -829,12 +823,15 @@ async function _loadAnalyticsForCard(campaign) {
     console.log('[analytics] targetPost.media:', JSON.stringify((targetPost.media || []).slice(0,1)));
 
     // Extract metrics — PostForMe menyimpan di targetPost.metrics
-    var m = targetPost.metrics || targetPost || {};
-    var likes    = parseInt(m.like_count    || m.likes    || m.reactions    || m.favorite_count || 0);
-    var comments = parseInt(m.comment_count || m.comments || m.reply_count  || 0);
-    var shares   = parseInt(m.share_count   || m.shares   || m.retweet_count || 0);
-    var views    = parseInt(m.view_count    || m.views    || m.video_views  ||
-                           m.play_count     || m.impressions || 0);
+    // Field yang confirmed ada: reach, reactions_like, reactions_total, comments, shares, video_views
+    var m = targetPost.metrics || {};
+    var likes    = parseInt(m.reactions_like  || m.reactions_total || m.like_count ||
+                            m.likes           || m.reactions       || m.favorite_count || 0);
+    var comments = parseInt(m.comments        || m.comment_count   || m.reply_count || 0);
+    var shares   = parseInt(m.shares          || m.share_count     || m.retweet_count || 0);
+    var views    = parseInt(m.video_views     || m.video_views_unique || m.view_count ||
+                            m.views           || m.play_count      || m.impressions || 0);
+    var reachReal= parseInt(m.reach           || m.organic_reach   || m.total_reach || 0);
 
     // Ambil thumbnail dari media PostForMe (gambar asli, bukan blob)
     var mediaUrl = null;
@@ -865,7 +862,6 @@ async function _loadAnalyticsForCard(campaign) {
     if (viewsEl) viewsEl.textContent = views > 0 ? fmt(views) : '—';
 
     // Update reach DOM dengan data real dari API
-    var reachReal = parseInt(m.reach || m.total_reach || 0);
     if (reachReal > 0) {
       var reachEl = document.getElementById('reach-num-' + campaign.id);
       if (reachEl) reachEl.textContent = fmt(reachReal);
