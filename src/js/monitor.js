@@ -747,9 +747,18 @@ async function _loadAnalyticsForCard(campaign) {
           '/v1/social-account-feeds/' + acc.id + '?expand=metrics&limit=50',
           'GET', null
         );
-        var posts = [];
-        if (data && Array.isArray(data.data)) posts = data.data;
-        else if (Array.isArray(data)) posts = data;
+        var posts = (data && (
+          data.posts
+          || data.data
+          || data.items
+          || data.feeds
+          || data.results
+          || data.feed
+        )) || (Array.isArray(data) ? data : []);
+
+        if (!posts || !posts.length) {
+          console.warn('[analytics] Tidak ada posts ditemukan. Keys tersedia:', Object.keys(data || {}));
+        }
         _analyticsCache[cacheKey] = posts;
       } catch(e) {
         _analyticsCache[cacheKey] = [];
