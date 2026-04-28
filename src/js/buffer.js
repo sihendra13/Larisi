@@ -47,7 +47,11 @@ async function _pfmProxy(endpoint, method, body) {
       'Authorization': 'Bearer ' + supabaseKey,
       'Content-Type':  'application/json'
     },
-    body: JSON.stringify({ endpoint: endpoint, method: method || 'GET', body: body })
+    body: JSON.stringify(
+      (method || 'GET') === 'DELETE'
+        ? { endpoint: endpoint, method: 'DELETE' }          // DELETE: no body
+        : { endpoint: endpoint, method: method || 'GET', body: body }
+    )
   });
 
   if (!resp.ok) {
@@ -233,7 +237,7 @@ async function connectPostForMe(platform) {
     var _existingAcc  = _existingAccs.filter(function(a){ return a.platform === platform; })[0];
     if (_existingAcc && _existingAcc.id && !/^pfm_[a-z]+_\d+$/.test(_existingAcc.id)) {
       console.log('[postforme] auto-disconnect', platform, _existingAcc.id, '— fire-and-forget');
-      _pfmProxy('/v1/social-accounts/' + _existingAcc.id, 'DELETE', null).catch(function(e){
+      _pfmProxy('/v1/social-accounts/' + _existingAcc.id, 'DELETE', {}).catch(function(e){
         console.warn('[postforme] auto-disconnect failed (non-blocking):', e.message);
       });
     }
