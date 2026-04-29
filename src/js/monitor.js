@@ -867,24 +867,31 @@ async function _loadAnalyticsForCard(campaign) {
     if (!posts.length) return;
 
     // Match berdasarkan platform_post_id yang tersimpan di Supabase
-    var targetPost = null;
+    var targetPost   = null;
+    var _isExactMatch = false;
+
     for (var k = 0; k < posts.length; k++) {
       var p = posts[k];
       if (campaign.platform_post_id && p.platform_post_id === campaign.platform_post_id) {
-        targetPost = p;
+        targetPost    = p;
+        _isExactMatch = true;
         break;
       }
       if (p.platform_post_id === campaign.post_id || p.id === campaign.post_id) {
-        targetPost = p;
+        targetPost    = p;
+        _isExactMatch = true;
         break;
       }
     }
-    // Fallback posts[0] jika tidak ada exact match tapi campaign punya post_id
-    // (artinya post sudah pernah dipublish — posts[0] = postingan terbaru dari akun itu)
+    // Fallback posts[0] hanya untuk engagement (best-effort) — TIDAK untuk URL
+    // karena posts[0] mungkin bukan post milik campaign ini
     if (!targetPost && campaign.post_id) {
-      console.warn('[monitor] No exact match — fallback ke posts[0] untuk:', campaign.name,
-        '| platform_post_id:', campaign.platform_post_id || 'N/A');
-      targetPost = posts[0] || null;
+      targetPost    = posts[0] || null;
+      _isExactMatch = false;
+      if (targetPost) {
+        console.warn('[monitor] Fallback posts[0] (engagement best-effort, URL tidak di-set):',
+          campaign.name);
+      }
     }
     if (!targetPost) return;
 
@@ -957,22 +964,22 @@ async function _loadAnalyticsForCard(campaign) {
       }
     }
 
-    // Update UI — timestamp link + thumbnail
+    // Update UI — hanya lakukan jika exact match (bukan fallback)
     var cardEl = document.getElementById('campaign-card-' + campaign.id);
     if (cardEl) {
-      // Update .cc-timestamp → jadi <a> link ke postingan jika punya postUrl
-      if (postUrl) {
-        campaign.post_url = postUrl; // simpan di memory agar card rebuild juga pakai
+      // Timestamp → jadi link HANYA jika kita confirmed post yang benar
+      // Fallback posts[0] TIDAK boleh set URL — bisa jadi post orang/campaign lain
+      if (postUrl && _isExactMatch) {
+        campaign.post_url = postUrl; // simpan di memory
         if (typeof updateCampaignPostUrl === 'function' && campaign.supabase_id) {
-          updateCampaignPostUrl(campaign.supabase_id, postUrl); // simpan ke Supabase
+          updateCampaignPostUrl(campaign.supabase_id, postUrl); // persist ke Supabase
         }
         var tsEl = cardEl.querySelector('.cc-timestamp');
         if (tsEl && tsEl.tagName !== 'A') {
-          // Ganti <span> → <a> tanpa rebuild seluruh card
           var tsA = document.createElement('a');
-          tsA.href    = postUrl;
-          tsA.target  = '_blank';
-          tsA.rel     = 'noopener';
+          tsA.href      = postUrl;
+          tsA.target    = '_blank';
+          tsA.rel       = 'noopener';
           tsA.className = 'cc-timestamp';
           tsA.style.cssText = 'color:#791ADB;text-decoration:underline;'
             + 'text-underline-offset:2px;font-weight:600;font-size:10px;';
@@ -980,11 +987,12 @@ async function _loadAnalyticsForCard(campaign) {
           tsA.addEventListener('click', function(e) { e.stopPropagation(); });
           tsEl.parentNode.replaceChild(tsA, tsEl);
         } else if (tsEl && tsEl.tagName === 'A') {
-          tsEl.href = postUrl; // update href jika sudah <a>
+          tsEl.href = postUrl;
         }
       }
 
-      if (mediaUrl) {
+      // Thumbnail update juga hanya jika exact match
+      if (mediaUrl && _isExactMatch) {
         var thumbContainer = cardEl.querySelector('.cc-thumbnail-container');
         if (thumbContainer) {
           var img = thumbContainer.querySelector('.cc-thumbnail-img');
