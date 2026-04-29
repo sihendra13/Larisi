@@ -883,15 +883,56 @@ async function _loadAnalyticsForCard(campaign) {
         break;
       }
     }
-    // Fallback posts[0] HANYA untuk campaign lama dari Supabase (ada created_at)
-    // Campaign baru yang baru saja di-launch (in-memory, created_at = null) jangan fallback
-    // — tunggu platform_post_id dari polling, lalu analytics di-refresh otomatis
+    // Temporal matching: cari post yang waktunya paling dekat dengan campaign.created_at
+    // Digunakan ketika platform_post_id belum tersimpan di Supabase (misal setelah hard refresh)
+    // Toleransi ±15 menit — jika cocok, anggap exact match dan simpan platform_post_id ke Supabase
+    if (!targetPost && campaign.created_at && posts.length) {
+      var _campTime = new Date(campaign.created_at).getTime();
+      var _bestPost = null;
+      var _bestDiff = Infinity;
+      var _MAX_DIFF = 15 * 60 * 1000; // 15 menit
+
+      for (var kt = 0; kt < posts.length; kt++) {
+        var pt = posts[kt];
+        // Coba semua field waktu yang mungkin ada di PostForMe
+        var _postTime = new Date(
+          pt.published_at || pt.created_at || pt.scheduled_at || pt.posted_at || 0
+        ).getTime();
+        if (!_postTime) continue;
+        var _diff = Math.abs(_campTime - _postTime);
+        if (_diff < _bestDiff) { _bestDiff = _diff; _bestPost = pt; }
+      }
+
+      if (_bestPost && _bestDiff <= _MAX_DIFF) {
+        // Cocok dalam 15 menit — perlakukan sebagai exact match
+        targetPost    = _bestPost;
+        _isExactMatch = true;
+        console.log('[monitor] Temporal match:', campaign.name,
+          '— diff', Math.round(_bestDiff / 1000) + 's, post:', _bestPost.platform_post_id);
+
+        // Simpan platform_post_id ke Supabase agar hard refresh berikutnya langsung exact match
+        if (_bestPost.platform_post_id && !campaign.platform_post_id) {
+          campaign.platform_post_id = _bestPost.platform_post_id;
+          if (typeof updateCampaignPostId === 'function' && campaign.supabase_id && campaign.post_id) {
+            updateCampaignPostId(campaign.supabase_id, campaign.post_id, null, _bestPost.platform_post_id);
+          }
+        }
+      } else if (_bestPost && campaign.post_id) {
+        // Tidak dalam toleransi — pakai best-effort saja, TIDAK set URL/thumbnail
+        targetPost    = _bestPost;
+        _isExactMatch = false;
+        console.warn('[monitor] Temporal fallback (diff terlalu jauh):', campaign.name,
+          Math.round(_bestDiff / 1000) + 's');
+      }
+    }
+
+    // Fallback final: posts[0] hanya jika temporal matching tidak berhasil sama sekali
+    // dan campaign punya post_id (lama dari Supabase)
     if (!targetPost && campaign.post_id && campaign.created_at) {
       targetPost    = posts[0] || null;
       _isExactMatch = false;
       if (targetPost) {
-        console.warn('[monitor] Fallback posts[0] (engagement best-effort, URL tidak di-set):',
-          campaign.name);
+        console.warn('[monitor] Fallback posts[0] (last resort):', campaign.name);
       }
     }
     if (!targetPost) return;
