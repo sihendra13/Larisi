@@ -299,13 +299,11 @@ async function fetchAndUpdatePostUrl(campaign, _attempt) {
   } catch(e) {
     var msg = e.message || '';
 
-    // 401 → token OAuth expired → tampilkan reconnect banner (bukan replace timestamp)
+    // 401 → post lama tidak bisa diakses dengan session baru — silent fail
+    // Engagement data (endpoint berbeda) tetap bekerja, user TIDAK perlu reconnect
     if (msg.indexOf('401') !== -1) {
-      console.warn('[monitor] 401 — token expired untuk platform:', campaign.platforms && campaign.platforms[0]);
+      console.warn('[monitor] 401 dari social-posts (silent) — post lama, tidak perlu reconnect');
       campaign._postUrlError = true;
-      campaign._authError    = true;
-      var platKey = (campaign.platforms && campaign.platforms[0]) || 'ig';
-      _showReconnectBanner(platKey);
       return;
     }
 
@@ -423,16 +421,6 @@ function _reconnectFromBanner(platKey, platApi) {
   if (typeof connectPostForMe === 'function') {
     connectPostForMe(platApi);
   }
-
-  // Setelah OAuth selesai (~15 detik), retry fetchAndUpdatePostUrl
-  // agar timestamp langsung jadi link tanpa perlu hard refresh
-  setTimeout(function() {
-    CAMPAIGNS.forEach(function(c) {
-      if (c.platforms && c.platforms[0] === platKey && !c.post_url && c.post_id) {
-        fetchAndUpdatePostUrl(c);
-      }
-    });
-  }, 15000);
 }
 window._dismissReconnectBanner = _dismissReconnectBanner;
 window._reconnectFromBanner    = _reconnectFromBanner;
@@ -445,18 +433,13 @@ function startPostUrlPolling() {
     console.log('[monitor] polling dinonaktifkan di localhost');
     return;
   }
+  // Bersihkan flag expired lama yang mungkin tersimpan dari versi sebelumnya
+  ['ig','meta','tiktok','youtube'].forEach(function(p) {
+    localStorage.removeItem('radar_pfm_token_expired_' + p);
+  });
   // Jalankan sekali langsung untuk semua campaign yang belum punya post_url
   CAMPAIGNS.forEach(function(c) {
-    if (!c.post_url && c.post_id) {
-      // Cek localStorage dulu — kalau token sudah diketahui expired, skip API call
-      var platKey = (c.platforms && c.platforms[0]) || 'ig';
-      if (localStorage.getItem('radar_pfm_token_expired_' + platKey)) {
-        _showReconnectBanner(platKey);
-        c._postUrlError = true;
-        return;
-      }
-      fetchAndUpdatePostUrl(c);
-    }
+    if (!c.post_url && c.post_id) fetchAndUpdatePostUrl(c);
   });
 
   // Bersihkan interval lama jika ada
@@ -974,15 +957,31 @@ async function _loadAnalyticsForCard(campaign) {
       }
     }
 
-    // Update UI — versi baru (Image + Link)
+    // Update UI — timestamp link + thumbnail
     var cardEl = document.getElementById('campaign-card-' + campaign.id);
     if (cardEl) {
+      // Update .cc-timestamp → jadi <a> link ke postingan jika punya postUrl
       if (postUrl) {
-        var tsLink = cardEl.querySelector('.cc-timestamp-link');
-        if (tsLink) tsLink.href = postUrl;
-
-        var chip = cardEl.querySelector('.cc-ts-chip');
-        if (chip) { chip.href = postUrl; chip.style.display = ''; }
+        campaign.post_url = postUrl; // simpan di memory agar card rebuild juga pakai
+        if (typeof updateCampaignPostUrl === 'function' && campaign.supabase_id) {
+          updateCampaignPostUrl(campaign.supabase_id, postUrl); // simpan ke Supabase
+        }
+        var tsEl = cardEl.querySelector('.cc-timestamp');
+        if (tsEl && tsEl.tagName !== 'A') {
+          // Ganti <span> → <a> tanpa rebuild seluruh card
+          var tsA = document.createElement('a');
+          tsA.href    = postUrl;
+          tsA.target  = '_blank';
+          tsA.rel     = 'noopener';
+          tsA.className = 'cc-timestamp';
+          tsA.style.cssText = 'color:#791ADB;text-decoration:underline;'
+            + 'text-underline-offset:2px;font-weight:600;font-size:10px;';
+          tsA.textContent = tsEl.textContent;
+          tsA.addEventListener('click', function(e) { e.stopPropagation(); });
+          tsEl.parentNode.replaceChild(tsA, tsEl);
+        } else if (tsEl && tsEl.tagName === 'A') {
+          tsEl.href = postUrl; // update href jika sudah <a>
+        }
       }
 
       if (mediaUrl) {
@@ -990,7 +989,6 @@ async function _loadAnalyticsForCard(campaign) {
         if (thumbContainer) {
           var img = thumbContainer.querySelector('.cc-thumbnail-img');
           if (img) {
-            // Update src hanya kalau berbeda (hindari flicker)
             if (img.src !== mediaUrl) img.src = mediaUrl;
           } else {
             thumbContainer.innerHTML = '<img src="' + mediaUrl + '" class="cc-thumbnail-img" '
@@ -1000,14 +998,7 @@ async function _loadAnalyticsForCard(campaign) {
           }
         }
       }
-        var tsText = cardEl.querySelector('.cc-ts-text');
-        if (tsText) {
-          tsText.style.color = '#791ADB';
-          tsText.style.textDecoration = 'underline';
-          tsText.style.cursor = 'pointer';
-          tsText.setAttribute('onclick', 'event.stopPropagation();_openCampaignPost(\'' + campaign.id + '\');');
-        }
-      }
+    }
 
   } catch(e) { /* silent */ }
 }
