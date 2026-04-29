@@ -299,21 +299,13 @@ async function fetchAndUpdatePostUrl(campaign, _attempt) {
   } catch(e) {
     var msg = e.message || '';
 
-    // 401 → stop polling untuk campaign ini saja, tandai auth_error
+    // 401 → token OAuth expired → tampilkan reconnect banner (bukan replace timestamp)
     if (msg.indexOf('401') !== -1) {
-      console.error('[monitor] 401 Unauthorized untuk campaign:', campaign.name, '— stop polling campaign ini.');
+      console.warn('[monitor] 401 — token expired untuk platform:', campaign.platforms && campaign.platforms[0]);
       campaign._postUrlError = true;
       campaign._authError    = true;
-      // Jangan stop semua campaign — hanya skip campaign ini di polling berikutnya
-      var authCard = document.querySelector('[data-id="' + campaign.id + '"]');
-      if (authCard) {
-        var authTs = authCard.querySelector('.cc-timestamp');
-        if (authTs) {
-          authTs.style.color = '#f59e0b';
-          authTs.title       = 'Akun perlu dihubungkan ulang.';
-          authTs.textContent = 'Akun perlu dihubungkan ulang';
-        }
-      }
+      var platKey = (campaign.platforms && campaign.platforms[0]) || 'ig';
+      _showReconnectBanner(platKey);
       return;
     }
 
@@ -354,6 +346,85 @@ async function fetchAndUpdatePostUrl(campaign, _attempt) {
   }
 }
 
+/* ─── Reconnect Banner (per platform) ─── */
+var _reconnectBanners = {};
+
+function _showReconnectBanner(platKey) {
+  if (_reconnectBanners[platKey]) return;
+  _reconnectBanners[platKey] = true;
+
+  // Persist ke localStorage — jangan retry di sesi berikutnya tanpa reconnect
+  localStorage.setItem('radar_pfm_token_expired_' + platKey, '1');
+
+  var platLabels   = { ig:'Instagram', meta:'Facebook', tiktok:'TikTok', youtube:'YouTube' };
+  var platApiNames = { ig:'instagram', meta:'facebook', tiktok:'tiktok', youtube:'youtube' };
+  var platName     = platLabels[platKey]   || platKey;
+  var platApi      = platApiNames[platKey] || platKey;
+  var bannerId     = 'pfm-reconnect-banner-' + platKey;
+  if (document.getElementById(bannerId)) return;
+
+  var list = document.getElementById('campaign-list');
+  if (!list) return;
+
+  var banner = document.createElement('div');
+  banner.id = bannerId;
+  banner.style.cssText =
+    'background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;'
+    + 'padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;'
+    + 'justify-content:space-between;gap:10px;font-family:var(--font,sans-serif);';
+  banner.innerHTML =
+    '<div style="display:flex;align-items:center;gap:8px;flex:1;">'
+    +   '<span style="font-size:18px;line-height:1;">⚠️</span>'
+    +   '<div>'
+    +     '<div style="font-size:12px;font-weight:700;color:#92400e;">'
+    +       'Akun ' + platName + ' perlu dihubungkan ulang'
+    +     '</div>'
+    +     '<div style="font-size:11px;color:#b45309;margin-top:2px;line-height:1.4;">'
+    +       'Token OAuth expired — klik Hubungkan Ulang untuk memperbarui.'
+    +     '</div>'
+    +   '</div>'
+    + '</div>'
+    + '<button onclick="_reconnectFromBanner(\'' + platKey + '\',\'' + platApi + '\')" '
+    +   'style="flex-shrink:0;padding:7px 14px;border-radius:8px;border:none;'
+    +   'background:#f59e0b;color:#fff;font-size:11px;font-weight:700;cursor:pointer;'
+    +   'font-family:var(--font,sans-serif);white-space:nowrap;">'
+    +   'Hubungkan Ulang'
+    + '</button>'
+    + '<button onclick="_dismissReconnectBanner(\'' + platKey + '\')" '
+    +   'style="flex-shrink:0;padding:4px 6px;background:none;border:none;'
+    +   'cursor:pointer;color:#92400e;font-size:14px;line-height:1;" title="Tutup">✕</button>';
+
+  list.insertBefore(banner, list.firstChild);
+}
+
+function _dismissReconnectBanner(platKey) {
+  var el = document.getElementById('pfm-reconnect-banner-' + platKey);
+  if (el) el.remove();
+  delete _reconnectBanners[platKey];
+}
+
+function _reconnectFromBanner(platKey, platApi) {
+  // Hapus flag expired — setelah reconnect berhasil token fresh lagi
+  localStorage.removeItem('radar_pfm_token_expired_' + platKey);
+  delete _reconnectBanners[platKey];
+  _dismissReconnectBanner(platKey);
+
+  // Reset error flag di semua campaign platform itu agar polling bisa jalan lagi
+  CAMPAIGNS.forEach(function(c) {
+    if (c.platforms && c.platforms[0] === platKey) {
+      c._postUrlError = false;
+      c._authError    = false;
+    }
+  });
+
+  // Buka OAuth popup reconnect
+  if (typeof connectPostForMe === 'function') {
+    connectPostForMe(platApi);
+  }
+}
+window._dismissReconnectBanner = _dismissReconnectBanner;
+window._reconnectFromBanner    = _reconnectFromBanner;
+
 var _postUrlPollInterval = null;
 
 function startPostUrlPolling() {
@@ -364,7 +435,16 @@ function startPostUrlPolling() {
   }
   // Jalankan sekali langsung untuk semua campaign yang belum punya post_url
   CAMPAIGNS.forEach(function(c) {
-    if (!c.post_url && c.post_id) fetchAndUpdatePostUrl(c);
+    if (!c.post_url && c.post_id) {
+      // Cek localStorage dulu — kalau token sudah diketahui expired, skip API call
+      var platKey = (c.platforms && c.platforms[0]) || 'ig';
+      if (localStorage.getItem('radar_pfm_token_expired_' + platKey)) {
+        _showReconnectBanner(platKey);
+        c._postUrlError = true;
+        return;
+      }
+      fetchAndUpdatePostUrl(c);
+    }
   });
 
   // Bersihkan interval lama jika ada
