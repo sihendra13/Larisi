@@ -852,29 +852,6 @@ async function _loadAnalyticsForCard(campaign) {
           )) || (Array.isArray(dataUnfiltered) ? dataUnfiltered : []);
         }
 
-        // DEBUG SEMENTARA: lihat field apa yang ada di post object dari PostForMe feed
-        if (posts.length) {
-          var _p0 = posts[0];
-          console.log('[monitor] DEBUG feed post[0] keys:', Object.keys(_p0));
-          console.log('[monitor] DEBUG feed post[0] timestamp fields:',
-            'published_at:', _p0.published_at,
-            '| created_at:', _p0.created_at,
-            '| scheduled_at:', _p0.scheduled_at,
-            '| posted_at:', _p0.posted_at,
-            '| publish_date:', _p0.publish_date,
-            '| date:', _p0.date,
-            '| timestamp:', _p0.timestamp,
-            '| post_date:', _p0.post_date
-          );
-          console.log('[monitor] DEBUG feed post[0] id fields:',
-            'id:', _p0.id,
-            '| platform_post_id:', _p0.platform_post_id,
-            '| social_account_id:', _p0.social_account_id
-          );
-        } else {
-          console.warn('[monitor] DEBUG feed kosong untuk', campaign.name, '| endpoint:', endpoint);
-        }
-
         _analyticsCache[cacheKey] = posts;
       } catch(e) {
         _analyticsCache[cacheKey] = [];
@@ -918,8 +895,9 @@ async function _loadAnalyticsForCard(campaign) {
       for (var kt = 0; kt < posts.length; kt++) {
         var pt = posts[kt];
         // Coba semua field waktu yang mungkin ada di PostForMe
+        // Field yang confirmed ada di PostForMe feed response: posted_at
         var _postTime = new Date(
-          pt.published_at || pt.created_at || pt.scheduled_at || pt.posted_at || 0
+          pt.posted_at || pt.published_at || pt.created_at || pt.scheduled_at || pt.post_date || 0
         ).getTime();
         if (!_postTime) continue;
         var _diff = Math.abs(_campTime - _postTime);

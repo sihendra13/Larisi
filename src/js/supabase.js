@@ -201,10 +201,12 @@ async function updateCampaignPostId(campaignSupabaseId, postId, postUrl, platfor
     var fields = { post_id: postId };
     if (postUrl)        fields.post_url          = postUrl;
     if (platformPostId) fields.platform_post_id  = platformPostId;
-    await client
+    var result = await client
       .from('campaigns')
       .update(fields)
-      .eq('id', campaignSupabaseId);
+      .eq('id', campaignSupabaseId)
+      .eq('session_id', window.radarSessionId); // RLS: update hanya boleh milik session ini
+    if (result.error) throw result.error;
     console.log('[supabase] post_id updated:', postId, '| post_url:', postUrl, '| platform_post_id:', platformPostId);
   } catch(e) {
     console.warn('[supabase] updateCampaignPostId error:', e.message);
@@ -235,10 +237,12 @@ async function updateCampaignPostUrl(campaignId, postUrl) {
   var client = getSupabaseClient();
   if (!client || !campaignId || !postUrl) return;
   try {
-    await client
+    var result = await client
       .from('campaigns')
       .update({ post_url: postUrl })
-      .eq('id', campaignId);
+      .eq('id', campaignId)
+      .eq('session_id', window.radarSessionId); // RLS: update hanya boleh milik session ini
+    if (result.error) throw result.error;
     console.log('[supabase] post_url updated:', campaignId);
   } catch(e) {
     console.warn('[supabase] updateCampaignPostUrl error:', e.message);
