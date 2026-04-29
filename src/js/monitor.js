@@ -829,29 +829,16 @@ async function _loadAnalyticsForCard(campaign) {
 
     if (!_analyticsCache[cacheKey] && !_analyticsFetching[cacheKey]) {
       _analyticsFetching[cacheKey] = true;
+      // Selalu pakai endpoint tanpa filter — PostForMe tidak support filter platform_post_id
+      // dan bisa return error (bukan empty) jika param tidak dikenal.
+      // Exact match dilakukan client-side via platform_post_id setelah semua post diambil.
+      var baseEndpoint = '/v1/social-account-feeds/' + acc.id + '?expand=metrics&limit=50';
       try {
-        // Endpoint utama: filter per platform_post_id jika tersedia
-        var baseEndpoint = '/v1/social-account-feeds/' + acc.id + '?expand=metrics&limit=50';
-        var endpoint = campaign.platform_post_id
-          ? baseEndpoint + '&platform_post_id=' + campaign.platform_post_id
-          : baseEndpoint;
-
-        var data = await _pfmProxy(endpoint, 'GET', null);
+        var data = await _pfmProxy(baseEndpoint, 'GET', null);
         var posts = (data && (
           data.posts || data.data || data.items ||
           data.feeds || data.results || data.feed
         )) || (Array.isArray(data) ? data : []);
-
-        // Jika filter menghasilkan empty (PostForMe mungkin tidak support param ini),
-        // retry tanpa filter agar exact match tetap bisa ditemukan di client-side
-        if (!posts.length && campaign.platform_post_id) {
-          var dataUnfiltered = await _pfmProxy(baseEndpoint, 'GET', null);
-          posts = (dataUnfiltered && (
-            dataUnfiltered.posts || dataUnfiltered.data || dataUnfiltered.items ||
-            dataUnfiltered.feeds || dataUnfiltered.results || dataUnfiltered.feed
-          )) || (Array.isArray(dataUnfiltered) ? dataUnfiltered : []);
-        }
-
         _analyticsCache[cacheKey] = posts;
       } catch(e) {
         _analyticsCache[cacheKey] = [];
