@@ -940,6 +940,16 @@ async function _loadAnalyticsForCard(campaign) {
     // Extract metrics — PostForMe menyimpan di targetPost.metrics
     // Field yang confirmed ada: reach, reactions_like, reactions_total, comments, shares, video_views
     var m = targetPost.metrics || {};
+    // DEBUG: log raw metrics untuk diagnosa field mana yang PostForMe kembalikan
+    console.log('[monitor] RAW metrics untuk', campaign.name,
+      '| platform_post_id:', targetPost.platform_post_id,
+      '| reactions_like:', m.reactions_like,
+      '| reactions_total:', m.reactions_total,
+      '| like_count:', m.like_count,
+      '| likes:', m.likes,
+      '| comments:', m.comments,
+      '| shares:', m.shares,
+      '| FULL metrics:', JSON.stringify(m));
     var likes    = parseInt(m.reactions_like  || m.reactions_total || m.like_count ||
                             m.likes           || m.reactions       || m.favorite_count || 0);
     var comments = parseInt(m.comments        || m.comment_count   || m.reply_count || 0);
