@@ -351,9 +351,6 @@ function _showReconnectBanner(platKey) {
   if (_reconnectBanners[platKey]) return;
   _reconnectBanners[platKey] = true;
 
-  // Persist ke localStorage — jangan retry di sesi berikutnya tanpa reconnect
-  localStorage.setItem('radar_pfm_token_expired_' + platKey, '1');
-
   var platLabels   = { ig:'Instagram', meta:'Facebook', tiktok:'TikTok', youtube:'YouTube' };
   var platApiNames = { ig:'instagram', meta:'facebook', tiktok:'tiktok', youtube:'youtube' };
   var platName     = platLabels[platKey]   || platKey;
@@ -833,22 +830,27 @@ async function _loadAnalyticsForCard(campaign) {
     if (!_analyticsCache[cacheKey] && !_analyticsFetching[cacheKey]) {
       _analyticsFetching[cacheKey] = true;
       try {
-        // Kalau punya platform_post_id, filter langsung ke post itu
-        var endpoint = '/v1/social-account-feeds/' + acc.id + '?expand=metrics&limit=50';
-        if (campaign.platform_post_id) {
-          endpoint = '/v1/social-account-feeds/' + acc.id
-            + '?expand=metrics&limit=50&platform_post_id=' + campaign.platform_post_id;
-        }
-        var data = await _pfmProxy(endpoint, 'GET', null);
+        // Endpoint utama: filter per platform_post_id jika tersedia
+        var baseEndpoint = '/v1/social-account-feeds/' + acc.id + '?expand=metrics&limit=50';
+        var endpoint = campaign.platform_post_id
+          ? baseEndpoint + '&platform_post_id=' + campaign.platform_post_id
+          : baseEndpoint;
 
+        var data = await _pfmProxy(endpoint, 'GET', null);
         var posts = (data && (
-          data.posts
-          || data.data
-          || data.items
-          || data.feeds
-          || data.results
-          || data.feed
+          data.posts || data.data || data.items ||
+          data.feeds || data.results || data.feed
         )) || (Array.isArray(data) ? data : []);
+
+        // Jika filter menghasilkan empty (PostForMe mungkin tidak support param ini),
+        // retry tanpa filter agar exact match tetap bisa ditemukan di client-side
+        if (!posts.length && campaign.platform_post_id) {
+          var dataUnfiltered = await _pfmProxy(baseEndpoint, 'GET', null);
+          posts = (dataUnfiltered && (
+            dataUnfiltered.posts || dataUnfiltered.data || dataUnfiltered.items ||
+            dataUnfiltered.feeds || dataUnfiltered.results || dataUnfiltered.feed
+          )) || (Array.isArray(dataUnfiltered) ? dataUnfiltered : []);
+        }
 
         _analyticsCache[cacheKey] = posts;
       } catch(e) {
@@ -881,9 +883,10 @@ async function _loadAnalyticsForCard(campaign) {
         break;
       }
     }
-    // Fallback posts[0] hanya untuk engagement (best-effort) — TIDAK untuk URL
-    // karena posts[0] mungkin bukan post milik campaign ini
-    if (!targetPost && campaign.post_id) {
+    // Fallback posts[0] HANYA untuk campaign lama dari Supabase (ada created_at)
+    // Campaign baru yang baru saja di-launch (in-memory, created_at = null) jangan fallback
+    // — tunggu platform_post_id dari polling, lalu analytics di-refresh otomatis
+    if (!targetPost && campaign.post_id && campaign.created_at) {
       targetPost    = posts[0] || null;
       _isExactMatch = false;
       if (targetPost) {

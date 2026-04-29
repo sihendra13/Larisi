@@ -1303,28 +1303,65 @@ async function publishViaPostForMe(canvas, campaignData) {
               // Update in-memory CAMPAIGNS — supaya _loadAnalyticsForCard bisa exact match
               if (typeof CAMPAIGNS !== 'undefined') {
                 CAMPAIGNS.forEach(function(c) {
-                  if (c.supabase_id === campaignData.supabase_id) {
-                    if (resolvedPlatformPostId) c.platform_post_id = resolvedPlatformPostId;
-                    if (resolvedUrl && !c.post_url) {
-                      c.post_url = resolvedUrl;
-                      // Update timestamp DOM langsung jadi link ungu
-                      var cardEl = document.getElementById('campaign-card-' + c.id);
-                      if (cardEl) {
-                        var tsEl = cardEl.querySelector('.cc-timestamp');
-                        if (tsEl && tsEl.tagName !== 'A') {
-                          var tsA = document.createElement('a');
-                          tsA.href      = resolvedUrl;
-                          tsA.target    = '_blank';
-                          tsA.rel       = 'noopener';
-                          tsA.className = 'cc-timestamp';
-                          tsA.style.cssText = 'color:#791ADB;text-decoration:underline;'
-                            + 'text-underline-offset:2px;font-weight:600;font-size:10px;';
-                          tsA.textContent = tsEl.textContent;
-                          tsA.addEventListener('click', function(e) { e.stopPropagation(); });
-                          tsEl.parentNode.replaceChild(tsA, tsEl);
+                  if (c.supabase_id !== campaignData.supabase_id) return;
+
+                  var _platPostIdUpdated = false;
+
+                  if (resolvedPlatformPostId && c.platform_post_id !== resolvedPlatformPostId) {
+                    // Hapus cache lama (key lama pakai post_id/id, bukan platform_post_id baru)
+                    // Setelah platform_post_id di-set, _loadAnalyticsForCard akan pakai key baru
+                    if (typeof _analyticsCache !== 'undefined' && typeof _getStoredAccounts === 'function') {
+                      var _accs = _getStoredAccounts();
+                      var _platApiMap = { ig:'instagram', meta:'facebook', tiktok:'tiktok', youtube:'youtube' };
+                      var _plat = c.platforms && c.platforms[0];
+                      var _sp   = _platApiMap[_plat] || _plat;
+                      for (var _ai = 0; _ai < _accs.length; _ai++) {
+                        if (_accs[_ai].platform === _sp) {
+                          // Hapus semua possible old cache keys untuk campaign ini
+                          var _oldKey1 = _accs[_ai].id + '||' + (c.platform_post_id || '');
+                          var _oldKey2 = _accs[_ai].id + '||' + (c.post_id || '');
+                          var _oldKey3 = _accs[_ai].id + '||' + c.id;
+                          delete _analyticsCache[_oldKey1];
+                          delete _analyticsCache[_oldKey2];
+                          delete _analyticsCache[_oldKey3];
+                          delete _analyticsFetching[_oldKey1];
+                          delete _analyticsFetching[_oldKey2];
+                          delete _analyticsFetching[_oldKey3];
+                          break;
                         }
                       }
                     }
+                    c.platform_post_id = resolvedPlatformPostId;
+                    _platPostIdUpdated = true;
+                  }
+
+                  if (resolvedUrl && !c.post_url) {
+                    c.post_url = resolvedUrl;
+                    // Update timestamp DOM langsung jadi link ungu
+                    var cardEl = document.getElementById('campaign-card-' + c.id);
+                    if (cardEl) {
+                      var tsEl = cardEl.querySelector('.cc-timestamp');
+                      if (tsEl && tsEl.tagName !== 'A') {
+                        var tsA = document.createElement('a');
+                        tsA.href      = resolvedUrl;
+                        tsA.target    = '_blank';
+                        tsA.rel       = 'noopener';
+                        tsA.className = 'cc-timestamp';
+                        tsA.style.cssText = 'color:#791ADB;text-decoration:underline;'
+                          + 'text-underline-offset:2px;font-weight:600;font-size:10px;';
+                        tsA.textContent = tsEl.textContent;
+                        tsA.addEventListener('click', function(e) { e.stopPropagation(); });
+                        tsEl.parentNode.replaceChild(tsA, tsEl);
+                      }
+                    }
+                  }
+
+                  // Re-trigger analytics setelah platform_post_id di-set
+                  // Ini akan fetch dengan exact filter → engagement real + timestamp link
+                  if (_platPostIdUpdated && typeof _loadAnalyticsForCard === 'function') {
+                    (function(camp) {
+                      setTimeout(function() { _loadAnalyticsForCard(camp); }, 800);
+                    })(c);
                   }
                 });
               }
