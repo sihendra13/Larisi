@@ -368,14 +368,15 @@ function _showReconnectBanner(platKey) {
 
   var banner = document.createElement('div');
   banner.id = bannerId;
+  // Insert SEBELUM campaign-list (sibling), bukan di dalam grid
   banner.style.cssText =
     'background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;'
-    + 'padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;'
+    + 'padding:12px 14px;margin:0 0 10px;display:flex;align-items:center;'
     + 'justify-content:space-between;gap:10px;font-family:var(--font,sans-serif);';
   banner.innerHTML =
-    '<div style="display:flex;align-items:center;gap:8px;flex:1;">'
-    +   '<span style="font-size:18px;line-height:1;">⚠️</span>'
-    +   '<div>'
+    '<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">'
+    +   '<span style="font-size:18px;line-height:1;flex-shrink:0;">⚠️</span>'
+    +   '<div style="min-width:0;">'
     +     '<div style="font-size:12px;font-weight:700;color:#92400e;">'
     +       'Akun ' + platName + ' perlu dihubungkan ulang'
     +     '</div>'
@@ -392,9 +393,10 @@ function _showReconnectBanner(platKey) {
     + '</button>'
     + '<button onclick="_dismissReconnectBanner(\'' + platKey + '\')" '
     +   'style="flex-shrink:0;padding:4px 6px;background:none;border:none;'
-    +   'cursor:pointer;color:#92400e;font-size:14px;line-height:1;" title="Tutup">✕</button>';
+    +   'cursor:pointer;color:#92400e;font-size:16px;line-height:1;" title="Tutup">✕</button>';
 
-  list.insertBefore(banner, list.firstChild);
+  // Insert sebagai sibling SEBELUM campaign-list (di luar grid)
+  list.parentNode.insertBefore(banner, list);
 }
 
 function _dismissReconnectBanner(platKey) {
@@ -421,6 +423,16 @@ function _reconnectFromBanner(platKey, platApi) {
   if (typeof connectPostForMe === 'function') {
     connectPostForMe(platApi);
   }
+
+  // Setelah OAuth selesai (~15 detik), retry fetchAndUpdatePostUrl
+  // agar timestamp langsung jadi link tanpa perlu hard refresh
+  setTimeout(function() {
+    CAMPAIGNS.forEach(function(c) {
+      if (c.platforms && c.platforms[0] === platKey && !c.post_url && c.post_id) {
+        fetchAndUpdatePostUrl(c);
+      }
+    });
+  }, 15000);
 }
 window._dismissReconnectBanner = _dismissReconnectBanner;
 window._reconnectFromBanner    = _reconnectFromBanner;
