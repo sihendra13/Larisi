@@ -1294,9 +1294,41 @@ async function publishViaPostForMe(canvas, campaignData) {
               || null;
             if (resolvedUrl || resolvedPlatformPostId) {
               console.log('[postforme] ✅ resolved — post_url:', resolvedUrl, '| platform_post_id:', resolvedPlatformPostId);
+
+              // Simpan ke Supabase
               if (campaignData && campaignData.supabase_id && typeof updateCampaignPostId === 'function') {
                 updateCampaignPostId(campaignData.supabase_id, postId, resolvedUrl, resolvedPlatformPostId);
               }
+
+              // Update in-memory CAMPAIGNS — supaya _loadAnalyticsForCard bisa exact match
+              if (typeof CAMPAIGNS !== 'undefined') {
+                CAMPAIGNS.forEach(function(c) {
+                  if (c.supabase_id === campaignData.supabase_id) {
+                    if (resolvedPlatformPostId) c.platform_post_id = resolvedPlatformPostId;
+                    if (resolvedUrl && !c.post_url) {
+                      c.post_url = resolvedUrl;
+                      // Update timestamp DOM langsung jadi link ungu
+                      var cardEl = document.getElementById('campaign-card-' + c.id);
+                      if (cardEl) {
+                        var tsEl = cardEl.querySelector('.cc-timestamp');
+                        if (tsEl && tsEl.tagName !== 'A') {
+                          var tsA = document.createElement('a');
+                          tsA.href      = resolvedUrl;
+                          tsA.target    = '_blank';
+                          tsA.rel       = 'noopener';
+                          tsA.className = 'cc-timestamp';
+                          tsA.style.cssText = 'color:#791ADB;text-decoration:underline;'
+                            + 'text-underline-offset:2px;font-weight:600;font-size:10px;';
+                          tsA.textContent = tsEl.textContent;
+                          tsA.addEventListener('click', function(e) { e.stopPropagation(); });
+                          tsEl.parentNode.replaceChild(tsA, tsEl);
+                        }
+                      }
+                    }
+                  }
+                });
+              }
+
               if (resolvedUrl) break;
             }
             if (statusData.status === 'failed' || statusData.status === 'error') {

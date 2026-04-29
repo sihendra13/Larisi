@@ -638,10 +638,11 @@ async function _doLaunch(campNameOverride) {
       console.log('[launch] campaignData.format sebelum publishViaBuffer:', campaignData.format);
       publishViaBuffer(canvas, campaignData).then(function(result) {
         if (result && result.postId) {
-          // Simpan post_id ke newCamp → chip langsung aktif di Monitor
+          // Simpan post_id ke newCamp — JANGAN set post_url dari initial response
+          // karena PostForMe bisa mengembalikan URL post sebelumnya sebelum post baru live
+          // post_url akan di-set oleh polling di buffer.js saat post confirmed published
           newCamp.post_id  = result.postId;
-          newCamp.post_url = result.postUrl || null;
-          console.log('[launch] post_id saved:', result.postId, '| post_url:', result.postUrl || '—');
+          console.log('[launch] post_id saved:', result.postId, '(post_url ditunggu dari polling)');
 
           // Update chip di DOM card yang sudah dirender
           var cardEl = document.getElementById('campaign-card-' + newCamp.id);

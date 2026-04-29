@@ -872,12 +872,10 @@ async function _loadAnalyticsForCard(campaign) {
 
     for (var k = 0; k < posts.length; k++) {
       var p = posts[k];
+      // Hanya exact match via platform_post_id (ID real dari IG/FB/TikTok/YouTube)
+      // JANGAN gunakan p.id === campaign.post_id (PostForMe internal ID)
+      // karena initial publish response bisa mengembalikan ID post sebelumnya
       if (campaign.platform_post_id && p.platform_post_id === campaign.platform_post_id) {
-        targetPost    = p;
-        _isExactMatch = true;
-        break;
-      }
-      if (p.platform_post_id === campaign.post_id || p.id === campaign.post_id) {
         targetPost    = p;
         _isExactMatch = true;
         break;
