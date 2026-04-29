@@ -190,11 +190,12 @@ async function loadCampaignsFromSupabase() {
         : '';
 
       CAMPAIGNS.unshift({
-        id:          row.id,
-        supabase_id: row.id,
-        post_id:     row.post_id  || null,
-        post_url:    row.post_url || null,
-        format:      row.format   || 'post',
+        id:             row.id,
+        supabase_id:    row.id,
+        post_id:        row.post_id          || null,
+        post_url:       row.post_url         || null,
+        platform_post_id: row.platform_post_id || null,
+        format:         row.format           || 'post',
         name:        row.nama_campaign || 'Campaign',
         status:      row.status === 'active' ? 'running' : (row.status || 'running'),
         platforms:   platforms,
@@ -733,8 +734,8 @@ function _engRow2(label, elId, defaultVal, isLive) {
 
 /* ─── Load Analytics for Card ─── */
 async function _loadAnalyticsForCard(campaign) {
-  // Skip campaign yang sudah diketahui auth error
-  if (campaign._authError) return;
+  // _authError dari fetchAndUpdatePostUrl (endpoint /v1/social-posts) TIDAK memblokir
+  // engagement fetch (endpoint /v1/social-account-feeds) — keduanya independen
   try {
     var accounts = typeof _getStoredAccounts === 'function'
       ? _getStoredAccounts() : [];
@@ -803,10 +804,11 @@ async function _loadAnalyticsForCard(campaign) {
         break;
       }
     }
-    // Fallback posts[0] HANYA jika campaign punya platform_post_id
-    // dan posts sudah difilter per campaign (endpoint filter aktif)
-    // Kalau tidak punya platform_post_id, jangan fallback — data tidak akurat
-    if (!targetPost && campaign.platform_post_id) {
+    // Fallback posts[0] jika tidak ada exact match tapi campaign punya post_id
+    // (artinya post sudah pernah dipublish — posts[0] = postingan terbaru dari akun itu)
+    if (!targetPost && campaign.post_id) {
+      console.warn('[monitor] No exact match — fallback ke posts[0] untuk:', campaign.name,
+        '| platform_post_id:', campaign.platform_post_id || 'N/A');
       targetPost = posts[0] || null;
     }
     if (!targetPost) return;
