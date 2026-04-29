@@ -938,20 +938,23 @@ async function _loadAnalyticsForCard(campaign) {
     if (!targetPost) return;
 
     // Extract metrics — PostForMe menyimpan di targetPost.metrics
-    // Field yang confirmed ada: reach, reactions_like, reactions_total, comments, shares, video_views
     var m = targetPost.metrics || {};
-    // DEBUG: log raw metrics untuk diagnosa field mana yang PostForMe kembalikan
-    console.log('[monitor] RAW metrics untuk', campaign.name,
-      '| platform_post_id:', targetPost.platform_post_id,
-      '| reactions_like:', m.reactions_like,
-      '| reactions_total:', m.reactions_total,
-      '| like_count:', m.like_count,
-      '| likes:', m.likes,
-      '| comments:', m.comments,
-      '| shares:', m.shares,
-      '| FULL metrics:', JSON.stringify(m));
-    var likes    = parseInt(m.reactions_like  || m.reactions_total || m.like_count ||
-                            m.likes           || m.reactions       || m.favorite_count || 0);
+
+    // reactions_total = snapshot count saat ini — cocok dengan FB UI (BENAR)
+    // reactions_like  = sum activity log lintas time window — bisa double-count (SALAH untuk display)
+    // reactions_by_type.like = breakdown per tipe reaksi, paling akurat untuk FB
+    // Prioritas: reactions_by_type.like → reactions_total → reactions_like → fallback lain
+    var _rbt  = (m.reactions_by_type && typeof m.reactions_by_type === 'object')
+                ? m.reactions_by_type : {};
+    var _likesRaw =
+      (_rbt.like     != null) ? _rbt.like     :
+      (m.reactions_total != null) ? m.reactions_total :
+      (m.reactions_like  != null) ? m.reactions_like  :
+      (m.like_count  != null) ? m.like_count  :
+      (m.likes       != null) ? m.likes       :
+      (m.reactions   != null) ? m.reactions   :
+      (m.favorite_count != null) ? m.favorite_count : 0;
+    var likes = parseInt(_likesRaw, 10) || 0;
     var comments = parseInt(m.comments        || m.comment_count   || m.reply_count || 0);
     var shares   = parseInt(m.shares          || m.share_count     || m.retweet_count || 0);
     var views    = parseInt(m.video_views     || m.video_views_unique || m.view_count ||
