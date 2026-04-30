@@ -955,15 +955,6 @@ async function _loadAnalyticsForCard(campaign) {
 
     // Extract metrics — PostForMe menyimpan di targetPost.metrics
     var m = targetPost.metrics || {};
-    // DEBUG SEMENTARA — cek semua field metrics dari PostForMe (hapus setelah dicek)
-    console.log('[DEBUG metrics]', campaign.name, '|',
-      'reach:', m.reach,
-      '| likes:', m.likes,
-      '| comments:', m.comments,
-      '| video_views:', m.video_views,
-      '| profile_views:', m.profile_views,
-      '| new_followers:', m.new_followers
-    );
 
     // reactions_total = snapshot count saat ini — cocok dengan FB UI (BENAR)
     // reactions_like  = sum activity log lintas time window — bisa double-count (SALAH untuk display)
@@ -1016,6 +1007,12 @@ async function _loadAnalyticsForCard(campaign) {
 
     // Update reach DOM dengan data real dari API
     if (reachReal > 0) {
+      // Matikan counter animasi simulasi — sudah ada data real, tidak perlu animasi lagi
+      if (campaignReachIntervals[campaign.id]) {
+        clearInterval(campaignReachIntervals[campaign.id]);
+        delete campaignReachIntervals[campaign.id];
+      }
+      campaign._reachReal = true; // flag agar counter tidak restart
       var reachEl = document.getElementById('reach-num-' + campaign.id);
       if (reachEl) reachEl.textContent = fmt(reachReal);
       // Sembunyikan label estimasi karena sudah dapat data real
@@ -1336,6 +1333,7 @@ function startReachCounters() {
   CAMPAIGNS.forEach(function(c) {
     if (c.status !== 'running') return;
     if (campaignReachIntervals[c.id]) return;
+    if (c._reachReal) return; // sudah dapat data real, skip animasi simulasi
     // Scale increment to ~0.4–0.8% of target per tick — realistic for any target size
     var baseInc = Math.max(5, Math.round(c.reachTarget * 0.005));
     campaignReachIntervals[c.id] = setInterval(function() {
