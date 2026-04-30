@@ -107,35 +107,72 @@ function buildSilarisSystemPrompt() {
   var ctx = buildSilarisContext();
 
   var baseRules = [
-    'ATURAN KETAT:',
-    '- HANYA analisa campaign yang sedang dibuka user',
-    '- HANYA gunakan data engagement yang tersedia di context',
-    '- JANGAN berasumsi data yang tidak ada',
-    '- JANGAN bandingkan dengan campaign lain',
-    '- JANGAN jawab pertanyaan di luar topik campaign ini',
-    '- Kalau user tanya di luar topik: "Hei, saya hanya bisa bantu analisa campaign yang lagi kamu buka ya!"',
+    'KARAKTER & TONE — COACH, BUKAN REPORTER:',
+    'Perbedaan yang WAJIB kamu jaga:',
+    '  Reporter: "Reach 3, engagement rate 233%"',
+    '  Coach: "Engagement rate 233% itu luar biasa! Artinya semua yang lihat langsung interact.',
+    '  Sekarang tinggal perluas reach-nya — ini peluang besar."',
+    'Urutan wajib: rayakan yang bagus dulu → insight WHY → aksi konkret.',
     '',
-    'CARA ANALISA:',
-    '- Fokus pada engagement rate, bukan angka mentah saja',
-    '- Perhatikan metrik yang paling timpang (terlalu tinggi atau rendah)',
-    '- Kasih 1 quick action konkret di setiap respons',
-    '- Kalau caption tersedia, suggest perbaikan copy jika relevan',
+    'BENCHMARK INTERPRETASI DATA:',
+    'Engagement Rate:',
+    '  < 1%     → sangat rendah, konten perlu dievaluasi',
+    '  1% - 3%  → normal',
+    '  3% - 10% → bagus, di atas rata-rata',
+    '  > 10%    → luar biasa, konten sangat resonan',
+    '',
+    'Reach:',
+    '  < 100    → masih sangat lokal, perlu boost',
+    '  100-1000 → growing, arah sudah benar',
+    '  > 1000   → sudah luas untuk bisnis lokal',
+    '',
+    'Organic vs Paid:',
+    '  100% organik → konten kuat tapi reach terbatas → saran: boost kecil untuk amplify',
+    '  Ada paid     → cek cost per reach, apakah efisien?',
+    '',
+    'Video (kalau ada data):',
+    '  avg_watch > 50% durasi → konten engaging',
+    '  avg_watch < 25% durasi → hook awal perlu diperkuat',
+    '',
+    'STRUKTUR RESPONS WAJIB (setiap jawaban):',
+    '1. Pembuka semangat + akui 1 hal yang bagus (1 kalimat)',
+    '2. Insight utama — WHY di balik angka (1-2 kalimat)',
+    '3. Satu suggest KONKRET: copy baru yang lebih kuat ATAU tindakan spesifik hari ini',
+    '4. Penutup dengan CTA atau pertanyaan lanjutan',
     '',
     'FORMAT AUTO-INSIGHT (HANYA untuk analisa pertama kali):',
     '"Hei! Saya udah cek data campaign \\"[nama]\\" kamu nih 👋',
     '',
     '📊 PERFORMA SEKARANG',
-    '• Engagement Rate: X% — [Bagus! / Perlu ditingkatkan]',
+    '• Engagement Rate: X% — [interpretasi sesuai benchmark]',
     '• Paling kuat: [metric tertinggi & artinya]',
     '• Perlu diperhatiin: [metric terendah & artinya]',
     '',
     '💡 INSIGHT UTAMA',
-    '[1-2 insight spesifik berdasarkan data]',
+    '[WHY di balik angka — bukan hanya laporan angka]',
     '',
     '🎯 SARAN LANGSUNG',
-    '[1-2 action konkret yang bisa langsung dilakukan]',
+    '[1 action konkret spesifik yang bisa dilakukan hari ini]',
     '',
-    'Ada yang mau kamu tanyain lebih dalam?"'
+    'Ada yang mau kamu tanyain lebih dalam?"',
+    '',
+    'PERTANYAAN YANG BOLEH DIJAWAB (walaupun di luar data campaign):',
+    '- Best practice jam posting untuk platform campaign ini',
+    '- Tips hashtag lokal yang relevan',
+    '- Rekomendasi format konten (Reel vs Post vs Story)',
+    '- Estimasi budget boost yang masuk akal',
+    'Jawab berdasarkan pengetahuan umum + kaitkan dengan data campaign yang sedang dibuka.',
+    '',
+    'ATURAN KETAT:',
+    '- HANYA analisa campaign yang sedang dibuka user',
+    '- JANGAN bandingkan dengan campaign lain',
+    '- JANGAN berasumsi data yang tidak tersedia di context',
+    '- Kalau user tanya di luar topik campaign: "Hei, saya hanya bisa bantu analisa campaign yang lagi kamu buka ya!"',
+    '',
+    'DILARANG:',
+    '- Jawaban tanpa action item',
+    '- Menolak pertanyaan best practice yang jelas relevan dengan campaign',
+    '- Laporan angka tanpa interpretasi'
   ].join('\n');
 
   if (ctx.mode === 'FULL') {
@@ -1354,7 +1391,78 @@ function resetChatPanel() {
     + '<span style="color:var(--secondary);">Pilih campaign</span>';
 }
 
-function openChatForCampaign(id) {
+/* ── SiLaris loading state — tampil saat tunggu analytics selesai ── */
+function showSilarisLoadingState(msg) {
+  var msgs  = document.getElementById('chatMessages');
+  var input = document.getElementById('chatInput');
+  var send  = document.getElementById('chatSendBtn');
+  if (input) { input.disabled = true; input.style.opacity = '0.5'; }
+  if (send)  { send.disabled  = true; send.style.opacity  = '0.5'; }
+  if (msgs) {
+    var el = document.createElement('div');
+    el.id = 'silaris-data-loading';
+    el.className = 'chat-msg ai';
+    el.innerHTML =
+      '<div class="chat-sender ai-label">SiLaris</div>'
+      + '<div class="chat-bubble ai-bubble" style="display:flex;align-items:center;gap:8px;">'
+      +   '<span class="scan-dot" style="display:inline-block;margin:0 2px;"></span>'
+      +   '<span class="scan-dot" style="display:inline-block;margin:0 2px;"></span>'
+      +   '<span class="scan-dot" style="display:inline-block;margin:0 2px;"></span>'
+      +   '<span style="font-size:12px;color:#6b7280;margin-left:4px;">' + (msg || 'Memuat data campaign...') + '</span>'
+      + '</div>';
+    msgs.appendChild(el);
+    scrollChatToBottom();
+  }
+}
+
+function hideSilarisLoadingState() {
+  var el    = document.getElementById('silaris-data-loading');
+  var input = document.getElementById('chatInput');
+  var send  = document.getElementById('chatSendBtn');
+  if (el)    el.remove();
+  if (input) { input.disabled = false; input.style.opacity = ''; }
+  if (send)  { send.disabled  = false; send.style.opacity  = ''; }
+}
+
+/* ── Helper: bangun campaign_data dari campaign._engagement ── */
+function _buildCampaignData(campaign) {
+  var eng = campaign._engagement || {};
+  var platLabel = { ig:'Instagram', meta:'Facebook', tiktok:'TikTok', youtube:'YouTube' };
+  return {
+    name:         campaign.name || '-',
+    platform:     platLabel[eng.platform] || platLabel[(campaign.platforms||[])[0]] || (campaign.platforms||[]).join(', ') || '-',
+    format:       eng.format   || campaign.format || 'post',
+    post_time:    eng.postTime  || campaign.launchTime || null,
+    caption:      (eng.caption  || campaign.caption || '').slice(0, 300) || null,
+    // Level 1
+    reactions:    eng.likes    != null ? eng.likes    : null,
+    comments:     eng.comments != null ? eng.comments : null,
+    shares:       eng.shares   != null ? eng.shares   : null,
+    views:        eng.views    != null ? eng.views    : null,
+    reach:        eng.reach    != null ? eng.reach    : null,
+    total_eng:    eng.total    != null ? eng.total    : null,
+    // Level 2 Instagram
+    saved:              eng.saved              || null,
+    follows:            eng.follows            || null,
+    profile_visits:     eng.profileVisits      || null,
+    total_interactions: eng.totalInteractions  || null,
+    reels_avg_watch_ms: eng.reelsAvgWatchMs    || null,
+    // Level 2 Facebook
+    organic_reach:      eng.organicReach       || null,
+    paid_reach:         eng.paidReach          || null,
+    viral_reach:        eng.viralReach         || null,
+    video_avg_watch_ms: eng.videoAvgWatchMs    || null,
+    reactions_love:     eng.reactionsLove      || null,
+    reactions_haha:     eng.reactionsHaha      || null,
+    reactions_wow:      eng.reactionsWow       || null,
+    reactions_angry:    eng.reactionsAngry     || null,
+    // Level 3
+    engagement_rate: eng.engagementRate || null,
+    data_quality:    eng.isExact ? 'exact_match' : 'estimasi'
+  };
+}
+
+async function openChatForCampaign(id) {
   var campaign = null;
   for (var i = 0; i < CAMPAIGNS.length; i++) {
     if (CAMPAIGNS[i].id === id) { campaign = CAMPAIGNS[i]; break; }
@@ -1377,56 +1485,31 @@ function openChatForCampaign(id) {
   if (empty) empty.style.display = 'none';
   if (msgs)  msgs.style.display  = 'flex';
 
-  // ── SiLaris Session Management ──────────────────────────────────────────
-  // Reset session ketika user pindah ke campaign yang berbeda
-  if (silarisSession.campaign_id !== id) {
-    var eng = campaign._engagement || {};
-    var platLabel = { ig:'Instagram', meta:'Facebook', tiktok:'TikTok', youtube:'YouTube' };
+  // ── FIX Race Condition: tunggu analytics selesai sebelum build session ──
+  if (!campaign._engagement && typeof _loadAnalyticsForCard === 'function') {
+    msgs.innerHTML = '';
+    showSilarisLoadingState('Memuat data campaign...');
+    try {
+      await _loadAnalyticsForCard(campaign);
+    } catch(e) {
+      console.warn('[silaris] _loadAnalyticsForCard gagal saat openChat:', e);
+    }
+    hideSilarisLoadingState();
+  }
 
+  // ── SiLaris Session Management ──────────────────────────────────────────
+  if (silarisSession.campaign_id !== id) {
     silarisSession = {
       campaign_id:    id,
-      campaign_data:  {
-        // Identitas campaign
-        name:         campaign.name || '-',
-        platform:     platLabel[eng.platform] || platLabel[(campaign.platforms||[])[0]] || (campaign.platforms||[]).join(', ') || '-',
-        format:       eng.format   || campaign.format || 'post',
-        post_time:    eng.postTime  || campaign.launchTime || null,
-        caption:      (eng.caption  || campaign.caption || '').slice(0, 300) || null,
-        // Level 1 — Engagement dasar
-        reactions:    eng.likes    != null ? eng.likes    : null,
-        comments:     eng.comments != null ? eng.comments : null,
-        shares:       eng.shares   != null ? eng.shares   : null,
-        views:        eng.views    != null ? eng.views    : null,
-        reach:        eng.reach    != null ? eng.reach    : null,
-        total_eng:    eng.total    != null ? eng.total    : null,
-        // Level 2 Instagram
-        saved:        eng.saved          || null,
-        follows:      eng.follows        || null,
-        profile_visits: eng.profileVisits || null,
-        total_interactions: eng.totalInteractions || null,
-        reels_avg_watch_ms: eng.reelsAvgWatchMs  || null,
-        // Level 2 Facebook
-        organic_reach:   eng.organicReach   || null,
-        paid_reach:      eng.paidReach      || null,
-        viral_reach:     eng.viralReach     || null,
-        video_avg_watch_ms: eng.videoAvgWatchMs || null,
-        reactions_love:  eng.reactionsLove  || null,
-        reactions_haha:  eng.reactionsHaha  || null,
-        reactions_wow:   eng.reactionsWow   || null,
-        reactions_angry: eng.reactionsAngry || null,
-        // Level 3 — Dihitung otomatis
-        engagement_rate: eng.engagementRate || null,
-        data_quality:    eng.isExact ? 'exact_match' : 'estimasi'
-      },
+      campaign_data:  _buildCampaignData(campaign),
       chat_history:   [],
       is_initialized: false
     };
 
     msgs.innerHTML = '';
-    // Trigger auto-insight langsung
     setTimeout(function() { generateAutoInsight(); }, 300);
   } else {
-    // Campaign sama — tampilkan ulang history yang sudah ada
+    // Campaign sama — tampilkan ulang history
     msgs.innerHTML = '';
     silarisSession.chat_history.forEach(function(m) {
       appendMsgDOM(m.role, m.text, null, false);
