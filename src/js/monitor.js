@@ -27,6 +27,58 @@ function _openCampaignPost(campId) {
 var campaignReachIntervals = {};
 var chatHistory = {};
 
+/* ─── SiLaris AI Session (Scoped Conversation Memory) ─── */
+var silarisSession = {
+  campaign_id:    null,
+  campaign_data:  null,
+  chat_history:   [],
+  is_initialized: false
+};
+
+var SILARIS_MAX_HISTORY = 6;
+var SILARIS_SYSTEM_PROMPT = [
+  'Kamu adalah SiLaris, seorang Senior Social Media Analyst dan Strategist',
+  'berpengalaman yang bekerja khusus untuk UMKM Indonesia.',
+  '',
+  'KARAKTER:',
+  '- Bicara santai, pakai bahasa Indonesia yang mudah dimengerti',
+  '- Langsung ke poin, tidak bertele-tele',
+  '- Kasih saran yang praktis dan bisa langsung dilakukan',
+  '- Gunakan analogi sederhana kalau perlu',
+  '- Jangan pakai istilah teknis yang membingungkan',
+  '',
+  'ATURAN KETAT:',
+  '- HANYA analisa campaign yang sedang dibuka user',
+  '- HANYA gunakan data engagement yang tersedia di context',
+  '- JANGAN berasumsi data yang tidak ada',
+  '- JANGAN bandingkan dengan campaign lain',
+  '- JANGAN jawab pertanyaan di luar topik campaign ini',
+  '- Kalau user tanya di luar topik, jawab:',
+  '  "Hei, saya hanya bisa bantu analisa campaign yang lagi kamu buka ya! Ada yang mau ditanyain soal campaign ini?"',
+  '',
+  'CARA ANALISA:',
+  '- Fokus pada engagement rate, bukan angka mentah saja',
+  '- Perhatikan metrik yang paling timpang (terlalu tinggi/rendah)',
+  '- Kasih saran yang spesifik dan actionable',
+  '- Sesuaikan saran dengan platform dan format campaign',
+  '',
+  'FORMAT AUTO-INSIGHT (gunakan HANYA saat pertama kali analisa):',
+  '"Hei! Saya udah cek data campaign \\"[nama]\\" kamu nih 👋',
+  '',
+  '📊 PERFORMA SEKARANG',
+  '• Engagement Rate: X% — [Bagus! / Perlu ditingkatkan]',
+  '• Paling kuat: [metric tertinggi & artinya]',
+  '• Perlu diperhatiin: [metric terendah & artinya]',
+  '',
+  '💡 INSIGHT UTAMA',
+  '[1-2 insight spesifik berdasarkan data, bahasa santai]',
+  '',
+  '🎯 SARAN LANGSUNG',
+  '[1-2 action konkret yang bisa langsung dilakukan]',
+  '',
+  'Ada yang mau kamu tanyain lebih dalam?"'
+].join('\n');
+
 /* ─── View Switching ─── */
 function switchMenu(view) {
   var cmd = document.getElementById('view-command');
@@ -977,6 +1029,57 @@ async function _loadAnalyticsForCard(campaign) {
                             m.views           || m.play_count      || m.impressions || 0);
     var reachReal= parseInt(m.reach           || m.organic_reach   || m.total_reach || 0);
 
+    // ── Simpan engagement ke campaign._engagement — dipakai SiLaris AI ──
+    // Level 2 Instagram
+    var _saved       = parseInt(m.saved            || 0) || null;
+    var _follows     = parseInt(m.follows          || m.new_followers  || 0) || null;
+    var _profVisits  = parseInt(m.profile_visits   || m.profile_views  || 0) || null;
+    var _totalInter  = parseInt(m.total_interactions || 0) || null;
+    var _reelsWatch  = m.ig_reels_avg_watch_time   || null;
+    // Level 2 Facebook
+    var _organicR    = parseInt(m.organic_reach    || 0) || null;
+    var _paidR       = parseInt(m.paid_reach       || 0) || null;
+    var _viralR      = parseInt(m.viral_reach      || 0) || null;
+    var _fanR        = parseInt(m.fan_reach        || 0) || null;
+    var _vidAvgWatch = m.video_avg_time_watched    || null;
+    var _rbtFull     = (m.reactions_by_type && typeof m.reactions_by_type === 'object') ? m.reactions_by_type : {};
+
+    campaign._engagement = {
+      // Level 1
+      likes:     likes,
+      comments:  comments,
+      shares:    shares,
+      views:     views     > 0 ? views     : null,
+      reach:     reachReal > 0 ? reachReal : null,
+      total:     likes + comments + shares,
+      // Level 2 Instagram
+      saved:           _saved,
+      follows:         _follows,
+      profileVisits:   _profVisits,
+      totalInteractions: _totalInter,
+      reelsAvgWatchMs: _reelsWatch,
+      // Level 2 Facebook
+      organicReach:    _organicR,
+      paidReach:       _paidR,
+      viralReach:      _viralR,
+      fanReach:        _fanR,
+      videoAvgWatchMs: _vidAvgWatch,
+      reactionsLove:   _rbtFull.love  || null,
+      reactionsHaha:   _rbtFull.haha  || null,
+      reactionsWow:    _rbtFull.wow   || null,
+      reactionsAngry:  _rbtFull.anger || null,
+      // Level 3 — dihitung otomatis
+      engagementRate: reachReal > 0
+        ? (((likes + comments + shares) / reachReal) * 100).toFixed(1) + '%'
+        : null,
+      // Meta
+      postTime: targetPost.posted_at || targetPost.published_at || null,
+      caption:  targetPost.caption   || campaign.caption        || null,
+      platform: (campaign.platforms  || [])[0]                  || null,
+      format:   campaign.format      || 'post',
+      isExact:  _isExactMatch
+    };
+
     // Ambil thumbnail dari media PostForMe HANYA jika match exact
     var mediaUrl = null;
     if (targetPost.media && targetPost.media.length && targetPost.media[0].url) {
@@ -1156,23 +1259,115 @@ function openChatForCampaign(id) {
   if (empty) empty.style.display = 'none';
   if (msgs)  msgs.style.display  = 'flex';
 
-  if (!chatHistory[id]) {
-    chatHistory[id] = [];
+  // ── SiLaris Session Management ──────────────────────────────────────────
+  // Reset session ketika user pindah ke campaign yang berbeda
+  if (silarisSession.campaign_id !== id) {
+    var eng = campaign._engagement || {};
+    var platLabel = { ig:'Instagram', meta:'Facebook', tiktok:'TikTok', youtube:'YouTube' };
+
+    silarisSession = {
+      campaign_id:    id,
+      campaign_data:  {
+        // Identitas campaign
+        name:         campaign.name || '-',
+        platform:     platLabel[eng.platform] || platLabel[(campaign.platforms||[])[0]] || (campaign.platforms||[]).join(', ') || '-',
+        format:       eng.format   || campaign.format || 'post',
+        post_time:    eng.postTime  || campaign.launchTime || null,
+        caption:      (eng.caption  || campaign.caption || '').slice(0, 300) || null,
+        // Level 1 — Engagement dasar
+        reactions:    eng.likes    != null ? eng.likes    : null,
+        comments:     eng.comments != null ? eng.comments : null,
+        shares:       eng.shares   != null ? eng.shares   : null,
+        views:        eng.views    != null ? eng.views    : null,
+        reach:        eng.reach    != null ? eng.reach    : null,
+        total_eng:    eng.total    != null ? eng.total    : null,
+        // Level 2 Instagram
+        saved:        eng.saved          || null,
+        follows:      eng.follows        || null,
+        profile_visits: eng.profileVisits || null,
+        total_interactions: eng.totalInteractions || null,
+        reels_avg_watch_ms: eng.reelsAvgWatchMs  || null,
+        // Level 2 Facebook
+        organic_reach:   eng.organicReach   || null,
+        paid_reach:      eng.paidReach      || null,
+        viral_reach:     eng.viralReach     || null,
+        video_avg_watch_ms: eng.videoAvgWatchMs || null,
+        reactions_love:  eng.reactionsLove  || null,
+        reactions_haha:  eng.reactionsHaha  || null,
+        reactions_wow:   eng.reactionsWow   || null,
+        reactions_angry: eng.reactionsAngry || null,
+        // Level 3 — Dihitung otomatis
+        engagement_rate: eng.engagementRate || null,
+        data_quality:    eng.isExact ? 'exact_match' : 'estimasi'
+      },
+      chat_history:   [],
+      is_initialized: false
+    };
+
     msgs.innerHTML = '';
-    setTimeout(function() { addAIMessage(id, campaign.aiOpening, campaign.aiChips); }, 300);
+    // Trigger auto-insight langsung
+    setTimeout(function() { generateAutoInsight(); }, 300);
   } else {
+    // Campaign sama — tampilkan ulang history yang sudah ada
     msgs.innerHTML = '';
-    chatHistory[id].forEach(function(m) {
-      appendMsgDOM(m.role, m.text, m.chips, m.chipsUsed);
+    silarisSession.chat_history.forEach(function(m) {
+      appendMsgDOM(m.role, m.text, null, false);
     });
     scrollChatToBottom();
   }
 }
 
+async function generateAutoInsight() {
+  if (!activeCampaignId) return;
+  if (silarisSession.campaign_id !== activeCampaignId) return;
+  if (silarisSession.is_initialized) return;
+
+  silarisSession.is_initialized = true;
+  showTypingIndicator();
+
+  var supabaseUrl = (typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.SUPABASE_URL)
+    || 'https://mojzmlrdihenvfhrwopd.supabase.co';
+  var supabaseKey = (typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.SUPABASE_ANON_KEY) || '';
+  var edgeUrl = supabaseUrl + '/functions/v1/silaris-chat';
+
+  try {
+    var resp = await fetch(edgeUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': 'Bearer ' + supabaseKey
+      },
+      body: JSON.stringify({
+        systemPrompt: SILARIS_SYSTEM_PROMPT,
+        campaignData: silarisSession.campaign_data,
+        autoInsight:  true,
+        messages:     []
+      })
+    });
+    var data = await resp.json();
+    var aiText = data.reply || 'Hei! Data campaign kamu sudah saya terima. Tanyakan apa saja soal campaign ini ya!';
+    removeTypingIndicator();
+
+    // Simpan ke session history
+    silarisSession.chat_history.push({ role: 'ai', text: aiText });
+    addAIMessageSilaris(activeCampaignId, aiText);
+  } catch(e) {
+    removeTypingIndicator();
+    var fallback = 'Hei! Saya SiLaris, siap bantu analisa campaign kamu. Ada yang mau ditanyain?';
+    silarisSession.chat_history.push({ role: 'ai', text: fallback });
+    addAIMessageSilaris(activeCampaignId, fallback);
+    console.error('[silaris] generateAutoInsight error:', e);
+  }
+}
+
+function addAIMessageSilaris(campaignId, text) {
+  if (activeCampaignId !== campaignId) return;
+  appendMsgDOM('ai', text, null, false);
+  scrollChatToBottom();
+}
+
 function addAIMessage(campaignId, text, chips) {
   if (activeCampaignId !== campaignId) return;
-  if (!chatHistory[campaignId]) chatHistory[campaignId] = [];
-  chatHistory[campaignId].push({ role: 'ai', text: text, chips: chips, chipsUsed: false });
   appendMsgDOM('ai', text, chips, false);
   scrollChatToBottom();
 }
@@ -1215,8 +1410,8 @@ function useChatChip(btn, chipText) {
 
 function addUserMessage(text) {
   if (!activeCampaignId) return;
-  if (!chatHistory[activeCampaignId]) chatHistory[activeCampaignId] = [];
-  chatHistory[activeCampaignId].push({ role: 'user', text: text });
+  // Simpan ke silarisSession history
+  silarisSession.chat_history.push({ role: 'user', text: text });
   appendMsgDOM('user', text, null, false);
   scrollChatToBottom();
 }
@@ -1226,11 +1421,9 @@ async function sendChatMessage(overrideText) {
   var text;
 
   if (overrideText) {
-    // Called from chip button — text provided directly
     text = overrideText.trim();
     addUserMessage(text);
   } else {
-    // Called from input box
     if (!input) return;
     text = input.value.trim();
     if (!text) return;
@@ -1241,24 +1434,12 @@ async function sendChatMessage(overrideText) {
 
   showTypingIndicator();
 
-  var campaign = activeCampaignId
-    ? (CAMPAIGNS || []).find(function(c) { return c.id === activeCampaignId; })
-    : null;
-
-  var systemPrompt = 'Kamu adalah SiLaris, co-pilot marketing AI untuk UMKM Indonesia di platform Larisi. Gunakan bahasa Indonesia santai, singkat, dan actionable. Selalu berikan rekomendasi spesifik dan praktis.'
-    + (campaign ? '\n\nData campaign aktif:'
-    + '\n- Nama: ' + (campaign.name || campaign.nama_campaign || '-')
-    + '\n- Platform: ' + (Array.isArray(campaign.platforms) ? campaign.platforms.join(', ') : (campaign.platform || '-'))
-    + '\n- Format: ' + (campaign.format || '-')
-    + '\n- Lokasi: ' + (campaign.kecamatan || campaign.location || '-')
-    + '\n- Radius: ' + (campaign.radius || '-') + ' km'
-    + '\n- Reach: ' + (campaign.estimated_reach_max || campaign.reach || 0)
-    + '\n- Status: ' + (campaign.status || 'running')
-    + '\n- Caption: ' + (campaign.caption || '').slice(0, 200)
-    : '\nTidak ada campaign yang dipilih.');
-
-  // Build conversation history for context
-  var history = (chatHistory[activeCampaignId] || []).map(function(m) {
+  // ── Build history dari silarisSession (max SILARIS_MAX_HISTORY) ──
+  var rawHistory = silarisSession.chat_history.slice(-(SILARIS_MAX_HISTORY));
+  // Pesan terakhir (yang baru ditambah user) sudah masuk ke rawHistory via addUserMessage
+  // Kirim semua history kecuali pesan user paling akhir (sudah jadi "user message" baru)
+  // Gemini butuh format: messages = history sebelum pesan terbaru + pesan terbaru sebagai last item
+  var history = rawHistory.map(function(m) {
     return { role: m.role === 'ai' ? 'assistant' : 'user', content: m.text };
   });
 
@@ -1271,17 +1452,26 @@ async function sendChatMessage(overrideText) {
     var resp = await fetch(edgeUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type':  'application/json',
         'Authorization': 'Bearer ' + supabaseKey
       },
       body: JSON.stringify({
+        systemPrompt: SILARIS_SYSTEM_PROMPT,
+        campaignData: silarisSession.campaign_data,
         messages:     history,
-        systemPrompt: systemPrompt
+        autoInsight:  false
       })
     });
     var data = await resp.json();
     var aiText = data.reply || 'Maaf, tidak bisa merespons saat ini.';
     removeTypingIndicator();
+
+    // Simpan balasan AI ke session
+    silarisSession.chat_history.push({ role: 'ai', text: aiText });
+    // Jaga max history
+    if (silarisSession.chat_history.length > SILARIS_MAX_HISTORY * 2) {
+      silarisSession.chat_history = silarisSession.chat_history.slice(-(SILARIS_MAX_HISTORY * 2));
+    }
     addAIMessage(activeCampaignId, aiText, null);
   } catch(e) {
     removeTypingIndicator();

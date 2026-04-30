@@ -1,9 +1,9 @@
 // RADAR — Edge Function: silaris-chat
-// Supabase Edge Function (Deno runtime) — powered by Groq (Llama 3.1)
+// Supabase Edge Function (Deno runtime) — powered by Gemini 2.0 Flash
 //
 // ─── Deploy Instructions ──────────────────────────────────────────────────────
 // 1. Set secret API key:
-//      supabase secrets set GROQ_API_KEY=gsk_xxx...
+//      supabase secrets set GEMINI_API_KEY=AIza_xxx...
 //
 // 2. Deploy function:
 //      supabase functions deploy silaris-chat --no-verify-jwt
@@ -17,8 +17,8 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Authorization, Content-Type",
 };
 
-const GROQ_MODEL = "llama-3.1-8b-instant";
-const GROQ_URL   = "https://api.groq.com/openai/v1/chat/completions";
+const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_URL   = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -32,17 +32,19 @@ serve(async (req: Request) => {
     });
   }
 
-  const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
-  if (!GROQ_API_KEY) {
-    return new Response(JSON.stringify({ error: "GROQ_API_KEY not set" }), {
+  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+  if (!GEMINI_API_KEY) {
+    return new Response(JSON.stringify({ error: "GEMINI_API_KEY not set" }), {
       status: 500,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
 
   let body: {
-    messages?:     Array<{ role: string; content: string }>;
-    systemPrompt?: string;
+    messages?:      Array<{ role: string; content: string }>;
+    systemPrompt?:  string;
+    campaignData?:  Record<string, unknown>;
+    autoInsight?:   boolean;
   };
 
   try {
@@ -55,49 +57,77 @@ serve(async (req: Request) => {
   }
 
   const messages     = body.messages     || [];
-  const systemPrompt = body.systemPrompt || "Kamu adalah SiLaris, co-pilot marketing AI untuk UMKM Indonesia di platform Larisi. Gunakan bahasa Indonesia santai, singkat, dan actionable.";
+  const systemPrompt = body.systemPrompt || "";
+  const campaignData = body.campaignData || null;
+  const autoInsight  = body.autoInsight  || false;
 
-  if (!messages.length) {
-    return new Response(JSON.stringify({ error: "messages array is empty" }), {
+  // Build messages array — sesuai brief Section 10
+  // 1. System prompt permanen (karakter + aturan)
+  // 2. Campaign context — selalu inject ulang
+  // 3. History chat (max 6)
+  // 4. Pesan baru dari user (atau trigger auto-insight)
+  const chatMessages: Array<{ role: string; content: string }> = [];
+
+  // System prompt permanen
+  if (systemPrompt) {
+    chatMessages.push({ role: "system", content: systemPrompt });
+  }
+
+  // Campaign context — inject ulang di setiap request
+  if (campaignData) {
+    chatMessages.push({
+      role: "system",
+      content: "Data Campaign Aktif:\n" + JSON.stringify(campaignData, null, 2),
+    });
+  }
+
+  // History chat
+  for (const m of messages) {
+    chatMessages.push({
+      role:    m.role === "ai" ? "assistant" : m.role,
+      content: m.content,
+    });
+  }
+
+  // Kalau auto-insight, tambah trigger message
+  if (autoInsight && !messages.length) {
+    chatMessages.push({
+      role: "user",
+      content: "Analisa campaign ini dan berikan insight langsung sesuai format yang sudah kamu ketahui.",
+    });
+  }
+
+  if (!chatMessages.length) {
+    return new Response(JSON.stringify({ error: "No messages to process" }), {
       status: 400,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
 
-  // Groq uses OpenAI-compatible format
-  // Map 'ai' role → 'assistant', keep 'user' as is
-  const chatMessages = [
-    { role: "system", content: systemPrompt },
-    ...messages.map((m) => ({
-      role:    m.role === "ai" ? "assistant" : m.role,
-      content: m.content,
-    })),
-  ];
-
   try {
-    const groqResp = await fetch(GROQ_URL, {
+    const geminiResp = await fetch(GEMINI_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${GROQ_API_KEY}`,
+        "Authorization": `Bearer ${GEMINI_API_KEY}`,
         "Content-Type":  "application/json",
       },
       body: JSON.stringify({
-        model:      GROQ_MODEL,
-        messages:   chatMessages,
-        max_tokens: 1000,
-        temperature: 0.7,
+        model:       GEMINI_MODEL,
+        messages:    chatMessages,
+        max_tokens:  1000,
+        temperature: 0.3,
       }),
     });
 
-    if (!groqResp.ok) {
-      const errText = await groqResp.text();
-      throw new Error(`Groq API error ${groqResp.status}: ${errText}`);
+    if (!geminiResp.ok) {
+      const errText = await geminiResp.text();
+      throw new Error(`Gemini API error ${geminiResp.status}: ${errText}`);
     }
 
-    const groqData = await groqResp.json();
-    const reply = groqData?.choices?.[0]?.message?.content?.trim() || "";
+    const geminiData = await geminiResp.json();
+    const reply = geminiData?.choices?.[0]?.message?.content?.trim() || "";
 
-    if (!reply) throw new Error("Empty response from Groq");
+    if (!reply) throw new Error("Empty response from Gemini");
 
     return new Response(JSON.stringify({ reply }), {
       status: 200,
@@ -106,7 +136,7 @@ serve(async (req: Request) => {
 
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("[silaris-chat] Groq API error:", msg);
+    console.error("[silaris-chat] Gemini API error:", msg);
 
     return new Response(
       JSON.stringify({ reply: null, error: msg }),
