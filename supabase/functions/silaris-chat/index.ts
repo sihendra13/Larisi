@@ -34,6 +34,7 @@ serve(async (req: Request) => {
 
   const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
   if (!GEMINI_API_KEY) {
+    console.error("[silaris-chat] GEMINI_API_KEY tidak ditemukan di secrets");
     return new Response(JSON.stringify({ error: "GEMINI_API_KEY not set" }), {
       status: 500,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
@@ -61,27 +62,23 @@ serve(async (req: Request) => {
   const campaignData = body.campaignData || null;
   const autoInsight  = body.autoInsight  || false;
 
-  // Build messages array — sesuai brief Section 10
-  // 1. System prompt permanen (karakter + aturan)
-  // 2. Campaign context — selalu inject ulang
-  // 3. History chat (max 6)
-  // 4. Pesan baru dari user (atau trigger auto-insight)
+  // ── Build single system message (Gemini OpenAI-compat hanya support 1 system role) ──
+  // Gabungkan systemPrompt + campaignData menjadi satu system message
+  let fullSystemContent = systemPrompt;
+  if (campaignData) {
+    fullSystemContent += "\n\n=== DATA CAMPAIGN YANG SEDANG DIANALISA ===\n"
+      + JSON.stringify(campaignData, null, 2)
+      + "\n===========================================";
+  }
+
   const chatMessages: Array<{ role: string; content: string }> = [];
 
-  // System prompt permanen
-  if (systemPrompt) {
-    chatMessages.push({ role: "system", content: systemPrompt });
+  // Satu system message gabungan
+  if (fullSystemContent.trim()) {
+    chatMessages.push({ role: "system", content: fullSystemContent });
   }
 
-  // Campaign context — inject ulang di setiap request
-  if (campaignData) {
-    chatMessages.push({
-      role: "system",
-      content: "Data Campaign Aktif:\n" + JSON.stringify(campaignData, null, 2),
-    });
-  }
-
-  // History chat
+  // History chat dari client (sudah dalam format {role, content})
   for (const m of messages) {
     chatMessages.push({
       role:    m.role === "ai" ? "assistant" : m.role,
@@ -89,20 +86,27 @@ serve(async (req: Request) => {
     });
   }
 
-  // Kalau auto-insight, tambah trigger message
+  // Kalau auto-insight dan belum ada pesan user sama sekali, tambah trigger
   if (autoInsight && !messages.length) {
     chatMessages.push({
-      role: "user",
+      role:    "user",
       content: "Analisa campaign ini dan berikan insight langsung sesuai format yang sudah kamu ketahui.",
     });
   }
 
-  if (!chatMessages.length) {
-    return new Response(JSON.stringify({ error: "No messages to process" }), {
+  if (!chatMessages.length || chatMessages.every(m => m.role === "system")) {
+    return new Response(JSON.stringify({ error: "No user messages to process" }), {
       status: 400,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
+
+  console.log("[silaris-chat] Sending to Gemini:", {
+    model:        GEMINI_MODEL,
+    msgCount:     chatMessages.length,
+    autoInsight,
+    hasCampaign:  !!campaignData,
+  });
 
   try {
     const geminiResp = await fetch(GEMINI_URL, {
@@ -121,13 +125,19 @@ serve(async (req: Request) => {
 
     if (!geminiResp.ok) {
       const errText = await geminiResp.text();
+      console.error("[silaris-chat] Gemini HTTP error", geminiResp.status, errText);
       throw new Error(`Gemini API error ${geminiResp.status}: ${errText}`);
     }
 
     const geminiData = await geminiResp.json();
     const reply = geminiData?.choices?.[0]?.message?.content?.trim() || "";
 
-    if (!reply) throw new Error("Empty response from Gemini");
+    if (!reply) {
+      console.error("[silaris-chat] Empty reply from Gemini. Full response:", JSON.stringify(geminiData));
+      throw new Error("Empty response from Gemini");
+    }
+
+    console.log("[silaris-chat] OK, reply length:", reply.length);
 
     return new Response(JSON.stringify({ reply }), {
       status: 200,
@@ -136,7 +146,7 @@ serve(async (req: Request) => {
 
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("[silaris-chat] Gemini API error:", msg);
+    console.error("[silaris-chat] Error:", msg);
 
     return new Response(
       JSON.stringify({ reply: null, error: msg }),

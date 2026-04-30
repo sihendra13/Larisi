@@ -1345,18 +1345,25 @@ async function generateAutoInsight() {
       })
     });
     var data = await resp.json();
-    var aiText = data.reply || 'Hei! Data campaign kamu sudah saya terima. Tanyakan apa saja soal campaign ini ya!';
+    if (data.error) console.error('[silaris] auto-insight API error:', data.error);
+    var aiText = data.reply;
     removeTypingIndicator();
 
-    // Simpan ke session history
-    silarisSession.chat_history.push({ role: 'ai', text: aiText });
-    addAIMessageSilaris(activeCampaignId, aiText);
+    if (aiText) {
+      silarisSession.chat_history.push({ role: 'ai', text: aiText });
+      addAIMessageSilaris(activeCampaignId, aiText);
+    } else {
+      // Fallback jika Gemini tidak balik reply
+      var noReply = 'Hei! Ada masalah teknis sedikit. Coba ketik pertanyaanmu tentang campaign ini ya!';
+      silarisSession.chat_history.push({ role: 'ai', text: noReply });
+      addAIMessageSilaris(activeCampaignId, noReply);
+    }
   } catch(e) {
     removeTypingIndicator();
-    var fallback = 'Hei! Saya SiLaris, siap bantu analisa campaign kamu. Ada yang mau ditanyain?';
+    var fallback = 'Gagal konek ke SiLaris. Pastikan koneksi internet kamu stabil, lalu coba lagi.';
     silarisSession.chat_history.push({ role: 'ai', text: fallback });
     addAIMessageSilaris(activeCampaignId, fallback);
-    console.error('[silaris] generateAutoInsight error:', e);
+    console.error('[silaris] generateAutoInsight fetch error:', e);
   }
 }
 
