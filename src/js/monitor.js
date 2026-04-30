@@ -782,7 +782,7 @@ function buildCampaignCard(c) {
     +       '<span style="font-size:10px;color:#111827;">Reach</span>'
     +       '<span style="font-size:11px;font-weight:700;color:#111827;display:flex;align-items:center;gap:4px;">'
     +         '<span id="reach-num-' + c.id + '">' + formatReach(c.reach) + '</span>'
-    +         '<span style="font-size:10px;color:#9ca3af;font-weight:400;margin-left:4px;">(estimasi)</span>'
+    +         '<span id="reach-est-' + c.id + '" style="font-size:10px;color:#9ca3af;font-weight:400;margin-left:4px;">(estimasi)</span>'
     +         (isRunning ? '<span style="font-size:9px;color:#16a34a;margin-left:3px;">▲</span>' : '')
     +       '</span>'
     +     '</div>'
@@ -955,6 +955,15 @@ async function _loadAnalyticsForCard(campaign) {
 
     // Extract metrics — PostForMe menyimpan di targetPost.metrics
     var m = targetPost.metrics || {};
+    // DEBUG SEMENTARA — cek metrics tambahan yang dibutuhkan (hapus setelah dicek)
+    console.log('[DEBUG extra]', campaign.name,
+      '| new_followers:', m.new_followers,
+      '| profile_views:', m.profile_views,
+      '| impression_sources:', JSON.stringify(m.impression_sources),
+      '| audience_cities:', JSON.stringify(m.audience_cities),
+      '| audience_genders:', JSON.stringify(m.audience_genders),
+      '| audience_countries:', JSON.stringify(m.audience_countries)
+    );
 
     // reactions_total = snapshot count saat ini — cocok dengan FB UI (BENAR)
     // reactions_like  = sum activity log lintas time window — bisa double-count (SALAH untuk display)
