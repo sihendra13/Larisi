@@ -955,15 +955,6 @@ async function _loadAnalyticsForCard(campaign) {
 
     // Extract metrics — PostForMe menyimpan di targetPost.metrics
     var m = targetPost.metrics || {};
-    // DEBUG SEMENTARA — cek metrics tambahan yang dibutuhkan (hapus setelah dicek)
-    console.log('[DEBUG extra]', campaign.name,
-      '| new_followers:', m.new_followers,
-      '| profile_views:', m.profile_views,
-      '| impression_sources:', JSON.stringify(m.impression_sources),
-      '| audience_cities:', JSON.stringify(m.audience_cities),
-      '| audience_genders:', JSON.stringify(m.audience_genders),
-      '| audience_countries:', JSON.stringify(m.audience_countries)
-    );
 
     // reactions_total = snapshot count saat ini — cocok dengan FB UI (BENAR)
     // reactions_like  = sum activity log lintas time window — bisa double-count (SALAH untuk display)
