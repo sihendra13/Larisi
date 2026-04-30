@@ -11,6 +11,8 @@ var _analyticsCache = {};
 var _analyticsFetching = {};
 var _analyticsCacheTime = {}; // timestamp kapan cache diisi (untuk invalidasi)
 var ANALYTICS_CACHE_TTL = 120000; // 2 menit
+var ANALYTICS_AUTO_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 menit
+var _analyticsRefreshTimer = null;
 
 /* Buka URL postingan dari card — dipanggil saat timestamp diklik */
 function _openCampaignPost(campId) {
@@ -227,11 +229,33 @@ async function loadCampaignsFromSupabase() {
     renderCampaigns();
     startReachCounters();
     startPostUrlPolling();
+    startAnalyticsAutoRefresh();
   } catch(e) {
     window.CAMPAIGNS_LOADED = true;
     console.warn('[monitor] loadCampaignsFromSupabase error:', e);
   }
 }
+
+/* ─── Auto-refresh engagement metrics setiap 5 menit ─── */
+function startAnalyticsAutoRefresh() {
+  if (_analyticsRefreshTimer) clearInterval(_analyticsRefreshTimer);
+
+  _analyticsRefreshTimer = setInterval(function() {
+    var active = CAMPAIGNS.filter(function(c) {
+      return c.status === 'running' && document.getElementById('campaign-card-' + c.id);
+    });
+    if (!active.length) return;
+
+    // Expire cache semua akun agar fetch ulang dari PostForMe
+    Object.keys(_analyticsCacheTime).forEach(function(key) {
+      _analyticsCacheTime[key] = 0;
+    });
+
+    console.log('[monitor] auto-refresh engagement untuk', active.length, 'campaign...');
+    active.forEach(function(c) { _loadAnalyticsForCard(c); });
+  }, ANALYTICS_AUTO_REFRESH_INTERVAL);
+}
+window.startAnalyticsAutoRefresh = startAnalyticsAutoRefresh;
 
 /* ─── Auto-fetch post_url dari PostForMe ─── */
 
