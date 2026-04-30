@@ -824,14 +824,16 @@ async function _loadAnalyticsForCard(campaign) {
     }
     if (!acc || !acc.id) return;
 
-    // cacheKey per-campaign agar tidak tercampur antar campaign dari akun yang sama
-    var cacheKey = acc.id + '||' + (campaign.platform_post_id || campaign.post_id || campaign.id);
+    // Feed cache per AKUN (acc.id) — bukan per campaign
+    // Semua campaign dari akun yang sama berbagi SATU fetch ke PostForMe
+    // Mencegah concurrent API calls yang menyebabkan rate-limit → beberapa campaign kosong
+    var feedKey  = acc.id;
+    var now      = Date.now();
+    var expired  = !_analyticsCacheTime[feedKey] ||
+                   (now - _analyticsCacheTime[feedKey] > ANALYTICS_CACHE_TTL);
 
-    if (!_analyticsCache[cacheKey] && !_analyticsFetching[cacheKey]) {
-      _analyticsFetching[cacheKey] = true;
-      // Selalu pakai endpoint tanpa filter — PostForMe tidak support filter platform_post_id
-      // dan bisa return error (bukan empty) jika param tidak dikenal.
-      // Exact match dilakukan client-side via platform_post_id setelah semua post diambil.
+    if ((!_analyticsCache[feedKey] || expired) && !_analyticsFetching[feedKey]) {
+      _analyticsFetching[feedKey] = true;
       var baseEndpoint = '/v1/social-account-feeds/' + acc.id + '?expand=metrics&limit=50';
       try {
         var data = await _pfmProxy(baseEndpoint, 'GET', null);
@@ -839,20 +841,21 @@ async function _loadAnalyticsForCard(campaign) {
           data.posts || data.data || data.items ||
           data.feeds || data.results || data.feed
         )) || (Array.isArray(data) ? data : []);
-        _analyticsCache[cacheKey] = posts;
+        _analyticsCache[feedKey]     = posts;
+        _analyticsCacheTime[feedKey] = Date.now();
       } catch(e) {
-        _analyticsCache[cacheKey] = [];
+        _analyticsCache[feedKey] = [];
       }
-      _analyticsFetching[cacheKey] = false;
+      _analyticsFetching[feedKey] = false;
     }
 
     var waited = 0;
-    while (_analyticsFetching[cacheKey] && waited < 5000) {
+    while (_analyticsFetching[feedKey] && waited < 5000) {
       await new Promise(function(r){ setTimeout(r, 100); });
       waited += 100;
     }
 
-    var posts = _analyticsCache[cacheKey] || [];
+    var posts = _analyticsCache[feedKey] || [];
     if (!posts.length) return;
 
     // Match berdasarkan platform_post_id yang tersimpan di Supabase
