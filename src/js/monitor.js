@@ -908,8 +908,9 @@ async function _loadAnalyticsForCard(campaign) {
             updateCampaignPostId(campaign.supabase_id, campaign.post_id, null, _bestPost.platform_post_id);
           }
         }
-      } else if (_bestPost && campaign.post_id) {
-        // Tidak dalam toleransi — pakai best-effort saja, TIDAK set URL/thumbnail
+      } else if (_bestPost) {
+        // Diff > 15 menit — pakai best-effort engagement saja (tanpa URL/thumbnail)
+        // Tidak perlu post_id — campaign.created_at sudah cukup sebagai gating
         targetPost    = _bestPost;
         _isExactMatch = false;
         console.warn('[monitor] Temporal fallback (diff terlalu jauh):', campaign.name,
@@ -918,7 +919,7 @@ async function _loadAnalyticsForCard(campaign) {
     }
 
     // Fallback final: posts[0] hanya jika temporal matching tidak berhasil sama sekali
-    // dan campaign punya post_id (lama dari Supabase)
+    // (posts kosong atau tidak ada created_at), dan campaign punya post_id
     if (!targetPost && campaign.post_id && campaign.created_at) {
       targetPost    = posts[0] || null;
       _isExactMatch = false;
