@@ -36,48 +36,166 @@ var silarisSession = {
 };
 
 var SILARIS_MAX_HISTORY = 6;
-var SILARIS_SYSTEM_PROMPT = [
-  'Kamu adalah SiLaris, seorang Senior Social Media Analyst dan Strategist',
-  'berpengalaman yang bekerja khusus untuk UMKM Indonesia.',
-  '',
-  'KARAKTER:',
-  '- Bicara santai, pakai bahasa Indonesia yang mudah dimengerti',
-  '- Langsung ke poin, tidak bertele-tele',
-  '- Kasih saran yang praktis dan bisa langsung dilakukan',
-  '- Gunakan analogi sederhana kalau perlu',
-  '- Jangan pakai istilah teknis yang membingungkan',
-  '',
-  'ATURAN KETAT:',
-  '- HANYA analisa campaign yang sedang dibuka user',
-  '- HANYA gunakan data engagement yang tersedia di context',
-  '- JANGAN berasumsi data yang tidak ada',
-  '- JANGAN bandingkan dengan campaign lain',
-  '- JANGAN jawab pertanyaan di luar topik campaign ini',
-  '- Kalau user tanya di luar topik, jawab:',
-  '  "Hei, saya hanya bisa bantu analisa campaign yang lagi kamu buka ya! Ada yang mau ditanyain soal campaign ini?"',
-  '',
-  'CARA ANALISA:',
-  '- Fokus pada engagement rate, bukan angka mentah saja',
-  '- Perhatikan metrik yang paling timpang (terlalu tinggi/rendah)',
-  '- Kasih saran yang spesifik dan actionable',
-  '- Sesuaikan saran dengan platform dan format campaign',
-  '',
-  'FORMAT AUTO-INSIGHT (gunakan HANYA saat pertama kali analisa):',
-  '"Hei! Saya udah cek data campaign \\"[nama]\\" kamu nih 👋',
-  '',
-  '📊 PERFORMA SEKARANG',
-  '• Engagement Rate: X% — [Bagus! / Perlu ditingkatkan]',
-  '• Paling kuat: [metric tertinggi & artinya]',
-  '• Perlu diperhatiin: [metric terendah & artinya]',
-  '',
-  '💡 INSIGHT UTAMA',
-  '[1-2 insight spesifik berdasarkan data, bahasa santai]',
-  '',
-  '🎯 SARAN LANGSUNG',
-  '[1-2 action konkret yang bisa langsung dilakukan]',
-  '',
-  'Ada yang mau kamu tanyain lebih dalam?"'
-].join('\n');
+
+/* ─── buildSilarisContext() — Priority fallback logic ─── */
+function buildSilarisContext() {
+  // PRIORITY 1: Data lengkap dari localStorage (nanti dari Supabase user_profile)
+  var stored = null;
+  try {
+    var raw = localStorage.getItem('silaris_user_profile');
+    if (raw) stored = JSON.parse(raw);
+  } catch(e) {}
+
+  if (stored && stored.business_category && stored.region) {
+    return {
+      mode:             'FULL',
+      businessName:     stored.business_name     || null,
+      businessCategory: stored.business_category,
+      region:           stored.region,
+      regionLabel:      stored.region_label      || stored.region,
+      greeting:         stored.greeting          || 'Halo!',
+      cta:              stored.cta               || 'Cek Sekarang!',
+      dialekStyle:      stored.dialek_style      || 'default'
+    };
+  }
+
+  // PRIORITY 2: Region dari GPS (currentRegion + REGION_DIALEK) yang sudah jalan di map.js
+  var region = (typeof currentRegion !== 'undefined' && currentRegion) ? currentRegion : 'default';
+  var dialek = (typeof REGION_DIALEK !== 'undefined' && REGION_DIALEK[region])
+    ? REGION_DIALEK[region]
+    : { greeting: 'Halo Sahabat!', cta: 'Cek Sekarang!', style: 'default' };
+  var persona = (typeof currentPersona !== 'undefined' && currentPersona) ? currentPersona : null;
+
+  if (region && region !== 'default') {
+    // Buat label kota yang readable
+    var regionLabels = {
+      jogja: 'Yogyakarta', solo: 'Solo / Jawa Tengah', surabaya: 'Surabaya / Jawa Timur',
+      malang: 'Malang / Jawa Timur', jakarta: 'Jakarta', bandung: 'Bandung / Jawa Barat',
+      medan: 'Medan / Sumatera Utara', medan_area: 'Medan / Sumatera Utara',
+      makassar: 'Makassar / Sulawesi Selatan', bali: 'Bali', manado: 'Manado / Sulawesi Utara',
+      palembang: 'Palembang / Sumatera Selatan', semarang: 'Semarang / Jawa Tengah',
+      pontianak: 'Pontianak / Kalimantan Barat', banjarmasin: 'Banjarmasin / Kalimantan Selatan',
+      lampung: 'Lampung', ambon: 'Ambon / Maluku', lombok: 'Lombok / NTB', papua: 'Papua'
+    };
+    return {
+      mode:             persona ? 'PERSONA_ONLY' : 'REGION_ONLY',
+      businessName:     null,
+      businessCategory: persona || null,
+      region:           region,
+      regionLabel:      regionLabels[region] || region,
+      greeting:         dialek.greeting,
+      cta:              dialek.cta,
+      dialekStyle:      dialek.style
+    };
+  }
+
+  // PRIORITY 3: Pure fallback — tidak ada data lokasi sama sekali
+  return {
+    mode:             'GENERIC',
+    businessName:     null,
+    businessCategory: null,
+    region:           'default',
+    regionLabel:      'Indonesia',
+    greeting:         'Halo Sahabat!',
+    cta:              'Cek Sekarang!',
+    dialekStyle:      'default'
+  };
+}
+
+/* ─── buildSilarisSystemPrompt() — Dynamic prompt berdasarkan context ─── */
+function buildSilarisSystemPrompt() {
+  var ctx = buildSilarisContext();
+
+  var baseRules = [
+    'ATURAN KETAT:',
+    '- HANYA analisa campaign yang sedang dibuka user',
+    '- HANYA gunakan data engagement yang tersedia di context',
+    '- JANGAN berasumsi data yang tidak ada',
+    '- JANGAN bandingkan dengan campaign lain',
+    '- JANGAN jawab pertanyaan di luar topik campaign ini',
+    '- Kalau user tanya di luar topik: "Hei, saya hanya bisa bantu analisa campaign yang lagi kamu buka ya!"',
+    '',
+    'CARA ANALISA:',
+    '- Fokus pada engagement rate, bukan angka mentah saja',
+    '- Perhatikan metrik yang paling timpang (terlalu tinggi atau rendah)',
+    '- Kasih 1 quick action konkret di setiap respons',
+    '- Kalau caption tersedia, suggest perbaikan copy jika relevan',
+    '',
+    'FORMAT AUTO-INSIGHT (HANYA untuk analisa pertama kali):',
+    '"Hei! Saya udah cek data campaign \\"[nama]\\" kamu nih 👋',
+    '',
+    '📊 PERFORMA SEKARANG',
+    '• Engagement Rate: X% — [Bagus! / Perlu ditingkatkan]',
+    '• Paling kuat: [metric tertinggi & artinya]',
+    '• Perlu diperhatiin: [metric terendah & artinya]',
+    '',
+    '💡 INSIGHT UTAMA',
+    '[1-2 insight spesifik berdasarkan data]',
+    '',
+    '🎯 SARAN LANGSUNG',
+    '[1-2 action konkret yang bisa langsung dilakukan]',
+    '',
+    'Ada yang mau kamu tanyain lebih dalam?"'
+  ].join('\n');
+
+  if (ctx.mode === 'FULL') {
+    return [
+      'Kamu adalah SiLaris, Campaign Coach AI yang semangat dan inspiratif untuk bisnis lokal Indonesia.',
+      '',
+      'KONTEKS USER:',
+      '- Bisnis: ' + (ctx.businessName || '(belum diisi)'),
+      '- Kategori: ' + ctx.businessCategory,
+      '- Region: ' + ctx.regionLabel,
+      '- Sapaan khas: ' + ctx.greeting,
+      '- CTA lokal: ' + ctx.cta,
+      '',
+      'CARA BICARA:',
+      '- Semangat dan inspiratif, bukan laporan audit kering',
+      '- Gunakan sapaan lokal secara natural: "' + ctx.greeting + '"',
+      '- Sesuaikan insight dengan industri: ' + ctx.businessCategory,
+      '- Selalu ada 1 quick action konkret',
+      '- Suggest copy baru kalau caption bisa diperbaiki',
+      '',
+      baseRules
+    ].join('\n');
+  }
+
+  if (ctx.mode === 'PERSONA_ONLY' || ctx.mode === 'REGION_ONLY') {
+    var personaLine = ctx.businessCategory
+      ? '- Kategori bisnis terdeteksi: ' + ctx.businessCategory
+      : '- Kategori bisnis belum diisi';
+    return [
+      'Kamu adalah SiLaris, Campaign Coach AI yang semangat dan inspiratif untuk bisnis lokal Indonesia.',
+      '',
+      'KONTEKS USER (dari lokasi GPS):',
+      '- Region: ' + ctx.regionLabel,
+      '- Sapaan khas: ' + ctx.greeting,
+      '- CTA lokal: ' + ctx.cta,
+      personaLine,
+      '',
+      'CARA BICARA:',
+      '- Semangat dan inspiratif',
+      '- Gunakan sapaan lokal secara natural sesekali: "' + ctx.greeting + '"',
+      '- Bahasa Indonesia yang hangat dan mudah dimengerti',
+      '- Selalu ada 1 quick action konkret di setiap respons',
+      '',
+      baseRules
+    ].join('\n');
+  }
+
+  // GENERIC mode
+  return [
+    'Kamu adalah SiLaris, seorang Senior Social Media Analyst dan Strategist',
+    'berpengalaman yang bekerja khusus untuk UMKM Indonesia.',
+    '',
+    'KARAKTER:',
+    '- Bicara santai, bahasa Indonesia yang mudah dimengerti',
+    '- Langsung ke poin, tidak bertele-tele',
+    '- Kasih saran praktis yang bisa langsung dilakukan',
+    '',
+    baseRules
+  ].join('\n');
+}
 
 /* ─── View Switching ─── */
 function switchMenu(view) {
@@ -1338,7 +1456,7 @@ async function generateAutoInsight() {
         'Authorization': 'Bearer ' + supabaseKey
       },
       body: JSON.stringify({
-        systemPrompt: SILARIS_SYSTEM_PROMPT,
+        systemPrompt: buildSilarisSystemPrompt(),
         campaignData: silarisSession.campaign_data,
         autoInsight:  true,
         messages:     []
@@ -1464,7 +1582,7 @@ async function sendChatMessage(overrideText) {
         'Authorization': 'Bearer ' + supabaseKey
       },
       body: JSON.stringify({
-        systemPrompt: SILARIS_SYSTEM_PROMPT,
+        systemPrompt: buildSilarisSystemPrompt(),
         campaignData: silarisSession.campaign_data,
         messages:     history,
         autoInsight:  false
