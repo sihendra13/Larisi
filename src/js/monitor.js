@@ -1345,7 +1345,8 @@ async function generateAutoInsight() {
       })
     });
     var data = await resp.json();
-    if (data.error) console.error('[silaris] auto-insight API error:', data.error);
+    console.log('[silaris] generateAutoInsight response:', JSON.stringify(data));
+    if (data.error) console.error('[silaris] ❌ Gemini error:', data.error);
     var aiText = data.reply;
     removeTypingIndicator();
 
@@ -1470,6 +1471,8 @@ async function sendChatMessage(overrideText) {
       })
     });
     var data = await resp.json();
+    console.log('[silaris] sendChatMessage response:', JSON.stringify(data));
+    if (data.error) console.error('[silaris] ❌ Gemini error:', data.error);
     var aiText = data.reply || 'Maaf, tidak bisa merespons saat ini.';
     removeTypingIndicator();
 

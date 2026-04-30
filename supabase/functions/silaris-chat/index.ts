@@ -149,7 +149,7 @@ serve(async (req: Request) => {
     console.error("[silaris-chat] Error:", msg);
 
     return new Response(
-      JSON.stringify({ reply: null, error: msg }),
+      JSON.stringify({ reply: null, error: msg, debug: true }),
       {
         status: 200,
         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
