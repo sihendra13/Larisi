@@ -169,7 +169,7 @@ function buildSilarisSystemPrompt() {
     '  Caption sekarang: "Sugeng rawuh — Ada yang baru di Sumbersari, 1.0km dari kamu! Mampir yuk!"',
     '  Caption yang lebih kuat: "Ada yang baru buat kamu di Sumbersari! 🔥 Mampir sekarang sebelum kehabisan.',
     '  📍 1km dari kamu. #JogjaLokal #KulinerJogja #Sumbersari"',
-    'Kalau caption sudah bagus, bilang apa yang sudah kuat dan kenapa.'
+    'Kalau caption sudah bagus, bilang apa yang sudah kuat dan kenapa.',
     '',
     'BENCHMARK INTERPRETASI DATA:',
     'Engagement Rate:',
@@ -1026,8 +1026,7 @@ function buildCampaignCard(c) {
     +     '<div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;">'
     +       '<span style="font-size:10px;color:#111827;">Reach</span>'
     +       '<span style="font-size:11px;font-weight:700;color:#111827;display:flex;align-items:center;gap:4px;">'
-    +         '<span id="reach-num-' + c.id + '">' + formatReach(c.reach) + '</span>'
-    +         '<span id="reach-est-' + c.id + '" style="font-size:10px;color:#9ca3af;font-weight:400;margin-left:4px;">(estimasi)</span>'
+    +         '<span id="reach-num-' + c.id + '">' + (c._reachReal ? formatReach(c.reach) : '—') + '</span>'
     +         (isRunning ? '<span style="font-size:9px;color:#16a34a;margin-left:3px;">▲</span>' : '')
     +       '</span>'
     +     '</div>'
@@ -1772,7 +1771,8 @@ function startReachCounters() {
   CAMPAIGNS.forEach(function(c) {
     if (c.status !== 'running') return;
     if (campaignReachIntervals[c.id]) return;
-    if (c._reachReal) return; // sudah dapat data real, skip animasi simulasi
+    if (c._reachReal) return;
+    return; // Animasi estimasi dimatikan — tampilkan — sampai data real tiba
     // Scale increment to ~0.4–0.8% of target per tick — realistic for any target size
     var baseInc = Math.max(5, Math.round(c.reachTarget * 0.005));
     campaignReachIntervals[c.id] = setInterval(function() {
