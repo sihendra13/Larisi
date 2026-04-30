@@ -17,8 +17,8 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Authorization, Content-Type",
 };
 
-const GEMINI_MODEL = "gemini-2.0-flash";
-const GEMINI_URL   = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+const GROQ_MODEL = "llama-3.3-70b-versatile";
+const GROQ_URL   = "https://api.groq.com/openai/v1/chat/completions";
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -32,10 +32,10 @@ serve(async (req: Request) => {
     });
   }
 
-  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-  if (!GEMINI_API_KEY) {
-    console.error("[silaris-chat] GEMINI_API_KEY tidak ditemukan di secrets");
-    return new Response(JSON.stringify({ error: "GEMINI_API_KEY not set" }), {
+  const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+  if (!GROQ_API_KEY) {
+    console.error("[silaris-chat] GROQ_API_KEY tidak ditemukan di secrets");
+    return new Response(JSON.stringify({ error: "GROQ_API_KEY not set" }), {
       status: 500,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
@@ -101,40 +101,40 @@ serve(async (req: Request) => {
     });
   }
 
-  console.log("[silaris-chat] Sending to Gemini:", {
-    model:        GEMINI_MODEL,
+  console.log("[silaris-chat] Sending to Groq:", {
+    model:        GROQ_MODEL,
     msgCount:     chatMessages.length,
     autoInsight,
     hasCampaign:  !!campaignData,
   });
 
   try {
-    const geminiResp = await fetch(GEMINI_URL, {
+    const groqResp = await fetch(GROQ_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${GEMINI_API_KEY}`,
+        "Authorization": `Bearer ${GROQ_API_KEY}`,
         "Content-Type":  "application/json",
       },
       body: JSON.stringify({
-        model:       GEMINI_MODEL,
+        model:       GROQ_MODEL,
         messages:    chatMessages,
         max_tokens:  1000,
         temperature: 0.3,
       }),
     });
 
-    if (!geminiResp.ok) {
-      const errText = await geminiResp.text();
-      console.error("[silaris-chat] Gemini HTTP error", geminiResp.status, errText);
-      throw new Error(`Gemini API error ${geminiResp.status}: ${errText}`);
+    if (!groqResp.ok) {
+      const errText = await groqResp.text();
+      console.error("[silaris-chat] Groq HTTP error", groqResp.status, errText);
+      throw new Error(`Groq API error ${groqResp.status}: ${errText}`);
     }
 
-    const geminiData = await geminiResp.json();
-    const reply = geminiData?.choices?.[0]?.message?.content?.trim() || "";
+    const groqData = await groqResp.json();
+    const reply = groqData?.choices?.[0]?.message?.content?.trim() || "";
 
     if (!reply) {
-      console.error("[silaris-chat] Empty reply from Gemini. Full response:", JSON.stringify(geminiData));
-      throw new Error("Empty response from Gemini");
+      console.error("[silaris-chat] Empty reply from Groq. Full response:", JSON.stringify(groqData));
+      throw new Error("Empty response from Groq");
     }
 
     console.log("[silaris-chat] OK, reply length:", reply.length);
@@ -146,7 +146,7 @@ serve(async (req: Request) => {
 
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("[silaris-chat] Error:", msg);
+    console.error("[silaris-chat] Groq Error:", msg);
 
     return new Response(
       JSON.stringify({ reply: null, error: msg, debug: true }),
