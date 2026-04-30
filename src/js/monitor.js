@@ -955,6 +955,15 @@ async function _loadAnalyticsForCard(campaign) {
 
     // Extract metrics — PostForMe menyimpan di targetPost.metrics
     var m = targetPost.metrics || {};
+    // DEBUG SEMENTARA — cek semua field metrics dari PostForMe (hapus setelah dicek)
+    console.log('[DEBUG metrics]', campaign.name, '|',
+      'reach:', m.reach,
+      '| likes:', m.likes,
+      '| comments:', m.comments,
+      '| video_views:', m.video_views,
+      '| profile_views:', m.profile_views,
+      '| new_followers:', m.new_followers
+    );
 
     // reactions_total = snapshot count saat ini — cocok dengan FB UI (BENAR)
     // reactions_like  = sum activity log lintas time window — bisa double-count (SALAH untuk display)
