@@ -1084,12 +1084,35 @@
 }
 .an-si-cta:hover { background: var(--rausch); }
 
-/* ─── Two Column Grid ─── */
+/* ─── Two Column Grid (equal, for legacy) ─── */
 .an-two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   align-items: start;
+}
+
+/* ─── Main 2-Column Layout (63% left / 37% right) ─── */
+.an-two-main-cols {
+  display: grid;
+  grid-template-columns: 63fr 37fr;
+  gap: 12px;
+  align-items: start;
+}
+.an-col-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.an-col-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  position: sticky;
+  top: 16px;
+  align-self: start;
 }
 
 /* ─── Generic White Card ─── */

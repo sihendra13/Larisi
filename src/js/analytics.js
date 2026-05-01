@@ -316,9 +316,20 @@ function _renderTwoColSkeleton(id) {
   '</div>';
 }
 
-/* ─── Section: Campaign Terbaik + Mood Audiens ─── */
-function _renderBestMood(agg) {
-  // Campaign terbaik
+/* ─── Skeleton: Single White Card ─── */
+function _renderCardSkeleton(id) {
+  return '<div class="an-white-card" id="' + id + '">' +
+    '<div class="an-card-header">' + _anSkBlock('52%', 13) + '</div>' +
+    '<div class="an-card-body">' +
+      _anSkBlock('100%', 11) +
+      '<div style="margin-top:8px;">' + _anSkBlock('85%', 11) + '</div>' +
+      '<div style="margin-top:8px;">' + _anSkBlock('68%', 11) + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+/* ─── Section: Campaign Terbaik ─── */
+function _renderCampaignBest(agg) {
   var bestCampHTML = '';
   if (agg.bestCamp) {
     var c = agg.bestCamp;
@@ -347,8 +358,19 @@ function _renderBestMood(agg) {
         'Belum ada data engagement. Kunjungi <strong>Campaign Monitor</strong> untuk memuat data performa.' +
       '</div>';
   }
+  return '<div class="an-white-card" id="an-camp-wrap">' +
+    '<div class="an-card-header">' +
+      '<div class="an-card-icon">' +
+        '<svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>' +
+      '</div>' +
+      '<div><div class="an-card-title">Campaign Terbaik</div><div class="an-card-sub">performa tertinggi</div></div>' +
+    '</div>' +
+    '<div class="an-card-body">' + bestCampHTML + '</div>' +
+  '</div>';
+}
 
-  // Mood grid 2×2
+/* ─── Section: Mood Audiens ─── */
+function _renderMoodAudiens(agg) {
   var moodHTML = '<div class="an-mood-grid">';
   var totalR = agg.totalReact;
   if (agg.hasMoodData && totalR > 0) {
@@ -372,30 +394,16 @@ function _renderBestMood(agg) {
     });
   }
   moodHTML += '</div>';
-
-  return '<div class="an-two-col" id="an-tc1-wrap">' +
-    // Campaign terbaik
-    '<div class="an-white-card">' +
-      '<div class="an-card-header">' +
-        '<div class="an-card-icon">' +
-          '<svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>' +
-        '</div>' +
-        '<div><div class="an-card-title">Campaign Terbaik</div><div class="an-card-sub">performa tertinggi</div></div>' +
+  return '<div class="an-white-card" id="an-mood-wrap">' +
+    '<div class="an-card-header">' +
+      '<div class="an-card-icon">' +
+        '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>' +
       '</div>' +
-      '<div class="an-card-body">' + bestCampHTML + '</div>' +
+      '<div><div class="an-card-title">Mood Audiens Minggu Ini</div><div class="an-card-sub">breakdown reactions semua campaign</div></div>' +
     '</div>' +
-    // Mood audiens
-    '<div class="an-white-card">' +
-      '<div class="an-card-header">' +
-        '<div class="an-card-icon">' +
-          '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>' +
-        '</div>' +
-        '<div><div class="an-card-title">Mood Audiens</div><div class="an-card-sub">breakdown reaksi</div></div>' +
-      '</div>' +
-      '<div class="an-card-body">' +
-        moodHTML +
-        '<div class="an-mood-insight" id="an-mood-insight">Memuat insight audiens...</div>' +
-      '</div>' +
+    '<div class="an-card-body">' +
+      moodHTML +
+      '<div class="an-mood-insight" id="an-mood-insight">Memuat insight audiens...</div>' +
     '</div>' +
   '</div>';
 }
@@ -427,20 +435,18 @@ function _buildStitchPreviews(agg) {
   }).join('');
 }
 
-/* ─── Section: Local Pulse + Platform Terkuat ─── */
-function _renderLocalPulsePlatform(agg) {
+/* ─── Section: Local Pulse ─── */
+function _renderLocalPulse(agg) {
   var ctx   = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : null;
   var reg   = (typeof currentRegion !== 'undefined') ? currentRegion : 'default';
   var dial  = (typeof REGION_DIALEK !== 'undefined' && REGION_DIALEK[reg]) ? REGION_DIALEK[reg] : { greeting: 'Halo Sahabat!', cta: 'Cek Sekarang!' };
   var regLabel = ctx ? ctx.regionLabel : 'Indonesia';
-
   var hStart = String(agg.bestHour).padStart(2,'0');
   var hEnd   = String((agg.bestHour + 2) % 24).padStart(2,'0');
   var bestTimeStr = agg.total > 0 ? hStart + ':00 – ' + hEnd + ':00' : '19:00 – 21:00';
 
   var pulseHTML =
     '<div class="an-pulse-list">' +
-    // Jam terbaik
     '<div class="an-pulse-item">' +
       '<div class="an-pulse-icon-wrap"><span>⏰</span></div>' +
       '<div><div class="an-pulse-key">Jam Terbaik Posting</div>' +
@@ -448,7 +454,6 @@ function _renderLocalPulsePlatform(agg) {
         '<div class="an-pulse-note">Waktu dengan frekuensi publish tertinggi</div>' +
       '</div>' +
     '</div>' +
-    // Hari terkuat
     '<div class="an-pulse-item">' +
       '<div class="an-pulse-icon-wrap"><span>📅</span></div>' +
       '<div><div class="an-pulse-key">Hari Terkuat</div>' +
@@ -456,7 +461,6 @@ function _renderLocalPulsePlatform(agg) {
         '<div class="an-pulse-note">Hari dengan aktivitas campaign tertinggi</div>' +
       '</div>' +
     '</div>' +
-    // Sapaan lokal
     '<div class="an-pulse-item">' +
       '<div class="an-pulse-icon-wrap"><span>📍</span></div>' +
       '<div><div class="an-pulse-key">Sapaan Lokal Terbaik</div>' +
@@ -464,7 +468,6 @@ function _renderLocalPulsePlatform(agg) {
         '<div class="an-pulse-note">Sapaan khas <span class="an-pulse-highlight">' + regLabel + '</span> — terbukti meningkatkan engagement lokal</div>' +
       '</div>' +
     '</div>' +
-    // Format terbaik
     '<div class="an-pulse-item">' +
       '<div class="an-pulse-icon-wrap"><span>🎬</span></div>' +
       '<div><div class="an-pulse-key">Format Terbaik</div>' +
@@ -473,15 +476,26 @@ function _renderLocalPulsePlatform(agg) {
       '</div>' +
     '</div>' +
     '</div>' +
-
-    // Stitching text section
     '<div class="an-stitch-section">' +
       '<div class="an-stitch-title">Stitching Text Terbaik di Foto</div>' +
       '<div id="an-stitch-previews">' + _buildStitchPreviews(agg) + '</div>' +
       '<div class="an-stitch-insight" id="an-stitch-insight">Memuat pola terkuat...</div>' +
     '</div>';
 
-  // Platform list
+  return '<div class="an-white-card" id="an-pulse-wrap">' +
+    '<div class="an-card-header">' +
+      '<div class="an-card-icon" style="background:linear-gradient(135deg,rgba(121,26,219,0.15),rgba(121,26,219,0.05));">' +
+        '<svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' +
+      '</div>' +
+      '<div style="flex:1;"><div class="an-card-title">Local Pulse</div><div class="an-card-sub">pola lokal terbaik</div></div>' +
+      '<span class="local-pulse-badge">LOKAL</span>' +
+    '</div>' +
+    '<div class="an-card-body">' + pulseHTML + '</div>' +
+  '</div>';
+}
+
+/* ─── Section: Platform Terkuat ─── */
+function _renderPlatformTerkuat(agg) {
   var platHTML = '<div class="an-plat-list">';
   if (agg.platList.length > 0) {
     agg.platList.forEach(function(p) {
@@ -493,7 +507,6 @@ function _renderLocalPulsePlatform(agg) {
           '<span class="an-plat-badge count">' + p.count + ' campaign</span>' +
         '</div>';
     });
-    // Add platforms not in use
     ['ig','meta','tiktok'].forEach(function(p) {
       var inUse = agg.platList.some(function(pl) { return pl.key === p; });
       if (!inUse) {
@@ -511,28 +524,14 @@ function _renderLocalPulsePlatform(agg) {
   platHTML += '</div>';
   platHTML += '<div class="an-plat-insight" id="an-plat-insight">Memuat insight platform...</div>';
 
-  return '<div class="an-two-col" id="an-tc2-wrap">' +
-    // Local Pulse
-    '<div class="an-white-card">' +
-      '<div class="an-card-header">' +
-        '<div class="an-card-icon" style="background:linear-gradient(135deg,rgba(121,26,219,0.15),rgba(121,26,219,0.05));">' +
-          '<svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' +
-        '</div>' +
-        '<div style="flex:1;"><div class="an-card-title">Local Pulse</div><div class="an-card-sub">pola lokal terbaik</div></div>' +
-        '<span class="local-pulse-badge">LOKAL</span>' +
+  return '<div class="an-white-card" id="an-plat-wrap">' +
+    '<div class="an-card-header">' +
+      '<div class="an-card-icon">' +
+        '<svg viewBox="0 0 24 24"><rect x="18" y="3" width="4" height="18" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="2" y="13" width="4" height="8" rx="1"/></svg>' +
       '</div>' +
-      '<div class="an-card-body">' + pulseHTML + '</div>' +
+      '<div><div class="an-card-title">Platform Terkuat</div><div class="an-card-sub">engagement rate per platform</div></div>' +
     '</div>' +
-    // Platform terkuat
-    '<div class="an-white-card">' +
-      '<div class="an-card-header">' +
-        '<div class="an-card-icon">' +
-          '<svg viewBox="0 0 24 24"><rect x="18" y="3" width="4" height="18" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="2" y="13" width="4" height="8" rx="1"/></svg>' +
-        '</div>' +
-        '<div><div class="an-card-title">Platform Terkuat</div><div class="an-card-sub">engagement rate per platform</div></div>' +
-      '</div>' +
-      '<div class="an-card-body">' + platHTML + '</div>' +
-    '</div>' +
+    '<div class="an-card-body">' + platHTML + '</div>' +
   '</div>';
 }
 
@@ -856,15 +855,26 @@ function initAnalytics() {
   var container = document.getElementById('view-analytics');
   if (!container) return;
 
-  // Render full skeleton immediately
+  // KPI dulu (full-width), lalu 2-col layout (63% left / 37% right sticky)
+  // Left:  SiLaris · Campaign Terbaik · Local Pulse · Rekomendasi · Competitor
+  // Right: Mood Audiens · Platform Terkuat (sticky saat scroll)
+  // Bottom: Upgrade Pro (full-width, paling bawah)
   container.innerHTML =
     '<div class="an-dashboard-wrap">' +
-      _renderSilarisNarasi() +
       _renderStatCardsSkeleton() +
-      _renderTwoColSkeleton('an-tc1-wrap') +
-      _renderTwoColSkeleton('an-tc2-wrap') +
-      _renderRekomendasiWeek() +
-      _renderCompetitorSection() +
+      '<div class="an-two-main-cols">' +
+        '<div class="an-col-main">' +
+          _renderSilarisNarasi() +
+          _renderCardSkeleton('an-camp-wrap') +
+          _renderCardSkeleton('an-pulse-wrap') +
+          _renderRekomendasiWeek() +
+          _renderCompetitorSection() +
+        '</div>' +
+        '<div class="an-col-side">' +
+          _renderCardSkeleton('an-mood-wrap') +
+          _renderCardSkeleton('an-plat-wrap') +
+        '</div>' +
+      '</div>' +
       _renderUpgradePro() +
     '</div>';
 
@@ -878,12 +888,12 @@ function initAnalytics() {
     var agg = _anAggregate(campaigns);
     window._anLastAgg = agg;
 
-    // Replace skeleton sections with real data
-    _anReplace('an-sc-wrap', _renderStatCards(agg));
-    _anReplace('an-tc1-wrap', _renderBestMood(agg));
-    _anReplace('an-tc2-wrap', _renderLocalPulsePlatform(agg));
+    _anReplace('an-sc-wrap',   _renderStatCards(agg));
+    _anReplace('an-camp-wrap', _renderCampaignBest(agg));
+    _anReplace('an-mood-wrap', _renderMoodAudiens(agg));
+    _anReplace('an-pulse-wrap',_renderLocalPulse(agg));
+    _anReplace('an-plat-wrap', _renderPlatformTerkuat(agg));
 
-    // Fetch AI narasi + rekomendasi
     _callSilarisAnalytics(agg)
       .then(function(ai) { _anPopulateAI(ai || _buildAnalyticsFallback(agg)); })
       .catch(function()  { _anPopulateAI(_buildAnalyticsFallback(agg)); });
