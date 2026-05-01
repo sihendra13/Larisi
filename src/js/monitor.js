@@ -1024,8 +1024,7 @@ function buildCampaignCard(c) {
     +     _engRow2('Shares',    'shares-'   + c.id)
     +     (c.platforms[0] === 'meta'
             ? _engRowNA('Views', 'views-' + c.id,
-                'Facebook tidak menyediakan data Views untuk post biasa. '
-              + 'Untuk FB Video, data akan muncul jika tersedia.')
+                'Post foto & teks Facebook tidak memiliki data Views')
             : _engRow2('Views', 'views-' + c.id,
                 (c.views && c.views > 0) ? formatReach(c.views) : '—'))
     +     '<div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;">'
@@ -1078,12 +1077,13 @@ function _engRow2(label, elId, defaultVal, isLive) {
 }
 
 // Row khusus untuk metrik yang tidak tersedia di platform tertentu
-// Tampil "N/A" abu-abu + ikon ⓘ dengan tooltip penjelasan saat hover
+// Tampil "N/A" abu-abu + ikon ⓘ dengan custom tooltip saat hover
 function _engRowNA(label, elId, tooltip) {
   return '<div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;">'
     + '<span style="font-size:10px;color:#111827;">' + label + '</span>'
-    + '<span id="' + elId + '" style="font-size:11px;font-weight:600;color:#9ca3af;'
-    +   'display:flex;align-items:center;gap:3px;cursor:help;" title="' + tooltip + '">'
+    + '<span id="' + elId + '" class="eng-na-tip" data-tooltip="' + tooltip + '" '
+    +   'style="font-size:11px;font-weight:600;color:#9ca3af;'
+    +   'display:flex;align-items:center;gap:3px;cursor:help;position:relative;">'
     +   'N/A'
     +   '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" '
     +     'stroke="#9ca3af" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'

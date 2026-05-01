@@ -288,3 +288,30 @@
   transition: background 0.2s;
 }
 .cc-empty-cta:hover { background: #7c3aed; }
+
+/* ─── Custom Tooltip (N/A Views) ─── */
+.eng-na-tip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: #ffffff;
+  color: #222222;
+  font-size: 11px;
+  font-weight: 400;
+  font-family: var(--font, -apple-system, sans-serif);
+  line-height: 1.45;
+  padding: 7px 11px;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.13), 0 0 0 1px rgba(0,0,0,0.07);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 9999;
+}
+.eng-na-tip:hover::after {
+  opacity: 1;
+  transform: translateY(0);
+}
