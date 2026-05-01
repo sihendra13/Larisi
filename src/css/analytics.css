@@ -1005,13 +1005,13 @@
 
 /* ─── SiLaris Narasi Card ─── */
 .an-si-card {
-  background: linear-gradient(135deg, rgba(121,26,219,0.07) 0%, rgba(121,26,219,0.02) 100%);
-  border: 1px solid rgba(121,26,219,0.16);
+  background: var(--white);
+  border: 1px solid var(--border);
   border-radius: var(--radius-card);
-  padding: 20px 22px;
+  padding: 22px 24px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   box-shadow: var(--shadow-card);
 }
 .an-si-header {
@@ -1066,22 +1066,23 @@
   color: var(--near-black);
 }
 .an-si-cta {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  background: var(--rausch);
+  background: var(--near-black);
   color: white;
   border: none;
   border-radius: var(--radius-btn);
-  padding: 10px 18px;
+  padding: 12px 18px;
   font-size: 13px;
   font-weight: 700;
   font-family: var(--font);
   cursor: pointer;
-  width: fit-content;
+  width: 100%;
   transition: background .15s;
 }
-.an-si-cta:hover { background: var(--rausch-deep); }
+.an-si-cta:hover { background: var(--rausch); }
 
 /* ─── Two Column Grid ─── */
 .an-two-col {
@@ -1160,25 +1161,32 @@
 }
 
 /* ─── Mood Audiens ─── */
-.an-mood-bars { display: flex; flex-direction: column; gap: 8px; }
-.an-mood-row  { display: flex; align-items: center; gap: 8px; }
-.an-mood-emoji { font-size: 15px; line-height: 1; width: 20px; text-align: center; flex-shrink: 0; }
-.an-mood-label { font-size: 11px; color: var(--secondary); width: 34px; flex-shrink: 0; }
-.an-mood-bar-bg {
-  flex: 1; height: 6px;
-  background: var(--surface); border-radius: 3px; overflow: hidden;
+.an-mood-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
-.an-mood-bar-fill {
-  height: 100%; border-radius: 3px; transition: width 0.9s ease;
+.an-mood-cell {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 12px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
 }
-.an-mood-pct {
-  font-size: 10px; font-weight: 700; color: var(--near-black);
-  width: 28px; text-align: right; flex-shrink: 0;
+.an-mood-cell-emoji { font-size: 22px; line-height: 1; }
+.an-mood-cell-pct {
+  font-size: 18px; font-weight: 700; color: var(--near-black);
+  letter-spacing: -0.5px; line-height: 1;
 }
+.an-mood-cell-label { font-size: 10px; color: var(--secondary); font-weight: 500; }
 .an-mood-insight {
-  font-size: 11px; line-height: 1.5; color: var(--secondary);
+  font-size: 11px; line-height: 1.55; color: var(--secondary);
   background: var(--surface); border-radius: 8px;
-  padding: 8px 10px; font-style: italic;
+  padding: 8px 10px; font-style: italic; margin-top: 2px;
+  border-left: 2px solid rgba(121,26,219,0.25);
 }
 
 /* ─── Local Pulse Items ─── */
@@ -1251,12 +1259,11 @@
   width: 28px; height: 28px; border-radius: 7px;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.an-plat-icon svg { width: 14px; height: 14px; }
+.an-plat-icon svg { width: 18px; height: 18px; }
 .an-plat-icon.ig      { background: rgba(225,48,108,0.1);  color: #E1306C; }
 .an-plat-icon.meta    { background: rgba(24,119,242,0.1);  color: #1877F2; }
 .an-plat-icon.tiktok  { background: rgba(0,0,0,0.07);      color: #222; }
 .an-plat-icon.youtube { background: rgba(255,0,0,0.1);     color: #FF0000; }
-.an-plat-name  { font-size: 12px; font-weight: 700; color: var(--near-black); flex: 1; }
 .an-plat-badge {
   display: inline-flex; align-items: center;
   padding: 2px 7px; border-radius: 20px;
@@ -1297,7 +1304,7 @@
 }
 .an-step-num {
   width: 24px; height: 24px; border-radius: 50%;
-  background: var(--rausch); color: white;
+  background: var(--near-black); color: white;
   font-size: 11px; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; margin-top: 1px;

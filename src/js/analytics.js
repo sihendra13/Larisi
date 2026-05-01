@@ -348,35 +348,30 @@ function _renderBestMood(agg) {
       '</div>';
   }
 
-  // Mood bars
-  var moodHTML = '<div class="an-mood-bars">';
+  // Mood grid 2×2
+  var moodHTML = '<div class="an-mood-grid">';
   var totalR = agg.totalReact;
   if (agg.hasMoodData && totalR > 0) {
     agg.moodData.forEach(function(m) {
       var pct = Math.round((m.count / totalR) * 100);
       moodHTML +=
-        '<div class="an-mood-row">' +
-          '<span class="an-mood-emoji">' + m.emoji + '</span>' +
-          '<span class="an-mood-label">' + m.label + '</span>' +
-          '<div class="an-mood-bar-bg"><div class="an-mood-bar-fill" style="width:' + pct + '%;background:' + m.color + ';"></div></div>' +
-          '<span class="an-mood-pct">' + pct + '%</span>' +
+        '<div class="an-mood-cell">' +
+          '<span class="an-mood-cell-emoji">' + m.emoji + '</span>' +
+          '<span class="an-mood-cell-pct">' + pct + '%</span>' +
+          '<span class="an-mood-cell-label">' + m.label + '</span>' +
         '</div>';
     });
   } else {
-    [['❤️','Love',45,'#ef4444'],['👍','Like',35,'#3b82f6'],['😂','Haha',12,'#f59e0b'],['😮','Wow',8,'#8b5cf6']].forEach(function(m, i) {
+    [['❤️','Love','—'],['👍','Like','—'],['😂','Haha','—'],['😮','Wow','—']].forEach(function(m) {
       moodHTML +=
-        '<div class="an-mood-row">' +
-          '<span class="an-mood-emoji">' + m[0] + '</span>' +
-          '<span class="an-mood-label">' + m[1] + '</span>' +
-          '<div class="an-mood-bar-bg"><div class="an-mood-bar-fill" style="width:' + m[2] + '%;background:' + m[3] + ';transition-delay:' + (i*0.12) + 's;"></div></div>' +
-          '<span class="an-mood-pct">—</span>' +
+        '<div class="an-mood-cell">' +
+          '<span class="an-mood-cell-emoji">' + m[0] + '</span>' +
+          '<span class="an-mood-cell-pct" style="color:var(--disabled);">' + m[2] + '</span>' +
+          '<span class="an-mood-cell-label">' + m[1] + '</span>' +
         '</div>';
     });
   }
   moodHTML += '</div>';
-  if (!agg.hasMoodData) {
-    moodHTML += '<div style="font-size:10px;color:var(--disabled);font-style:italic;margin-top:2px;">* Breakdown dari Facebook campaigns</div>';
-  }
 
   return '<div class="an-two-col" id="an-tc1-wrap">' +
     // Campaign terbaik
@@ -493,8 +488,7 @@ function _renderLocalPulsePlatform(agg) {
       var cfg = _AN_PLAT[p.key] || { name: p.key, color: '#666' };
       platHTML +=
         '<div class="an-plat-row">' +
-          '<div class="an-plat-icon ' + p.key + '">' + _anPlatSvg(p.key) + '</div>' +
-          '<span class="an-plat-name">' + cfg.name + '</span>' +
+          '<div class="an-plat-icon ' + p.key + '" title="' + cfg.name + '">' + _anPlatSvg(p.key) + '</div>' +
           (p.avgER > 0 ? '<span class="an-plat-badge er">ER ' + p.avgER.toFixed(1) + '%</span>' : '') +
           '<span class="an-plat-badge count">' + p.count + ' campaign</span>' +
         '</div>';
@@ -506,8 +500,7 @@ function _renderLocalPulsePlatform(agg) {
         var cfg = _AN_PLAT[p];
         platHTML +=
           '<div class="an-plat-row" style="opacity:0.45;">' +
-            '<div class="an-plat-icon ' + p + '">' + _anPlatSvg(p) + '</div>' +
-            '<span class="an-plat-name">' + cfg.name + '</span>' +
+            '<div class="an-plat-icon ' + p + '" title="' + cfg.name + '">' + _anPlatSvg(p) + '</div>' +
             '<span class="an-plat-badge count" style="color:var(--disabled);">belum dipakai</span>' +
           '</div>';
       }
