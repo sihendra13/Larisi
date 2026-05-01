@@ -1022,7 +1022,12 @@ function buildCampaignCard(c) {
     +     _engRow2('Reactions', 'likes-'    + c.id)
     +     _engRow2('Comments',  'comments-' + c.id)
     +     _engRow2('Shares',    'shares-'   + c.id)
-    +     _engRow2('Views',     'views-'    + c.id, (c.views && c.views > 0) ? formatReach(c.views) : '—')
+    +     (c.platforms[0] === 'meta'
+            ? _engRowNA('Views', 'views-' + c.id,
+                'Facebook tidak menyediakan data Views untuk post biasa. '
+              + 'Untuk FB Video, data akan muncul jika tersedia.')
+            : _engRow2('Views', 'views-' + c.id,
+                (c.views && c.views > 0) ? formatReach(c.views) : '—'))
     +     '<div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;">'
     +       '<span style="font-size:10px;color:#111827;">Reach</span>'
     +       '<span style="font-size:11px;font-weight:700;color:#111827;display:flex;align-items:center;gap:4px;">'
@@ -1068,6 +1073,24 @@ function _engRow2(label, elId, defaultVal, isLive) {
     + '<span style="font-size:11px;font-weight:700;color:#111827;">'
     +   '<span id="' + elId + '">' + (defaultVal || '—') + '</span>'
     +   (isLive ? '<span style="font-size:9px;color:#16a34a;margin-left:3px;">▲</span>' : '')
+    + '</span>'
+    + '</div>';
+}
+
+// Row khusus untuk metrik yang tidak tersedia di platform tertentu
+// Tampil "N/A" abu-abu + ikon ⓘ dengan tooltip penjelasan saat hover
+function _engRowNA(label, elId, tooltip) {
+  return '<div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;">'
+    + '<span style="font-size:10px;color:#111827;">' + label + '</span>'
+    + '<span id="' + elId + '" style="font-size:11px;font-weight:600;color:#9ca3af;'
+    +   'display:flex;align-items:center;gap:3px;cursor:help;" title="' + tooltip + '">'
+    +   'N/A'
+    +   '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" '
+    +     'stroke="#9ca3af" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
+    +     '<circle cx="12" cy="12" r="9"/>'
+    +     '<line x1="12" y1="11" x2="12" y2="16"/>'
+    +     '<circle cx="12" cy="8" r="0.5" fill="#9ca3af" stroke="none"/>'
+    +   '</svg>'
     + '</span>'
     + '</div>';
 }
@@ -1327,8 +1350,17 @@ async function _loadAnalyticsForCard(campaign) {
     if (totalEl)    totalEl.textContent    = fmt(likes + comments + shares);
 
     // Update views DOM
+    // FB post biasa tidak punya views → pertahankan N/A yang sudah di-render
+    // FB video bisa punya views → timpa dengan angka real jika ada
+    // Platform lain: update normal
     var viewsEl = document.getElementById('views-' + campaign.id);
-    if (viewsEl) viewsEl.textContent = views > 0 ? fmt(views) : '—';
+    if (viewsEl) {
+      if (plat === 'meta' && views === 0) {
+        // N/A sudah di-set saat render — jangan timpa dengan '—'
+      } else {
+        viewsEl.textContent = views > 0 ? fmt(views) : '—';
+      }
+    }
 
     // Update reach DOM dengan data real dari API
     if (reachReal > 0) {
