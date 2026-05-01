@@ -1200,26 +1200,50 @@ async function _loadAnalyticsForCard(campaign) {
     // Extract metrics — PostForMe menyimpan di targetPost.metrics
     var m = targetPost.metrics || {};
 
-    // reactions_total = snapshot count saat ini — cocok dengan FB UI (BENAR)
-    // reactions_like  = sum activity log lintas time window — bisa double-count (SALAH untuk display)
-    // reactions_by_type.like = breakdown per tipe reaksi, paling akurat untuk FB
-    // Prioritas: reactions_by_type.like → reactions_total → reactions_like → fallback lain
+    // ── Bug Fix 1: FB Likes ──────────────────────────────────────────────────
+    // FB: reactions_total = semua reaksi (👍❤️😂😮😢😡) = yang tampil di UI FB — PRIORITAS UTAMA
+    //     reactions_by_type.like = hanya 👍 thumbs-up = SUBSET, bukan total
+    //     Matt (PostForMe support) konfirmasi reactions_by_type tidak didukung untuk FB posts
+    // IG/TikTok/YouTube: pakai m.likes / m.like_count / m.favorite_count
     var _rbt  = (m.reactions_by_type && typeof m.reactions_by_type === 'object')
                 ? m.reactions_by_type : {};
-    var _likesRaw =
-      (_rbt.like     != null) ? _rbt.like     :
-      (m.reactions_total != null) ? m.reactions_total :
-      (m.reactions_like  != null) ? m.reactions_like  :
-      (m.like_count  != null) ? m.like_count  :
-      (m.likes       != null) ? m.likes       :
-      (m.reactions   != null) ? m.reactions   :
-      (m.favorite_count != null) ? m.favorite_count : 0;
+    var _likesRaw = (plat === 'meta')
+      // Facebook: reactions_total dulu (semua reaksi), baru fallback ke breakdown
+      ? ((m.reactions_total != null) ? m.reactions_total :
+         (m.reactions_like  != null) ? m.reactions_like  :
+         (_rbt.like         != null) ? _rbt.like         :
+         (m.like_count      != null) ? m.like_count      :
+         (m.reactions       != null) ? m.reactions       : 0)
+      // IG / TikTok / YouTube: likes biasa
+      : ((_rbt.like         != null) ? _rbt.like         :
+         (m.like_count      != null) ? m.like_count      :
+         (m.likes           != null) ? m.likes           :
+         (m.reactions_total != null) ? m.reactions_total :
+         (m.favorite_count  != null) ? m.favorite_count  : 0);
     var likes = parseInt(_likesRaw, 10) || 0;
     var comments = parseInt(m.comments        || m.comment_count   || m.reply_count || 0);
     var shares   = parseInt(m.shares          || m.share_count     || m.retweet_count || 0);
     var views    = parseInt(m.video_views     || m.video_views_unique || m.view_count ||
                             m.views           || m.play_count      || m.impressions || 0);
-    var reachReal= parseInt(m.reach           || m.organic_reach   || m.total_reach || 0);
+
+    // ── Bug Fix 2: FB Reach ──────────────────────────────────────────────────
+    // FB Graph API tidak punya satu field 'reach' untuk post — split jadi:
+    // organic_reach + paid_reach + viral_reach + fan_reach
+    // IG: m.reach tersedia langsung sebagai satu field → tidak perlu sum
+    var reachReal;
+    if (plat === 'meta') {
+      var _or = parseInt(m.organic_reach || 0) || 0;
+      var _pr = parseInt(m.paid_reach    || 0) || 0;
+      var _vr = parseInt(m.viral_reach   || 0) || 0;
+      var _fr = parseInt(m.fan_reach     || 0) || 0;
+      var _sumFbReach = _or + _pr + _vr + _fr;
+      // Jika semua split null, coba field generic sebagai safety net
+      reachReal = _sumFbReach > 0
+        ? _sumFbReach
+        : parseInt(m.reach || m.total_reach || 0);
+    } else {
+      reachReal = parseInt(m.reach || m.organic_reach || m.total_reach || 0);
+    }
 
     // ── Simpan engagement ke campaign._engagement — dipakai SiLaris AI ──
     // Level 2 Instagram
@@ -1261,9 +1285,15 @@ async function _loadAnalyticsForCard(campaign) {
       reactionsWow:    _rbtFull.wow   || null,
       reactionsAngry:  _rbtFull.anger || null,
       // Level 3 — dihitung otomatis
-      engagementRate: reachReal > 0
-        ? (((likes + comments + shares) / reachReal) * 100).toFixed(1) + '%'
-        : null,
+      // Bug Fix 3: TikTok & YouTube tidak punya field 'reach' — denominator ER = views
+      // Standar industri: TikTok ER = (likes+comments+shares) / views × 100
+      // IG/FB: denominator = reach (sudah difix di Bug Fix 2)
+      engagementRate: (function() {
+        var _denom = reachReal > 0 ? reachReal : views;
+        return _denom > 0
+          ? (((likes + comments + shares) / _denom) * 100).toFixed(1) + '%'
+          : null;
+      })(),
       // Meta
       postTime: targetPost.posted_at || targetPost.published_at || null,
       caption:  targetPost.caption   || campaign.caption        || null,
