@@ -993,13 +993,11 @@
 
 /* ─── Dashboard Wrapper ─── */
 .an-dashboard-wrap {
-  padding: 20px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 14px;
   width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
   box-sizing: border-box;
 }
 
