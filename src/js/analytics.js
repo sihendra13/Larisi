@@ -266,7 +266,7 @@ function _buildAnalyticsSystemPrompt(agg) {
   // Gap + aksi P2
   var hasGap = agg.totalPaidReach === 0 || agg.platList.length < 2;
   var p2Guide = agg.totalPaidReach === 0
-    ? 'Gap: paid reach masih 0%. Aksi konkret: rekomendasikan boost campaign "' + (agg.bestCamp ? agg.bestCamp.name : 'terkuat') + '" dengan Rp 20-50rb selama 3 hari. Contoh: "Satu peluang besar yang belum disentuh: paid reach kamu masih 0%. Coba boost campaign terkuatmu minggu ini dengan Rp 20-50rb selama 3 hari — ini kombinasi paling efisien untuk lipatgandakan jangkauanmu sekarang."'
+    ? 'Gap: paid reach masih 0%. Aksi konkret: rekomendasikan boost campaign "' + (agg.bestCamp ? agg.bestCamp.name : 'terbaik') + '" dengan Rp 20-50rb selama 3 hari. Contoh: "Satu peluang besar yang belum disentuh: paid reach kamu masih 0%. Coba boost campaign terbaikmu minggu ini dengan Rp 20-50rb selama 3 hari — ini kombinasi paling efisien untuk lipatgandakan jangkauanmu sekarang."'
     : agg.platList.length < 2
     ? 'Gap: baru aktif di ' + agg.platList.length + ' platform. Aksi: rekomendasikan expand ke platform baru yang relevan dengan bisnis ini. Contoh: "Satu peluang yang belum disentuh: kamu masih hanya aktif di ' + agg.platList.length + ' platform — audiens potensialmu di platform lain belum terjangkau sama sekali."'
     : 'Semua metrik sudah baik. Tulis tantangan naik level: konsistensi + ekspansi ke format atau platform baru. Contoh: "Semua metrik sudah hijau — tantangan berikutnya adalah mempertahankan konsistensi ini sambil mencoba format baru untuk menjangkau segmen audiens yang lebih luas."';
@@ -286,7 +286,7 @@ function _buildAnalyticsSystemPrompt(agg) {
     '- Total reach: ' + _anFmtK(agg.totalReach),
     '- Avg ER: ' + (erVal != null ? erVal.toFixed(1) + '%' : 'belum tersedia'),
     '- ' + paidReachNote,
-    '- Campaign terkuat: ' + (agg.bestCamp ? '"' + agg.bestCamp.name + '" dengan ER ' + agg.bestER.toFixed(1) + '%' : 'belum ada data'),
+    '- Campaign terbaik: ' + (agg.bestCamp ? '"' + agg.bestCamp.name + '" dengan ER ' + agg.bestER.toFixed(1) + '%' : 'belum ada data'),
     '- Platform aktif: ' + platSummary,
     '- Jam posting paling sering: ' + String(agg.bestHour).padStart(2,'0') + ':00',
     '- Hari posting paling sering: ' + agg.bestDay,
@@ -306,7 +306,7 @@ function _buildAnalyticsSystemPrompt(agg) {
     '  "narasi_p1": "kalimat pembuka + angka spesifik + interpretasi ER + kalimat penutup dinamis. Maks 2 kalimat.",',
     '  "narasi_p2": "gap terbesar sebagai peluang + 1 aksi konkret spesifik. Maks 2 kalimat.",',
     '  "clue_potensi": "1 kalimat spesifik, WAJIB sebut angka ER ' + (erVal ? erVal.toFixed(1) + '%' : 'nyata') + '. Contoh: ER ' + (erVal ? erVal.toFixed(1) + '%' : 'tinggi') + ' artinya audiens sangat responsif, kalau reach naik 10x lewat boost kecil, peluang closing ikut naik proporsional.",',
-    '  "clue_todo": "1 kalimat actionable konkret. ' + (agg.totalPaidReach === 0 ? 'Rekomendasikan boost campaign terkuat dengan Rp 20-50rb selama 3 hari karena paid reach masih 0.' : 'Langkah konkret berikutnya berdasarkan platform terkuat.') + '",',
+    '  "clue_todo": "1 kalimat actionable konkret. ' + (agg.totalPaidReach === 0 ? 'Rekomendasikan boost campaign terbaik dengan Rp 20-50rb selama 3 hari karena paid reach masih 0.' : 'Langkah konkret berikutnya berdasarkan platform terbaik.') + '",',
     '  "mood_insight": "1 kalimat dari pola reaksi audiens.",',
     '  "platform_insight": "1 kalimat, sebut nama platform.",',
     '  "stitch_insight": "1 kalimat pola caption terkuat.",',
@@ -361,13 +361,13 @@ function _buildAnalyticsFallback(agg) {
       (erStr ? ', reach ' + _anFmtK(agg.totalReach) + ' orang, ER ' + erStr + (parseFloat(erStr) >= 10 ? ' — artinya hampir semua yang lihat kontenmu langsung bereaksi, bukan sekadar scroll lewat.' : '.') : '.') +
       (erStr && parseFloat(erStr) >= 10 ? ' Untuk bisnis lokal, ini pencapaian yang serius layak dirayakan.' : erStr && parseFloat(erStr) >= 3 ? ' Fondasi sudah kuat — ini saat yang tepat untuk ekspansi.' : ' Data ini kasih tahu persis apa yang perlu diperbaiki — yuk benahi satu per satu.'),
     narasi_p2: noPaid
-      ? 'Satu peluang besar yang belum disentuh: paid reach kamu masih 0%. Coba boost campaign ' + (agg.bestCamp ? '"' + agg.bestCamp.name + '"' : 'terkuatmu') + ' dengan Rp 20-50rb selama 3 hari — ini kombinasi paling efisien untuk lipatgandakan jangkauanmu sekarang.'
+      ? 'Satu peluang besar yang belum disentuh: paid reach kamu masih 0%. Coba boost campaign ' + (agg.bestCamp ? '"' + agg.bestCamp.name + '"' : 'terbaik') + ' dengan Rp 20-50rb selama 3 hari — ini kombinasi paling efisien untuk lipatgandakan jangkauanmu sekarang.'
       : 'Semua metrik sudah hijau — tantangan berikutnya adalah mempertahankan konsistensi ini sambil mencoba format baru untuk menjangkau segmen audiens yang lebih luas.',
     clue_potensi: erStr
       ? 'ER ' + erStr + ' itu artinya audiens kamu sangat responsif. Kalau reach naik 10x lewat boost kecil, peluang closing ikut naik proporsional.'
       : 'Campaign organikmu sudah solid. Amplify dengan boost kecil untuk hasil yang jauh lebih besar.',
     clue_todo: noPaid
-      ? 'Paid reach kamu masih 0%. Coba boost campaign ' + (agg.bestCamp ? '"' + agg.bestCamp.name + '"' : 'terkuatmu') + ' dengan Rp 20-50rb selama 3 hari, itu titik paling efisien sekarang.'
+      ? 'Paid reach kamu masih 0%. Coba boost campaign ' + (agg.bestCamp ? '"' + agg.bestCamp.name + '"' : 'terbaik') + ' dengan Rp 20-50rb selama 3 hari, itu titik paling efisien sekarang.'
       : 'Publish 1 campaign baru di ' + bestPlat + ' minggu ini untuk menjaga momentum engagement.',
     mood_insight: 'Audiens kamu merespons dengan baik. Pertahankan tone dan format yang sudah terbukti bekerja.',
     platform_insight: 'Coba eksplorasi platform yang belum dipakai untuk menjangkau segmen audiens baru.',
@@ -491,16 +491,29 @@ function _renderCampaignBest(agg) {
   if (agg.bestCamp) {
     var c = agg.bestCamp;
     var eng = c._engagement || {};
+    var firstPlat = (c.platforms || [])[0] || '';
     var platLabel = (c.platforms || []).map(function(p) { return (_AN_PLAT[p] || {}).name || p; }).join(', ');
     var launchDate = c.launchTime || (c.created_at
       ? new Date(c.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
       : '—');
+    var postUrl = c.post_url || null;
+    var dateEl = postUrl
+      ? '<a href="' + postUrl + '" target="_blank" rel="noopener" class="an-camp-date-link">' + launchDate + ' ↗</a>'
+      : '<span>' + launchDate + '</span>';
+    var platIconEl = firstPlat
+      ? '<div class="an-plat-icon ' + firstPlat + ' an-camp-plat-icon">' + _anPlatSvg(firstPlat) + '</div>'
+      : '';
     bestCampHTML =
       '<div class="an-best-camp">' +
-        '<div class="an-camp-name">' + (c.name || '—') + '</div>' +
-        '<div class="an-camp-meta">' +
-          (platLabel ? '<span>' + platLabel + '</span><span style="color:var(--border);">·</span>' : '') +
-          '<span>' + launchDate + '</span>' +
+        '<div class="an-camp-top-row">' +
+          platIconEl +
+          '<div class="an-camp-top-info">' +
+            '<div class="an-camp-name">' + (c.name || '—') + '</div>' +
+            '<div class="an-camp-meta">' +
+              (platLabel ? '<span>' + platLabel + '</span><span style="color:var(--border);">·</span>' : '') +
+              dateEl +
+            '</div>' +
+          '</div>' +
         '</div>' +
         '<div class="an-camp-badges">' +
           (agg.bestER > 0 ? '<span class="an-badge purple">ER ' + agg.bestER.toFixed(1) + '%</span>' : '') +

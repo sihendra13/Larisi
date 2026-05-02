@@ -1174,6 +1174,24 @@
   flex-direction: column;
   gap: 7px;
 }
+.an-camp-top-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.an-camp-plat-icon {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  flex-shrink: 0;
+}
+.an-camp-plat-icon svg { width: 18px; height: 18px; }
+.an-camp-top-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 .an-camp-name {
   font-size: 13px; font-weight: 700; color: var(--near-black);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -1182,6 +1200,14 @@
   display: flex; align-items: center; gap: 5px;
   font-size: 12.5px; color: var(--secondary);
 }
+.an-camp-date-link {
+  color: var(--rausch);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 12.5px;
+  transition: opacity .15s;
+}
+.an-camp-date-link:hover { opacity: 0.75; }
 .an-camp-badges { display: flex; gap: 5px; flex-wrap: wrap; }
 .an-badge {
   display: inline-flex; align-items: center; gap: 3px;
