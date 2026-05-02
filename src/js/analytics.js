@@ -153,23 +153,27 @@ function _buildAnalyticsSystemPrompt(agg) {
   var erVal    = agg.avgER != null ? agg.avgER : null;
   var erTier   = erVal == null ? 'unknown' : erVal >= 10 ? 'high' : erVal >= 3 ? 'mid' : 'low';
   var closingGuide = erTier === 'high'
-    ? 'Kalimat penutup: pujian kuat + dorong naik level. Contoh: "Kamu sudah di jalur yang benar, sekarang tinggal gas lebih kencang."'
+    ? '"Kamu sudah di jalur yang benar — sekarang tinggal gas lebih kencang."'
     : erTier === 'mid'
-    ? 'Kalimat penutup: semangat + tunjukkan potensi. Contoh: "Fondasi sudah kuat, ini saat yang tepat untuk mulai ekspansi ke platform lain."'
-    : 'Kalimat penutup: jangan menghakimi, tetap semangat + kasih arah konkret. Contoh: "Setiap bisnis punya fase belajar, data ini justru kasih tahu persis di mana yang perlu diperbaiki. Yuk kita benahi satu per satu."';
+    ? '"Fondasi sudah kuat — ini saat yang tepat untuk mulai ekspansi."'
+    : '"Setiap bisnis punya fase belajar — data ini kasih tahu persis apa yang perlu diperbaiki. Yuk benahi satu per satu."';
 
+  var hasGap = agg.totalPaidReach === 0 || agg.platList.length < 2;
   var gapNote = agg.totalPaidReach === 0
-    ? 'Gap terbesar: paid reach masih 0, belum pernah boost.'
+    ? 'paid reach masih 0%, belum pernah boost'
     : agg.platList.length < 2
-    ? 'Gap terbesar: baru pakai ' + agg.platList.length + ' platform, masih banyak audiens yang belum terjangkau.'
-    : 'Gap terbesar: frekuensi posting bisa ditingkatkan untuk memperluas jangkauan.';
+    ? 'baru pakai ' + agg.platList.length + ' platform, masih banyak audiens belum terjangkau'
+    : '';
+
+  var paragraf2Guide = hasGap
+    ? 'Framing gap sebagai peluang, bukan kekurangan. Gap: ' + gapNote + '. Contoh jika paid reach 0: "Satu peluang besar yang belum disentuh: paid reach kamu masih 0%. Dengan konten organik yang sudah sekencang ini, boost kecil sekalipun bisa melipatgandakan jangkauanmu dan berpotensi langsung mendatangkan calon pembeli baru minggu ini."'
+    : 'Tidak ada gap besar. Tulis tantangan naik level: "Semua metrik sudah hijau — sekarang tantangannya adalah mempertahankan konsistensi ini sambil ekspansi ke platform atau format baru."';
 
   return [
     'Kamu adalah SiLaris, Campaign Coach AI untuk bisnis lokal Indonesia.',
     'MODE: ANALYTICS DASHBOARD. Bicara seperti coach yang jujur, hangat, dan langsung ke poin.',
-    'ATURAN KERAS: DILARANG gunakan tanda "—" (em-dash) di mana pun dalam semua field.',
     'ATURAN KERAS: DILARANG mulai dengan sapaan daerah. Gunakan "Hei!" saja.',
-    'ATURAN KERAS: Semua field tidak boleh mengandung karakter "—". Ganti dengan koma atau titik.',
+    'ATURAN KERAS: DILARANG gunakan bullet point, header, atau tanda baca berlebihan.',
     '',
     'DATA NYATA USER:',
     '- Total campaign: ' + agg.total,
@@ -182,24 +186,23 @@ function _buildAnalyticsSystemPrompt(agg) {
     '- Jam posting paling sering: ' + String(agg.bestHour).padStart(2,'0') + ':00',
     '- Hari posting paling sering: ' + agg.bestDay,
     '- Format dominan: ' + agg.topFormat,
-    '- ' + gapNote,
     '',
-    'STRUKTUR NARASI WAJIB — 3 lapisan dalam 1 paragraf mengalir, maksimal 4 kalimat total:',
+    'STRUKTUR NARASI WAJIB — 2 PARAGRAF TERPISAH dengan 1 baris kosong di antaranya (\\n\\n):',
+    'JANGAN dijejal jadi 1 paragraf. Wajib 2 paragraf.',
     '',
-    'LAPISAN 1 (selalu ada) — Rayakan hasil dengan angka spesifik:',
-    '  Sebutkan: total campaign (' + agg.total + '), reach (' + _anFmtK(agg.totalReach) + '), avg ER (' + (erVal ? erVal.toFixed(1) + '%' : 'data terbatas') + ').',
-    '  Contoh: "Hei! ' + agg.total + ' campaign, reach ' + _anFmtK(agg.totalReach) + ' orang, ER ' + (erVal ? erVal.toFixed(1) + '%' : 'yang terus tumbuh') + ' — ini bukan angka biasa untuk bisnis lokal. Kamu sudah buktikan kontenmu resonan."',
+    'PARAGRAF 1 (Lapisan 1 + Lapisan 3) — maks 2 kalimat:',
+    '  Kalimat 1: Apresiasi spesifik dengan angka nyata. Sebutkan: total campaign (' + agg.total + '), reach (' + _anFmtK(agg.totalReach) + '), ER (' + (erVal ? erVal.toFixed(1) + '%' : 'yang terus tumbuh') + ').',
+    '  Contoh: "Hei! ' + agg.total + ' campaign sudah berjalan dengan reach ' + _anFmtK(agg.totalReach) + ' orang dan ER ' + (erVal ? erVal.toFixed(1) + '%' : 'yang terus tumbuh') + ', ini pencapaian nyata yang layak diapresiasi."',
+    '  Kalimat 2 (penutup dinamis, kondisi ER = ' + erTier + '): ' + closingGuide,
     '',
-    'LAPISAN 2 (kalau ada gap) — Framing peluang dari gap data:',
-    '  ' + gapNote,
-    '  Framing sebagai peluang, bukan kekurangan. Contoh jika paid reach 0: "Satu peluang besar yang belum disentuh: paid reach kamu masih 0%. Dengan konten organik sekencang ini, boost kecil sekalipun bisa melipatgandakan jangkauan dan mendatangkan calon pembeli baru minggu ini."',
+    'PARAGRAF 2 (Lapisan 2) — maks 2 kalimat:',
+    '  ' + paragraf2Guide,
     '',
-    'LAPISAN 3 — Kalimat penutup dinamis (kondisi ER = ' + erTier + '):',
-    '  ' + closingGuide,
+    'Total seluruh narasi: maksimal 4 kalimat (2 per paragraf). Mengalir natural — bukan bullet point, bukan header.',
     '',
     'TUGAS: Buat response JSON persis berikut (tanpa markdown, tanpa teks di luar JSON):',
     '{',
-    '  "narasi": "3 lapisan di atas dalam 1 paragraf mengalir, maks 4 kalimat, TANPA tanda em-dash",',
+    '  "narasi": "WAJIB 2 paragraf dipisah \\\\n\\\\n. Paragraf 1: apresiasi angka + kalimat penutup dinamis. Paragraf 2: gap sebagai peluang atau tantangan naik level. Total maks 4 kalimat.",',
     '  "clue_potensi": "1 kalimat spesifik, WAJIB sebut angka ER ' + (erVal ? erVal.toFixed(1) + '%' : 'nyata') + '. Contoh: ER ' + (erVal ? erVal.toFixed(1) + '%' : 'tinggi') + ' artinya audiens sangat responsif, kalau reach naik 10x lewat boost kecil, peluang closing ikut naik proporsional. TANPA em-dash.",',
     '  "clue_todo": "1 kalimat actionable konkret. ' + (agg.totalPaidReach === 0 ? 'Rekomendasikan boost campaign terkuat dengan Rp 20-50rb selama 3 hari karena paid reach masih 0.' : 'Langkah konkret berikutnya berdasarkan platform terkuat.') + ' TANPA em-dash.",',
     '  "mood_insight": "1 kalimat dari pola reaksi audiens. Tanpa em-dash.",',
@@ -658,7 +661,11 @@ function _anPopulateAI(ai) {
   // Narasi
   var narasiWrap = document.getElementById('an-si-narasi-wrap');
   if (narasiWrap && ai.narasi) {
-    narasiWrap.innerHTML = '<p style="margin:0;font-size:14px;line-height:1.7;color:var(--near-black);">' + ai.narasi + '</p>';
+    var _pStyle = 'margin:0;font-size:14px;line-height:1.7;color:var(--near-black);';
+    var _paras = ai.narasi.split(/\n\n+/).map(function(p) { return p.trim(); }).filter(Boolean);
+    narasiWrap.innerHTML = _paras.length > 1
+      ? _paras.map(function(p) { return '<p style="' + _pStyle + '">' + p + '</p>'; }).join('<div style="height:10px;"></div>')
+      : '<p style="' + _pStyle + '">' + ai.narasi + '</p>';
   }
 
   // Clue cards
