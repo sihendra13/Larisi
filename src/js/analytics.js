@@ -140,40 +140,77 @@ function _anAggregate(campaigns) {
 
 /* ─── Build Analytics System Prompt ─── */
 function _buildAnalyticsSystemPrompt(agg) {
-  var ctx = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : { greeting: 'Hei!', regionLabel: 'Indonesia' };
+  var ctx = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : { region: 'default', regionLabel: 'Indonesia' };
+
+  // ── Greeting per region (analytics-specific, lebih casual) ──
+  var _greetMap = {
+    jogja: 'Hei!', solo: 'Hei!', semarang: 'Hei!',
+    surabaya: 'Hei Rek!', malang: 'Hei Rek!',
+    medan: 'Hoi Bos!', medan_area: 'Hoi Bos!',
+    jakarta: 'Hei Guys!', bandung: 'Hei!',
+    makassar: 'Hei!', bali: 'Hei!',
+    manado: 'Hei!', palembang: 'Hei!',
+    pontianak: 'Hei!', banjarmasin: 'Hei!',
+    lampung: 'Hei!', ambon: 'Hei!', lombok: 'Hei!', papua: 'Hei!'
+  };
+  var analyticsGreeting = _greetMap[ctx.region] || 'Hei!';
+
+  // ── Tone detection dari nama + caption campaign ──
+  var _allText = '';
+  if (agg.bestCamp && agg.bestCamp.name) _allText += ' ' + agg.bestCamp.name.toLowerCase();
+  agg.stitchCandidates.forEach(function(s) { _allText += ' ' + (s.text || '').toLowerCase() + ' ' + ((s.campaign && s.campaign.name) || '').toLowerCase(); });
+
+  var businessTone;
+  if (/servis|motor|bengkel|sparepart|otomotif|mobil/.test(_allText))
+    businessTone = 'Mesin bisnis kamu sudah ngebut bulan ini';
+  else if (/menu|makan|kuliner|resto|cafe|warung|masak|food/.test(_allText))
+    businessTone = 'Dapur kamu sudah rame bulan ini';
+  else if (/baju|outfit|fashion|style|koleksi|busana|pakaian/.test(_allText))
+    businessTone = 'Gaya kamu makin dikenal bulan ini';
+  else if (/jasa|layanan|bersih|rapi|bantu|cuci|laundry|servis/.test(_allText))
+    businessTone = 'Kerja keras kamu mulai kelihatan hasilnya bulan ini';
+  else if (/rumah|properti|hunian|kavling|kos|kontrakan/.test(_allText))
+    businessTone = 'Fondasi bisnis kamu makin kuat bulan ini';
+  else
+    businessTone = 'Kamu sudah kerja keras bulan ini';
+
+  var openingLine = analyticsGreeting + ' ' + businessTone + ' — dan datanya membuktikannya.';
+
   var platSummary = agg.platList.map(function(p) {
     var pn = (_AN_PLAT[p.key] || {}).name || p.key;
     return pn + ': ' + p.count + ' campaign' + (p.avgER > 0 ? ', avg ER ' + p.avgER.toFixed(1) + '%' : '');
-  }).join('; ') || '—';
+  }).join('; ') || 'belum ada';
 
   var paidReachNote = agg.totalPaidReach > 0
     ? 'Paid reach: ' + _anFmtK(agg.totalPaidReach)
     : 'Paid reach: 0 (belum pernah boost)';
 
-  var erVal    = agg.avgER != null ? agg.avgER : null;
-  var erTier   = erVal == null ? 'unknown' : erVal >= 10 ? 'high' : erVal >= 3 ? 'mid' : 'low';
-  var closingGuide = erTier === 'high'
-    ? '"Kamu sudah di jalur yang benar — sekarang tinggal gas lebih kencang."'
+  var erVal  = agg.avgER != null ? agg.avgER : null;
+  var erTier = erVal == null ? 'unknown' : erVal >= 10 ? 'high' : erVal >= 3 ? 'mid' : 'low';
+
+  // Closing P1 sesuai erTier
+  var p1Closing = erTier === 'high'
+    ? 'Untuk bisnis lokal, ini pencapaian yang serius layak dirayakan.'
     : erTier === 'mid'
-    ? '"Fondasi sudah kuat — ini saat yang tepat untuk mulai ekspansi."'
-    : '"Setiap bisnis punya fase belajar — data ini kasih tahu persis apa yang perlu diperbaiki. Yuk benahi satu per satu."';
+    ? 'Fondasi sudah kuat — ini saat yang tepat untuk ekspansi.'
+    : 'Data ini kasih tahu persis apa yang perlu diperbaiki — yuk benahi satu per satu.';
 
+  // Gap + aksi P2
   var hasGap = agg.totalPaidReach === 0 || agg.platList.length < 2;
-  var gapNote = agg.totalPaidReach === 0
-    ? 'paid reach masih 0%, belum pernah boost'
+  var p2Guide = agg.totalPaidReach === 0
+    ? 'Gap: paid reach masih 0%. Aksi konkret: rekomendasikan boost campaign "' + (agg.bestCamp ? agg.bestCamp.name : 'terkuat') + '" dengan Rp 20-50rb selama 3 hari. Contoh: "Satu peluang besar yang belum disentuh: paid reach kamu masih 0%. Coba boost campaign terkuatmu minggu ini dengan Rp 20-50rb selama 3 hari — ini kombinasi paling efisien untuk lipatgandakan jangkauanmu sekarang."'
     : agg.platList.length < 2
-    ? 'baru pakai ' + agg.platList.length + ' platform, masih banyak audiens belum terjangkau'
-    : '';
-
-  var paragraf2Guide = hasGap
-    ? 'Framing gap sebagai peluang, bukan kekurangan. Gap: ' + gapNote + '. Contoh jika paid reach 0: "Satu peluang besar yang belum disentuh: paid reach kamu masih 0%. Dengan konten organik yang sudah sekencang ini, boost kecil sekalipun bisa melipatgandakan jangkauanmu dan berpotensi langsung mendatangkan calon pembeli baru minggu ini."'
-    : 'Tidak ada gap besar. Tulis tantangan naik level: "Semua metrik sudah hijau — sekarang tantangannya adalah mempertahankan konsistensi ini sambil ekspansi ke platform atau format baru."';
+    ? 'Gap: baru aktif di ' + agg.platList.length + ' platform. Aksi: rekomendasikan expand ke platform baru yang relevan dengan bisnis ini. Contoh: "Satu peluang yang belum disentuh: kamu masih hanya aktif di ' + agg.platList.length + ' platform — audiens potensialmu di platform lain belum terjangkau sama sekali."'
+    : 'Semua metrik sudah baik. Tulis tantangan naik level: konsistensi + ekspansi ke format atau platform baru. Contoh: "Semua metrik sudah hijau — tantangan berikutnya adalah mempertahankan konsistensi ini sambil mencoba format baru untuk menjangkau segmen audiens yang lebih luas."';
 
   return [
     'Kamu adalah SiLaris, Campaign Coach AI untuk bisnis lokal Indonesia.',
     'MODE: ANALYTICS DASHBOARD. Bicara seperti coach yang jujur, hangat, dan langsung ke poin.',
-    'ATURAN KERAS: DILARANG mulai dengan sapaan daerah. Gunakan "Hei!" saja.',
-    'ATURAN KERAS: DILARANG gunakan bullet point, header, atau tanda baca berlebihan.',
+    'ATURAN KERAS: DILARANG gunakan bullet point, header, atau angka daftar.',
+    'ATURAN KERAS: Setiap kalimat diakhiri tanda titik. Angka % selalu pakai simbol %.',
+    '',
+    'KALIMAT PEMBUKA YANG WAJIB DIGUNAKAN (sudah ditetapkan, jangan diubah):',
+    '"' + openingLine + '"',
     '',
     'DATA NYATA USER:',
     '- Total campaign: ' + agg.total,
@@ -187,27 +224,24 @@ function _buildAnalyticsSystemPrompt(agg) {
     '- Hari posting paling sering: ' + agg.bestDay,
     '- Format dominan: ' + agg.topFormat,
     '',
-    'STRUKTUR NARASI WAJIB — 2 PARAGRAF TERPISAH dengan 1 baris kosong di antaranya (\\n\\n):',
-    'JANGAN dijejal jadi 1 paragraf. Wajib 2 paragraf.',
+    'INSTRUKSI narasi_p1 (ISI FIELD INI — maks 2 kalimat):',
+    '  Mulai PERSIS dengan kalimat pembuka di atas.',
+    '  Lanjutkan kalimat 2: sebutkan ' + agg.total + ' campaign, reach ' + _anFmtK(agg.totalReach) + ', ER ' + (erVal ? erVal.toFixed(1) + '%' : 'yang terus tumbuh') + '.',
+    '  ' + (erVal ? 'Interpretasikan ER ' + erVal.toFixed(1) + '% dalam bahasa manusia — artinya apa bagi bisnis ini.' : '') ,
+    '  Tutup dengan: "' + p1Closing + '"',
     '',
-    'PARAGRAF 1 (Lapisan 1 + Lapisan 3) — maks 2 kalimat:',
-    '  Kalimat 1: Apresiasi spesifik dengan angka nyata. Sebutkan: total campaign (' + agg.total + '), reach (' + _anFmtK(agg.totalReach) + '), ER (' + (erVal ? erVal.toFixed(1) + '%' : 'yang terus tumbuh') + ').',
-    '  Contoh: "Hei! ' + agg.total + ' campaign sudah berjalan dengan reach ' + _anFmtK(agg.totalReach) + ' orang dan ER ' + (erVal ? erVal.toFixed(1) + '%' : 'yang terus tumbuh') + ', ini pencapaian nyata yang layak diapresiasi."',
-    '  Kalimat 2 (penutup dinamis, kondisi ER = ' + erTier + '): ' + closingGuide,
-    '',
-    'PARAGRAF 2 (Lapisan 2) — maks 2 kalimat:',
-    '  ' + paragraf2Guide,
-    '',
-    'Total seluruh narasi: maksimal 4 kalimat (2 per paragraf). Mengalir natural — bukan bullet point, bukan header.',
+    'INSTRUKSI narasi_p2 (ISI FIELD INI — maks 2 kalimat):',
+    '  ' + p2Guide,
     '',
     'TUGAS: Buat response JSON persis berikut (tanpa markdown, tanpa teks di luar JSON):',
     '{',
-    '  "narasi": "WAJIB 2 paragraf dipisah \\\\n\\\\n. Paragraf 1: apresiasi angka + kalimat penutup dinamis. Paragraf 2: gap sebagai peluang atau tantangan naik level. Total maks 4 kalimat.",',
-    '  "clue_potensi": "1 kalimat spesifik, WAJIB sebut angka ER ' + (erVal ? erVal.toFixed(1) + '%' : 'nyata') + '. Contoh: ER ' + (erVal ? erVal.toFixed(1) + '%' : 'tinggi') + ' artinya audiens sangat responsif, kalau reach naik 10x lewat boost kecil, peluang closing ikut naik proporsional. TANPA em-dash.",',
-    '  "clue_todo": "1 kalimat actionable konkret. ' + (agg.totalPaidReach === 0 ? 'Rekomendasikan boost campaign terkuat dengan Rp 20-50rb selama 3 hari karena paid reach masih 0.' : 'Langkah konkret berikutnya berdasarkan platform terkuat.') + ' TANPA em-dash.",',
-    '  "mood_insight": "1 kalimat dari pola reaksi audiens. Tanpa em-dash.",',
-    '  "platform_insight": "1 kalimat, sebut nama platform. Tanpa em-dash.",',
-    '  "stitch_insight": "1 kalimat pola caption terkuat. Tanpa em-dash.",',
+    '  "narasi_p1": "kalimat pembuka + angka spesifik + interpretasi ER + kalimat penutup dinamis. Maks 2 kalimat.",',
+    '  "narasi_p2": "gap terbesar sebagai peluang + 1 aksi konkret spesifik. Maks 2 kalimat.",',
+    '  "clue_potensi": "1 kalimat spesifik, WAJIB sebut angka ER ' + (erVal ? erVal.toFixed(1) + '%' : 'nyata') + '. Contoh: ER ' + (erVal ? erVal.toFixed(1) + '%' : 'tinggi') + ' artinya audiens sangat responsif, kalau reach naik 10x lewat boost kecil, peluang closing ikut naik proporsional.",',
+    '  "clue_todo": "1 kalimat actionable konkret. ' + (agg.totalPaidReach === 0 ? 'Rekomendasikan boost campaign terkuat dengan Rp 20-50rb selama 3 hari karena paid reach masih 0.' : 'Langkah konkret berikutnya berdasarkan platform terkuat.') + '",',
+    '  "mood_insight": "1 kalimat dari pola reaksi audiens.",',
+    '  "platform_insight": "1 kalimat, sebut nama platform.",',
+    '  "stitch_insight": "1 kalimat pola caption terkuat.",',
     '  "rekomendasi": [',
     '    {"platform": "ig", "hari": "' + agg.bestDay + '", "jam": "' + String(agg.bestHour).padStart(2,'0') + ':00", "aksi": "aksi spesifik ig", "alasan": "alasan konkret"},',
     '    {"platform": "meta", "hari": "Rabu", "jam": "12:00", "aksi": "aksi spesifik fb", "alasan": "alasan konkret"},',
@@ -254,10 +288,13 @@ function _buildAnalyticsFallback(agg) {
   var bestPlat = agg.platList.length ? ((_AN_PLAT[agg.platList[0].key] || {}).name || agg.platList[0].key) : 'Instagram';
   var noPaid  = agg.totalPaidReach === 0;
   return {
-    narasi: 'Hei! Kamu sudah punya ' + agg.total + ' campaign aktif' +
-      (erStr ? ' dengan engagement rate rata-rata ' + erStr : '') +
-      (agg.bestCamp ? '. Campaign terkuatmu adalah "' + agg.bestCamp.name + '" dengan ER ' + agg.bestER.toFixed(1) + '%' : '') +
-      '. Kontenmu terbukti disukai audiens. Sekarang tinggal perluas jangkauannya!',
+    narasi_p1: 'Hei! Kamu sudah kerja keras bulan ini — dan datanya membuktikannya. ' +
+      agg.total + ' campaign berjalan' +
+      (erStr ? ', reach ' + _anFmtK(agg.totalReach) + ' orang, ER ' + erStr + (parseFloat(erStr) >= 10 ? ' — artinya hampir semua yang lihat kontenmu langsung bereaksi, bukan sekadar scroll lewat.' : '.') : '.') +
+      (erStr && parseFloat(erStr) >= 10 ? ' Untuk bisnis lokal, ini pencapaian yang serius layak dirayakan.' : erStr && parseFloat(erStr) >= 3 ? ' Fondasi sudah kuat — ini saat yang tepat untuk ekspansi.' : ' Data ini kasih tahu persis apa yang perlu diperbaiki — yuk benahi satu per satu.'),
+    narasi_p2: noPaid
+      ? 'Satu peluang besar yang belum disentuh: paid reach kamu masih 0%. Coba boost campaign ' + (agg.bestCamp ? '"' + agg.bestCamp.name + '"' : 'terkuatmu') + ' dengan Rp 20-50rb selama 3 hari — ini kombinasi paling efisien untuk lipatgandakan jangkauanmu sekarang.'
+      : 'Semua metrik sudah hijau — tantangan berikutnya adalah mempertahankan konsistensi ini sambil mencoba format baru untuk menjangkau segmen audiens yang lebih luas.',
     clue_potensi: erStr
       ? 'ER ' + erStr + ' itu artinya audiens kamu sangat responsif. Kalau reach naik 10x lewat boost kecil, peluang closing ikut naik proporsional.'
       : 'Campaign organikmu sudah solid. Amplify dengan boost kecil untuk hasil yang jauh lebih besar.',
@@ -660,12 +697,21 @@ function _anPopulateAI(ai) {
 
   // Narasi
   var narasiWrap = document.getElementById('an-si-narasi-wrap');
-  if (narasiWrap && ai.narasi) {
+  if (narasiWrap) {
     var _pStyle = 'margin:0;font-size:14px;line-height:1.7;color:var(--near-black);';
-    var _paras = ai.narasi.split(/\n\n+/).map(function(p) { return p.trim(); }).filter(Boolean);
-    narasiWrap.innerHTML = _paras.length > 1
-      ? _paras.map(function(p) { return '<p style="' + _pStyle + '">' + p + '</p>'; }).join('<div style="height:10px;"></div>')
-      : '<p style="' + _pStyle + '">' + ai.narasi + '</p>';
+    var _p1 = (ai.narasi_p1 || '').trim();
+    var _p2 = (ai.narasi_p2 || '').trim();
+    if (_p1 && _p2) {
+      narasiWrap.innerHTML =
+        '<p style="' + _pStyle + '">' + _p1 + '</p>' +
+        '<div style="height:10px;"></div>' +
+        '<p style="' + _pStyle + '">' + _p2 + '</p>';
+    } else if (_p1) {
+      narasiWrap.innerHTML = '<p style="' + _pStyle + '">' + _p1 + '</p>';
+    } else if (ai.narasi) {
+      // fallback: old single-field format
+      narasiWrap.innerHTML = '<p style="' + _pStyle + '">' + ai.narasi + '</p>';
+    }
   }
 
   // Clue cards
