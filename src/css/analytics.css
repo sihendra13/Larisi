@@ -1063,6 +1063,21 @@
   line-height: 1.55;
   color: var(--near-black);
 }
+/* ─── ER Explainer Box ─── */
+.an-er-explainer {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--secondary);
+  line-height: 1.55;
+}
+.an-er-explainer-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+.an-er-explainer strong { color: var(--near-black); font-weight: 700; }
+
 .an-si-cta {
   display: flex;
   align-items: center;

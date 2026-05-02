@@ -146,40 +146,42 @@ function _buildAnalyticsSystemPrompt(agg) {
     return pn + ': ' + p.count + ' campaign' + (p.avgER > 0 ? ', avg ER ' + p.avgER.toFixed(1) + '%' : '');
   }).join('; ') || '—';
 
+  var paidReachNote = agg.totalPaidReach > 0
+    ? 'Paid reach: ' + _anFmtK(agg.totalPaidReach)
+    : 'Paid reach: 0 (belum pernah boost)';
+
   return [
-    'Kamu adalah SiLaris, Campaign Coach AI yang semangat dan inspiratif untuk bisnis lokal Indonesia.',
-    'MODE: ANALYTICS DASHBOARD — analisa agregat SEMUA campaign user, bukan chat per campaign.',
+    'Kamu adalah SiLaris, Campaign Coach AI untuk bisnis lokal Indonesia.',
+    'MODE: ANALYTICS DASHBOARD. Bicara seperti coach yang jujur, hangat, dan langsung ke poin.',
+    'JANGAN gunakan tanda "—" (em-dash) di mana pun. Tulis natural seperti manusia bicara.',
+    'JANGAN mulai dengan sapaan daerah (Sugeng rawuh, Horas, dll). Gunakan "Hei!" saja.',
     '',
-    'KONTEKS USER:',
-    '- Region: ' + ctx.regionLabel,
-    '- Sapaan khas: ' + ctx.greeting,
-    '',
-    'DATA AGREGAT:',
+    'DATA NYATA USER (gunakan angka-angka ini di semua field):',
     '- Total campaign: ' + agg.total,
     '- Campaign aktif: ' + agg.active,
     '- Total reach: ' + _anFmtK(agg.totalReach),
-    '- Avg engagement rate: ' + (agg.avgER != null ? agg.avgER.toFixed(1) + '%' : 'belum tersedia'),
-    '- Paid reach: ' + _anFmtK(agg.totalPaidReach),
-    '- Campaign terkuat: ' + (agg.bestCamp ? agg.bestCamp.name + ' (ER: ' + agg.bestER.toFixed(1) + '%)' : '—'),
+    '- Avg ER: ' + (agg.avgER != null ? agg.avgER.toFixed(1) + '%' : 'belum tersedia'),
+    '- ' + paidReachNote,
+    '- Campaign terkuat: ' + (agg.bestCamp ? '"' + agg.bestCamp.name + '" dengan ER ' + agg.bestER.toFixed(1) + '%' : 'belum ada data'),
     '- Platform: ' + platSummary,
     '- Jam posting paling sering: ' + String(agg.bestHour).padStart(2,'0') + ':00',
     '- Hari posting paling sering: ' + agg.bestDay,
     '- Format dominan: ' + agg.topFormat,
     '',
-    'TUGAS: Buat response JSON persis berikut ini (tanpa markdown, tanpa teks di luar JSON):',
+    'TUGAS: Buat response JSON persis berikut (tanpa markdown, tanpa teks di luar JSON):',
     '{',
-    '  "narasi": "sapaan \'Hei!\' + rekap performa 2-3 kalimat coach style, sebut angka relevan, semangat dan personal",',
-    '  "clue_potensi": "1 kalimat singkat tentang potensi penjualan dari pola campaign yang ada",',
-    '  "clue_todo": "1 kalimat actionable konkret paling penting untuk dilakukan sekarang",',
-    '  "mood_insight": "1 kalimat insight bagaimana audiens merespons konten secara keseluruhan",',
-    '  "platform_insight": "1 kalimat tentang platform mana yang underutilized atau peluang terbesar",',
-    '  "stitch_insight": "1 kalimat pola terkuat dari stitching text yang paling engage",',
+    '  "narasi": "Mulai dengan Hei! lalu 3-4 kalimat coach yang jujur dan semangat. Sebut angka spesifik: total campaign, reach, avg ER, nama campaign terkuat dan ER-nya. Jelaskan artinya dalam bahasa sederhana. Akhiri dengan 1 kalimat penyemangat. Contoh gaya: Hei! Bulan ini kamu sudah jalankan ' + agg.total + ' campaign dan hasilnya tidak main-main. Total reach ' + _anFmtK(agg.totalReach) + ' orang dengan engagement rate rata-rata ' + (agg.avgER ? agg.avgER.toFixed(1) + '%' : 'yang terus tumbuh') + '. Artinya hampir semua yang lihat kontenmu langsung bereaksi. Kamu sudah di jalur yang benar.",',
+    '  "clue_potensi": "1 kalimat spesifik tentang potensi penjualan. WAJIB sebut angka ER nyata user. Contoh: ER ' + (agg.avgER ? agg.avgER.toFixed(1) + '%' : 'tinggi') + ' artinya audiens kamu sangat responsif, kalau reach naik 10x lewat boost kecil, peluang closing ikut naik proporsional.",',
+    '  "clue_todo": "1 kalimat actionable dengan angka nyata. ' + (agg.totalPaidReach === 0 ? 'Karena paid reach masih 0, rekomendasikan boost campaign terkuat dengan budget Rp 20-50rb selama 3 hari.' : 'Rekomendasikan langkah konkret berikutnya berdasarkan platform terkuat.') + ' Jangan generik.",',
+    '  "mood_insight": "1 kalimat insight dari pola reaksi audiens. Natural, tidak kaku.",',
+    '  "platform_insight": "1 kalimat tentang platform yang underutilized atau peluang terbesar. Sebut nama platformnya.",',
+    '  "stitch_insight": "1 kalimat pola terkuat dari caption atau stitching text yang paling engage.",',
     '  "rekomendasi": [',
-    '    {"platform": "ig", "hari": "Selasa", "jam": "19:00", "aksi": "langkah spesifik dengan konteks nyata", "alasan": "kenapa efektif dikaitkan data"},',
-    '    {"platform": "meta", "hari": "Rabu", "jam": "12:00", "aksi": "...", "alasan": "..."},',
-    '    {"platform": "tiktok", "hari": "Jumat", "jam": "20:00", "aksi": "...", "alasan": "..."}',
+    '    {"platform": "ig", "hari": "' + agg.bestDay + '", "jam": "' + String(agg.bestHour).padStart(2,"0") + ':00", "aksi": "aksi spesifik berdasarkan data platform ig", "alasan": "alasan konkret dikaitkan data"},',
+    '    {"platform": "meta", "hari": "Rabu", "jam": "12:00", "aksi": "aksi spesifik untuk Facebook", "alasan": "alasan konkret"},',
+    '    {"platform": "tiktok", "hari": "Jumat", "jam": "20:00", "aksi": "aksi spesifik untuk TikTok", "alasan": "alasan konkret"}',
     '  ],',
-    '  "rekom_cta": "Buat campaign [nama spesifik] sekarang →"',
+    '  "rekom_cta": "Buat campaign [nama format spesifik] sekarang"',
     '}'
   ].join('\n');
 }
@@ -216,21 +218,29 @@ async function _callSilarisAnalytics(agg) {
 
 /* ─── Analytics Fallback ─── */
 function _buildAnalyticsFallback(agg) {
+  var erStr   = agg.avgER != null ? agg.avgER.toFixed(1) + '%' : null;
+  var bestPlat = agg.platList.length ? ((_AN_PLAT[agg.platList[0].key] || {}).name || agg.platList[0].key) : 'Instagram';
+  var noPaid  = agg.totalPaidReach === 0;
   return {
-    narasi: 'Hei! Kamu sudah punya ' + agg.total + ' campaign' +
-      (agg.avgER != null ? ' dengan rata-rata engagement rate ' + agg.avgER.toFixed(1) + '%.' : '.') +
-      ' Konsistensi adalah kunci — terus semangat!',
-    clue_potensi: 'Campaign organikmu sudah solid — amplify dengan boost kecil untuk hasil yang jauh lebih besar.',
-    clue_todo: 'Publish 1 campaign baru minggu ini untuk menjaga momentum engagement.',
-    mood_insight: 'Audiens kamu merespons dengan hangat — pertahankan tone dan format yang sudah terbukti.',
-    platform_insight: 'Coba eksplorasi platform yang belum dipakai untuk menjangkau audiens baru.',
-    stitch_insight: 'Sapaan lokal + teks overlay personal terbukti meningkatkan stop-the-scroll rate secara signifikan.',
+    narasi: 'Hei! Kamu sudah punya ' + agg.total + ' campaign aktif' +
+      (erStr ? ' dengan engagement rate rata-rata ' + erStr : '') +
+      (agg.bestCamp ? '. Campaign terkuatmu adalah "' + agg.bestCamp.name + '" dengan ER ' + agg.bestER.toFixed(1) + '%' : '') +
+      '. Kontenmu terbukti disukai audiens. Sekarang tinggal perluas jangkauannya!',
+    clue_potensi: erStr
+      ? 'ER ' + erStr + ' itu artinya audiens kamu sangat responsif. Kalau reach naik 10x lewat boost kecil, peluang closing ikut naik proporsional.'
+      : 'Campaign organikmu sudah solid. Amplify dengan boost kecil untuk hasil yang jauh lebih besar.',
+    clue_todo: noPaid
+      ? 'Paid reach kamu masih 0%. Coba boost campaign ' + (agg.bestCamp ? '"' + agg.bestCamp.name + '"' : 'terkuatmu') + ' dengan Rp 20-50rb selama 3 hari, itu titik paling efisien sekarang.'
+      : 'Publish 1 campaign baru di ' + bestPlat + ' minggu ini untuk menjaga momentum engagement.',
+    mood_insight: 'Audiens kamu merespons dengan baik. Pertahankan tone dan format yang sudah terbukti bekerja.',
+    platform_insight: 'Coba eksplorasi platform yang belum dipakai untuk menjangkau segmen audiens baru.',
+    stitch_insight: 'Sapaan lokal dan teks overlay personal terbukti meningkatkan stop-the-scroll rate.',
     rekomendasi: [
-      { platform: 'ig', hari: 'Selasa', jam: '19:00', aksi: 'Post Reel dengan hook 3 detik pertama yang kuat', alasan: 'Jam 7 malam = prime time engagement Instagram di Indonesia' },
-      { platform: 'meta', hari: 'Rabu', jam: '12:00', aksi: 'Boost post terbaik dengan budget Rp 30rb selama 3 hari', alasan: 'Tengah hari Rabu adalah waktu tertinggi scrolling FB untuk audience dewasa' },
-      { platform: 'tiktok', hari: 'Jumat', jam: '20:00', aksi: 'Upload video 15-30 detik dengan musik trending lokal', alasan: 'Jumat malam = puncak engagement TikTok sebelum weekend' }
+      { platform: 'ig', hari: agg.bestDay || 'Selasa', jam: String(agg.bestHour || 19).padStart(2,'0') + ':00', aksi: 'Post Reel dengan hook 3 detik pertama yang kuat', alasan: 'Jam ' + String(agg.bestHour || 19).padStart(2,'0') + ':00 adalah prime time engagement Instagram kamu' },
+      { platform: 'meta', hari: 'Rabu', jam: '12:00', aksi: noPaid ? 'Boost post terbaik dengan budget Rp 30rb selama 3 hari' : 'Post konten edukatif singkat di Facebook', alasan: 'Tengah hari Rabu adalah waktu tertinggi scrolling Facebook untuk audiens dewasa' },
+      { platform: 'tiktok', hari: 'Jumat', jam: '20:00', aksi: 'Upload video 15-30 detik dengan musik trending lokal', alasan: 'Jumat malam adalah puncak engagement TikTok sebelum weekend' }
     ],
-    rekom_cta: 'Buat campaign baru sekarang →'
+    rekom_cta: 'Buat campaign baru sekarang'
   };
 }
 
@@ -243,12 +253,21 @@ function _renderSilarisNarasi() {
       '</div>' +
       '<div>' +
         '<div class="an-si-name">SiLaris</div>' +
-        '<div class="an-si-tag">Campaign Coach AI · Analytics Mode</div>' +
+        '<div class="an-si-tag">Analytics Coach</div>' +
       '</div>' +
     '</div>' +
     '<div id="an-si-narasi-wrap" class="an-si-narasi">' +
       '<div style="display:flex;flex-direction:column;gap:6px;">' +
         _anSkBlock('75%', 14) + _anSkBlock('60%', 14) + _anSkBlock('45%', 14) +
+      '</div>' +
+    '</div>' +
+    '<div class="an-er-explainer">' +
+      '<span class="an-er-explainer-icon">💡</span>' +
+      '<div>' +
+        '<strong>Apa itu Engagement Rate (ER)?</strong>' +
+        '<span> Persentase orang yang tidak sekadar lihat kontenmu, tapi langsung like, komen, atau share. ' +
+        'Makin tinggi angkanya, makin banyak orang yang tertarik dengan kontenmu. ' +
+        'Di atas 3% sudah bagus.</span>' +
       '</div>' +
     '</div>' +
     '<div class="an-si-clue-row">' +
@@ -261,7 +280,7 @@ function _renderSilarisNarasi() {
         '<div id="an-si-clue-todo">' + _anSkBlock('95%', 11) + '<div style="margin-top:4px;">' + _anSkBlock('55%', 11) + '</div></div>' +
       '</div>' +
     '</div>' +
-    '<button class="an-si-cta" onclick="switchMenu(\'command\')">Buat campaign baru sekarang →</button>' +
+    '<button class="an-si-cta" onclick="switchMenu(\'command\')">Buat campaign baru sekarang</button>' +
   '</div>';
 }
 
