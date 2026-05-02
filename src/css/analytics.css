@@ -1573,3 +1573,54 @@
   transition: opacity .15s; width: fit-content;
 }
 .an-pro-cta:hover { opacity: 0.88; }
+
+/* ─── Analytics Refresh / Cache UI ─── */
+.an-freshness-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 0 10px;
+  flex-wrap: wrap;
+}
+.an-freshness-note {
+  font-size: 11px;
+  color: var(--secondary);
+  line-height: 1.5;
+}
+.an-ts-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.an-ts-label {
+  font-size: 11px;
+  color: var(--secondary);
+  white-space: nowrap;
+}
+.an-refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  color: var(--secondary);
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+  flex-shrink: 0;
+}
+.an-refresh-btn:hover {
+  border-color: var(--rausch);
+  color: var(--rausch);
+}
+.an-narasi-ts {
+  font-size: 10.5px;
+  color: var(--secondary);
+  margin-top: 6px;
+  margin-bottom: 2px;
+  font-style: italic;
+}

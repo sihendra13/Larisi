@@ -138,6 +138,98 @@ function _anAggregate(campaigns) {
   };
 }
 
+/* ─── Analytics Cache & Auth Helpers ─── */
+
+// Relative time: "baru saja", "5 menit lalu", "2 jam lalu"
+function _anRelTime(isoStr) {
+  if (!isoStr) return '';
+  var diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
+  if (diff < 60)    return 'baru saja';
+  if (diff < 3600)  return Math.floor(diff / 60) + ' menit lalu';
+  if (diff < 86400) return Math.floor(diff / 3600) + ' jam lalu';
+  return Math.floor(diff / 86400) + ' hari lalu';
+}
+
+// Get or create Supabase anon user — returns user_id or null
+async function _anEnsureAnonUser() {
+  var sb = getSupabaseClient();
+  if (!sb) return null;
+  try {
+    var sessionRes = await sb.auth.getSession();
+    if (sessionRes.data && sessionRes.data.session) return sessionRes.data.session.user.id;
+    var signInRes = await sb.auth.signInAnonymously();
+    return (signInRes.data && signInRes.data.user) ? signInRes.data.user.id : null;
+  } catch(e) {
+    console.warn('[analytics] anon auth error:', e);
+    return null;
+  }
+}
+
+// Read from analytics_cache — returns row or null (null = miss or expired)
+async function _anGetCache(userId, cacheType) {
+  var sb = getSupabaseClient();
+  if (!sb || !userId) return null;
+  try {
+    var res = await sb
+      .from('analytics_cache')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('cache_type', cacheType)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+    return res.data || null;
+  } catch(e) {
+    console.warn('[analytics] cache get error:', e);
+    return null;
+  }
+}
+
+// Write to analytics_cache — upsert on (user_id, cache_type)
+async function _anSetCache(userId, cacheType, payload, aggSnapshot, ttlMinutes) {
+  var sb = getSupabaseClient();
+  if (!sb || !userId) return;
+  try {
+    var expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000).toISOString();
+    await sb.from('analytics_cache').upsert(
+      { user_id: userId, cache_type: cacheType, payload: payload, agg_snapshot: aggSnapshot, expires_at: expiresAt },
+      { onConflict: 'user_id,cache_type' }
+    );
+  } catch(e) {
+    console.warn('[analytics] cache set error:', e);
+  }
+}
+
+// Invalidate a specific cache type for the current user
+async function _anInvalidateCache(userId, cacheType) {
+  var sb = getSupabaseClient();
+  if (!sb || !userId) return;
+  try {
+    await sb.from('analytics_cache').delete().eq('user_id', userId).eq('cache_type', cacheType);
+  } catch(e) {
+    console.warn('[analytics] cache invalidate error:', e);
+  }
+}
+
+// Returns true if agg has changed >20% (reach OR ER) vs snapshot
+// Guard: absolute change must also be significant (>500 reach or >5pp ER)
+function _anNeedsRegenerate(agg, snapshot) {
+  if (!snapshot) return true;
+  var reachDiff = Math.abs(agg.totalReach - (snapshot.totalReach || 0)) / (snapshot.totalReach || 1);
+  var erDiff    = Math.abs((agg.avgER || 0) - (snapshot.avgER || 0)) / (snapshot.avgER || 1);
+  var reachBig  = Math.abs(agg.totalReach - (snapshot.totalReach || 0)) > 500;
+  var erBig     = Math.abs((agg.avgER || 0) - (snapshot.avgER || 0)) > 5;
+  return (reachDiff > 0.2 && reachBig) || (erDiff > 0.2 && erBig);
+}
+
+// Manual refresh — invalidate narasi cache then re-init
+async function refreshAnalyticsData() {
+  var btn = document.getElementById('an-refresh-btn');
+  if (btn) { btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; }
+  var userId = await _anEnsureAnonUser();
+  if (userId) await _anInvalidateCache(userId, 'narasi');
+  initAnalytics();
+}
+
 /* ─── Build Analytics System Prompt ─── */
 function _buildAnalyticsSystemPrompt(agg) {
   var ctx = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : { region: 'default', regionLabel: 'Indonesia' };
@@ -325,6 +417,7 @@ function _renderSilarisNarasi() {
         'Di atas 3% sudah bagus.</span>' +
       '</div>' +
     '</div>' +
+    '<div id="an-narasi-ts" class="an-narasi-ts"></div>' +
     '<button class="an-si-cta" onclick="switchMenu(\'command\')">Buat campaign baru sekarang</button>' +
   '</div>';
 }
@@ -668,7 +761,7 @@ function _renderUpgradePro() {
 }
 
 /* ─── Populate AI Sections ─── */
-function _anPopulateAI(ai) {
+function _anPopulateAI(ai, narasiTs) {
   if (!ai) return;
 
   // Narasi
@@ -688,6 +781,12 @@ function _anPopulateAI(ai) {
       // fallback: old single-field format
       narasiWrap.innerHTML = '<p style="' + _pStyle + '">' + ai.narasi + '</p>';
     }
+  }
+
+  // Narasi timestamp
+  var ntsEl = document.getElementById('an-narasi-ts');
+  if (ntsEl && narasiTs) {
+    ntsEl.textContent = 'Analisis diperbarui ' + _anRelTime(narasiTs);
   }
 
   // Clue cards
@@ -938,6 +1037,15 @@ function initAnalytics() {
   // Bottom: Upgrade Pro (full-width, paling bawah)
   container.innerHTML =
     '<div class="an-dashboard-wrap">' +
+      '<div class="an-freshness-bar">' +
+        '<span class="an-freshness-note">Data diperbarui setiap 15 menit · Metrics baru dari platform bisa butuh hingga 24 jam untuk muncul</span>' +
+        '<div class="an-ts-row">' +
+          '<span id="an-metrics-ts" class="an-ts-label"></span>' +
+          '<button id="an-refresh-btn" class="an-refresh-btn" onclick="refreshAnalyticsData()" title="Refresh data">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
       _renderStatCardsSkeleton() +
       '<div class="an-two-main-cols">' +
         '<div class="an-col-main">' +
@@ -955,7 +1063,7 @@ function initAnalytics() {
       _renderUpgradePro() +
     '</div>';
 
-  waitForCampaigns(function(campaigns) {
+  waitForCampaigns(async function(campaigns) {
     var hasPublished = campaigns.some(function(c) { return !!c.post_id; });
     if (!campaigns.length || !hasPublished) {
       _renderAnalyticsEmpty(container);
@@ -971,9 +1079,36 @@ function initAnalytics() {
     _anReplace('an-pulse-wrap',_renderLocalPulse(agg));
     _anReplace('an-plat-wrap', _renderPlatformTerkuat(agg));
 
-    _callSilarisAnalytics(agg)
-      .then(function(ai) { _anPopulateAI(ai || _buildAnalyticsFallback(agg)); })
-      .catch(function()  { _anPopulateAI(_buildAnalyticsFallback(agg)); });
+    // Metrics timestamp
+    var nowIso = new Date().toISOString();
+    var mtsEl = document.getElementById('an-metrics-ts');
+    if (mtsEl) mtsEl.textContent = 'Diperbarui ' + _anRelTime(nowIso);
+
+    // Narasi: check Supabase cache (TTL 1 jam), fallback to fresh Groq call
+    var userId = await _anEnsureAnonUser();
+    var aggSnap = { totalReach: agg.totalReach, avgER: agg.avgER, total: agg.total };
+
+    var narasiCache = await _anGetCache(userId, 'narasi');
+    var useCache = narasiCache && !_anNeedsRegenerate(agg, narasiCache.agg_snapshot);
+
+    if (useCache) {
+      console.log('[analytics] narasi from cache, created:', narasiCache.created_at);
+      _anPopulateAI(narasiCache.payload, narasiCache.created_at);
+    } else {
+      _callSilarisAnalytics(agg)
+        .then(async function(ai) {
+          var result = ai || _buildAnalyticsFallback(agg);
+          var tsNow = new Date().toISOString();
+          _anPopulateAI(result, tsNow);
+          await _anSetCache(userId, 'narasi', result, aggSnap, 60);
+        })
+        .catch(async function() {
+          var result = _buildAnalyticsFallback(agg);
+          var tsNow = new Date().toISOString();
+          _anPopulateAI(result, tsNow);
+          await _anSetCache(userId, 'narasi', result, aggSnap, 60);
+        });
+    }
   });
 }
 
