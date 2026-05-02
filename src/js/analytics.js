@@ -142,39 +142,15 @@ function _anAggregate(campaigns) {
 function _buildAnalyticsSystemPrompt(agg) {
   var ctx = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : { region: 'default', regionLabel: 'Indonesia' };
 
-  // ── Greeting per region (analytics-specific, lebih casual) ──
-  var _greetMap = {
-    jogja: 'Hei!', solo: 'Hei!', semarang: 'Hei!',
-    surabaya: 'Hei Rek!', malang: 'Hei Rek!',
-    medan: 'Hoi Bos!', medan_area: 'Hoi Bos!',
-    jakarta: 'Hei Guys!', bandung: 'Hei!',
-    makassar: 'Hei!', bali: 'Hei!',
-    manado: 'Hei!', palembang: 'Hei!',
-    pontianak: 'Hei!', banjarmasin: 'Hei!',
-    lampung: 'Hei!', ambon: 'Hei!', lombok: 'Hei!', papua: 'Hei!'
+  // ── Opening line universal per region (TODO: upgrade per kategori bisnis setelah onboarding selesai) ──
+  var _openingMap = {
+    surabaya: 'Hei Rek! Yuk lihat hasil campaign kamu bulan ini.',
+    malang:   'Hei Rek! Yuk lihat hasil campaign kamu bulan ini.',
+    medan:    'Hoi Bos! Yuk lihat hasil campaign kamu bulan ini.',
+    medan_area: 'Hoi Bos! Yuk lihat hasil campaign kamu bulan ini.',
+    jakarta:  'Hei Guys! Yuk lihat hasil campaign kamu bulan ini.'
   };
-  var analyticsGreeting = _greetMap[ctx.region] || 'Hei!';
-
-  // ── Tone detection dari nama + caption campaign ──
-  var _allText = '';
-  if (agg.bestCamp && agg.bestCamp.name) _allText += ' ' + agg.bestCamp.name.toLowerCase();
-  agg.stitchCandidates.forEach(function(s) { _allText += ' ' + (s.text || '').toLowerCase() + ' ' + ((s.campaign && s.campaign.name) || '').toLowerCase(); });
-
-  var businessTone;
-  if (/servis|motor|bengkel|sparepart|otomotif|mobil/.test(_allText))
-    businessTone = 'Mesin bisnis kamu sudah ngebut bulan ini';
-  else if (/menu|makan|kuliner|resto|cafe|warung|masak|food/.test(_allText))
-    businessTone = 'Dapur kamu sudah rame bulan ini';
-  else if (/baju|outfit|fashion|style|koleksi|busana|pakaian/.test(_allText))
-    businessTone = 'Gaya kamu makin dikenal bulan ini';
-  else if (/jasa|layanan|bersih|rapi|bantu|cuci|laundry|servis/.test(_allText))
-    businessTone = 'Kerja keras kamu mulai kelihatan hasilnya bulan ini';
-  else if (/rumah|properti|hunian|kavling|kos|kontrakan/.test(_allText))
-    businessTone = 'Fondasi bisnis kamu makin kuat bulan ini';
-  else
-    businessTone = 'Kamu sudah kerja keras bulan ini';
-
-  var openingLine = analyticsGreeting + ' ' + businessTone + ' — dan datanya membuktikannya.';
+  var openingLine = _openingMap[ctx.region] || 'Hei! Yuk lihat hasil campaign kamu bulan ini.';
 
   var platSummary = agg.platList.map(function(p) {
     var pn = (_AN_PLAT[p.key] || {}).name || p.key;
