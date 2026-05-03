@@ -14,6 +14,25 @@ function _anFmtPct(v) {
   return parseFloat(v).toFixed(1) + '%';
 }
 
+/* ─── ER Qualitative Label ─── */
+function _anErLabel(er) {
+  if (er == null || isNaN(er)) return { label: 'Belum ada data', sub: 'Belum ada data ER' };
+  if (er > 100) return { label: 'Luar biasa 🔥',  sub: 'Konten kamu sangat disukai' };
+  if (er >= 10) return { label: 'Sangat bagus ⭐', sub: 'Konten kamu bekerja dengan baik' };
+  if (er >= 3)  return { label: 'Bagus 👍',        sub: 'Konten kamu mulai dapat perhatian' };
+  return              { label: 'Berkembang 🌱',    sub: 'Masih ada ruang untuk tumbuh' };
+}
+
+/* ─── Delta vs Last Month ─── */
+function _anDelta(current, previous) {
+  if (current === 0 && previous === 0) return null;
+  if (previous === 0) return { text: 'Bulan pertama, terus semangat!', cls: 'neutral' };
+  var pct = Math.round(((current - previous) / previous) * 100);
+  if (pct > 0)  return { text: '↑ ' + pct + '% vs bulan lalu', cls: 'up' };
+  if (pct < 0)  return { text: '↓ ' + Math.abs(pct) + '% vs bulan lalu', cls: 'down' };
+  return              { text: '→ Sama seperti bulan lalu', cls: 'neutral' };
+}
+
 /* ─── Platform Config ─── */
 var _AN_PLAT = {
   ig:      { name: 'Instagram', color: '#E1306C' },
@@ -53,6 +72,13 @@ function _anAggregate(campaigns) {
   var stitchCandidates = [];
   var formatCount = {};
 
+  // Month-over-month breakdown
+  var _now = new Date();
+  var _thisMonthStart = new Date(_now.getFullYear(), _now.getMonth(), 1).getTime();
+  var _lastMonthStart = new Date(_now.getFullYear(), _now.getMonth() - 1, 1).getTime();
+  var reachThisMonth = 0, reachLastMonth = 0;
+  var countThisMonth = 0, countLastMonth = 0;
+
   real.forEach(function(c) {
     if (c.status === 'running') activeCount++;
 
@@ -83,7 +109,18 @@ function _anAggregate(campaigns) {
     formatCount[fmt] = (formatCount[fmt] || 0) + 1;
 
     var ts = c.created_at ? new Date(c.created_at) : null;
-    if (ts) { hourBuckets[ts.getHours()]++; dayBuckets[ts.getDay()]++; }
+    if (ts) {
+      hourBuckets[ts.getHours()]++;
+      dayBuckets[ts.getDay()]++;
+      var tsMs = ts.getTime();
+      if (tsMs >= _thisMonthStart) {
+        reachThisMonth += reach;
+        countThisMonth++;
+      } else if (tsMs >= _lastMonthStart) {
+        reachLastMonth += reach;
+        countLastMonth++;
+      }
+    }
 
     var caption = eng.caption || c.caption || '';
     if (caption && er > 0) {
@@ -134,7 +171,12 @@ function _anAggregate(campaigns) {
     bestHour: bestHour,
     bestDay: dayNames[bestDayIdx],
     topFormat: fmtLabels[topFmt] || topFmt,
-    stitchCandidates: stitchCandidates.slice(0, 3)
+    stitchCandidates: stitchCandidates.slice(0, 3),
+    // Month-over-month
+    reachThisMonth:  reachThisMonth,
+    reachLastMonth:  reachLastMonth,
+    countThisMonth:  countThisMonth,
+    countLastMonth:  countLastMonth
   };
 }
 
@@ -255,10 +297,11 @@ function _buildAnalyticsSystemPrompt(agg) {
 
   var erVal  = agg.avgER != null ? agg.avgER : null;
   var erTier = erVal == null ? 'unknown' : erVal >= 10 ? 'high' : erVal >= 3 ? 'mid' : 'low';
+  var erLbl  = _anErLabel(erVal);
 
-  // Closing P1 sesuai erTier
+  // Closing P1 sesuai erTier — tanpa sebutan "bisnis lokal"
   var p1Closing = erTier === 'high'
-    ? 'Untuk bisnis lokal, ini pencapaian yang serius layak dirayakan.'
+    ? 'Ini pencapaian yang serius dan layak dirayakan.'
     : erTier === 'mid'
     ? 'Fondasi sudah kuat — ini saat yang tepat untuk ekspansi.'
     : 'Data ini kasih tahu persis apa yang perlu diperbaiki — yuk benahi satu per satu.';
@@ -272,10 +315,16 @@ function _buildAnalyticsSystemPrompt(agg) {
     : 'Semua metrik sudah baik. Tulis tantangan naik level: konsistensi + ekspansi ke format atau platform baru. Contoh: "Semua metrik sudah hijau — tantangan berikutnya adalah mempertahankan konsistensi ini sambil mencoba format baru untuk menjangkau segmen audiens yang lebih luas."';
 
   return [
-    'Kamu adalah SiLaris, Campaign Coach AI untuk bisnis lokal Indonesia.',
+    'Kamu adalah SiLaris, Campaign Coach AI untuk UMKM Indonesia.',
     'MODE: ANALYTICS DASHBOARD. Bicara seperti coach yang jujur, hangat, dan langsung ke poin.',
     'ATURAN KERAS: DILARANG gunakan bullet point, header, atau angka daftar.',
     'ATURAN KERAS: Setiap kalimat diakhiri tanda titik. Angka % selalu pakai simbol %.',
+    'ATURAN KERAS: Setiap kalimat maksimal 20 kata. Hapus kata pengisi seperti "ini menunjukkan bahwa", "hal ini berarti bahwa". Langsung ke poin.',
+    'ATURAN KERAS: DILARANG menyebut kata "bisnis lokal" dalam semua output.',
+    'ATURAN KERAS: DILARANG menyebut benchmark industri yang tidak bisa diverifikasi (contoh: "rata-rata industri X%", "standar UMKM Y%").',
+    'ATURAN KERAS: Deskripsikan hasil berdasarkan data nyata user saja. Jangan bandingkan dengan pihak eksternal.',
+    'ATURAN KERAS: DILARANG menyebut angka ER mentah di narasi_p1. Gunakan label kualitatif yang sudah ditetapkan: "' + erLbl.label.replace(/\s*[🔥⭐👍🌱]/u, '') + '".',
+    'ATURAN KERAS: DILARANG gunakan tanda em-dash (—) dalam semua output. Ganti dengan tanda titik atau koma.',
     '',
     'KALIMAT PEMBUKA YANG WAJIB DIGUNAKAN (sudah ditetapkan, jangan diubah):',
     '"' + openingLine + '"',
@@ -294,8 +343,8 @@ function _buildAnalyticsSystemPrompt(agg) {
     '',
     'INSTRUKSI narasi_p1 (ISI FIELD INI — maks 2 kalimat):',
     '  Mulai PERSIS dengan kalimat pembuka di atas.',
-    '  Lanjutkan kalimat 2: sebutkan ' + agg.total + ' campaign, reach ' + _anFmtK(agg.totalReach) + ', ER ' + (erVal ? erVal.toFixed(1) + '%' : 'yang terus tumbuh') + '.',
-    '  ' + (erVal ? 'Interpretasikan ER ' + erVal.toFixed(1) + '% dalam bahasa manusia — artinya apa bagi bisnis ini.' : '') ,
+    '  Lanjutkan kalimat 2: sebutkan ' + agg.total + ' campaign, ' + _anFmtK(agg.totalReach) + ' orang tahu bisnis ini, performa konten dinilai "' + erLbl.label + '".',
+    '  Jelaskan apa arti performa "' + erLbl.label + '" ini bagi pemilik bisnis — dalam bahasa yang mudah dimengerti.',
     '  Tutup dengan: "' + p1Closing + '"',
     '',
     'INSTRUKSI narasi_p2 (ISI FIELD INI — maks 2 kalimat):',
@@ -305,8 +354,8 @@ function _buildAnalyticsSystemPrompt(agg) {
     '{',
     '  "narasi_p1": "kalimat pembuka + angka spesifik + interpretasi ER + kalimat penutup dinamis. Maks 2 kalimat.",',
     '  "narasi_p2": "gap terbesar sebagai peluang + 1 aksi konkret spesifik. Maks 2 kalimat.",',
-    '  "clue_potensi": "1 kalimat spesifik, WAJIB sebut angka ER ' + (erVal ? erVal.toFixed(1) + '%' : 'nyata') + '. Contoh: ER ' + (erVal ? erVal.toFixed(1) + '%' : 'tinggi') + ' artinya audiens sangat responsif, kalau reach naik 10x lewat boost kecil, peluang closing ikut naik proporsional.",',
-    '  "clue_todo": "1 kalimat actionable konkret. ' + (agg.totalPaidReach === 0 ? 'Rekomendasikan boost campaign terbaik dengan Rp 20-50rb selama 3 hari karena paid reach masih 0.' : 'Langkah konkret berikutnya berdasarkan platform terbaik.') + '",',
+    '  "clue_potensi": "WAJIB sebut angka ' + _anFmtK(agg.totalReach) + ' orang. Bahasa UMKM, 1 kalimat max. Contoh: Sekarang ' + _anFmtK(agg.totalReach) + ' orang sudah tahu bisnis kamu ada, makin banyak orang tahu makin besar peluang mereka jadi pelanggan.",',
+    '  "clue_todo": "' + (agg.totalPaidReach === 0 ? 'WAJIB sebut nama campaign \\"' + (agg.bestCamp ? agg.bestCamp.name : 'terbaik') + '\\". Bahasa UMKM, 1 kalimat max. Contoh: Boost campaign \\"' + (agg.bestCamp ? agg.bestCamp.name : 'terbaik') + '\\" dengan Rp 20-50rb selama 3 hari, cara paling mudah menjangkau lebih banyak calon pelanggan minggu ini.' : 'Tulis 1 langkah konkret berdasarkan platform ' + (agg.platList.length ? ((_AN_PLAT[agg.platList[0].key] || {}).name || agg.platList[0].key) : 'terbaik') + ' dengan ER tertinggi. Bahasa UMKM, langsung ke poin.') + '",',
     '  "mood_insight": "1 kalimat dari pola reaksi audiens.",',
     '  "platform_insight": "1 kalimat, sebut nama platform.",',
     '  "stitch_insight": "1 kalimat pola caption terkuat.",',
@@ -352,23 +401,25 @@ async function _callSilarisAnalytics(agg) {
 
 /* ─── Analytics Fallback ─── */
 function _buildAnalyticsFallback(agg) {
-  var erStr   = agg.avgER != null ? agg.avgER.toFixed(1) + '%' : null;
+  var erLbl   = _anErLabel(agg.avgER);
   var bestPlat = agg.platList.length ? ((_AN_PLAT[agg.platList[0].key] || {}).name || agg.platList[0].key) : 'Instagram';
   var noPaid  = agg.totalPaidReach === 0;
+  var erTier  = agg.avgER == null ? 'unknown' : agg.avgER >= 10 ? 'high' : agg.avgER >= 3 ? 'mid' : 'low';
+  var p1Closing = erTier === 'high'
+    ? 'Ini pencapaian yang serius dan layak dirayakan.'
+    : erTier === 'mid'
+    ? 'Fondasi sudah kuat — ini saat yang tepat untuk ekspansi.'
+    : 'Data ini kasih tahu persis apa yang perlu diperbaiki — yuk benahi satu per satu.';
   return {
-    narasi_p1: 'Hei! Kamu sudah kerja keras bulan ini — dan datanya membuktikannya. ' +
-      agg.total + ' campaign berjalan' +
-      (erStr ? ', reach ' + _anFmtK(agg.totalReach) + ' orang, ER ' + erStr + (parseFloat(erStr) >= 10 ? ' — artinya hampir semua yang lihat kontenmu langsung bereaksi, bukan sekadar scroll lewat.' : '.') : '.') +
-      (erStr && parseFloat(erStr) >= 10 ? ' Untuk bisnis lokal, ini pencapaian yang serius layak dirayakan.' : erStr && parseFloat(erStr) >= 3 ? ' Fondasi sudah kuat — ini saat yang tepat untuk ekspansi.' : ' Data ini kasih tahu persis apa yang perlu diperbaiki — yuk benahi satu per satu.'),
+    narasi_p1: 'Hei! Kamu sudah kerja keras bulan ini, dan datanya membuktikannya. ' +
+      agg.total + ' campaign berjalan, ' + _anFmtK(agg.totalReach) + ' orang sudah tahu bisnis kamu ada, performa kontenmu dinilai "' + erLbl.label.replace(/\s*[🔥⭐👍🌱]/u, '') + '"' +
+      (erTier === 'high' ? '. Artinya hampir semua yang lihat kontenmu langsung bereaksi, bukan sekadar scroll lewat.' : '.') +
+      ' ' + p1Closing,
     narasi_p2: noPaid
-      ? 'Satu peluang besar yang belum disentuh: paid reach kamu masih 0%. Coba boost campaign ' + (agg.bestCamp ? '"' + agg.bestCamp.name + '"' : 'terbaik') + ' dengan Rp 20-50rb selama 3 hari — ini kombinasi paling efisien untuk lipatgandakan jangkauanmu sekarang.'
-      : 'Semua metrik sudah hijau — tantangan berikutnya adalah mempertahankan konsistensi ini sambil mencoba format baru untuk menjangkau segmen audiens yang lebih luas.',
-    clue_potensi: erStr
-      ? 'ER ' + erStr + ' itu artinya audiens kamu sangat responsif. Kalau reach naik 10x lewat boost kecil, peluang closing ikut naik proporsional.'
-      : 'Campaign organikmu sudah solid. Amplify dengan boost kecil untuk hasil yang jauh lebih besar.',
-    clue_todo: noPaid
-      ? 'Paid reach kamu masih 0%. Coba boost campaign ' + (agg.bestCamp ? '"' + agg.bestCamp.name + '"' : 'terbaik') + ' dengan Rp 20-50rb selama 3 hari, itu titik paling efisien sekarang.'
-      : 'Publish 1 campaign baru di ' + bestPlat + ' minggu ini untuk menjaga momentum engagement.',
+      ? 'Satu peluang besar yang belum disentuh: iklan berbayar kamu masih nol. Coba boost campaign ' + (agg.bestCamp ? '"' + agg.bestCamp.name + '"' : 'terbaik') + ' dengan Rp 20-50rb selama 3 hari. Ini cara paling efisien untuk lipatgandakan jangkauanmu sekarang.'
+      : 'Semua metrik sudah bagus. Tantangan berikutnya adalah mempertahankan konsistensi ini sambil mencoba format baru.',
+    clue_potensi: 'Makin banyak orang yang tahu bisnis kamu, makin besar peluang mereka jadi pelanggan.',
+    clue_todo: 'Boost campaign terbaik kamu dengan Rp 20-50rb selama 3 hari. Cara paling mudah menjangkau lebih banyak calon pelanggan minggu ini.',
     mood_insight: 'Audiens kamu merespons dengan baik. Pertahankan tone dan format yang sudah terbukti bekerja.',
     platform_insight: 'Coba eksplorasi platform yang belum dipakai untuk menjangkau segmen audiens baru.',
     stitch_insight: 'Sapaan lokal dan teks overlay personal terbukti meningkatkan stop-the-scroll rate.',
@@ -400,21 +451,18 @@ function _renderSilarisNarasi() {
     '</div>' +
     '<div class="an-si-clue-row">' +
       '<div class="an-si-clue">' +
-        '<div class="an-si-clue-label">💰 Potensi Penjualan</div>' +
+        '<div class="an-si-clue-label">💡 Artinya untuk bisnismu</div>' +
         '<div id="an-si-clue-potensi">' + _anSkBlock('95%', 11) + '<div style="margin-top:4px;">' + _anSkBlock('70%', 11) + '</div></div>' +
       '</div>' +
       '<div class="an-si-clue">' +
-        '<div class="an-si-clue-label">✅ Yang Perlu Dilakukan</div>' +
+        '<div class="an-si-clue-label">🎯 Yang bisa dilakukan sekarang</div>' +
         '<div id="an-si-clue-todo">' + _anSkBlock('95%', 11) + '<div style="margin-top:4px;">' + _anSkBlock('55%', 11) + '</div></div>' +
       '</div>' +
     '</div>' +
     '<div class="an-er-explainer">' +
       '<span class="an-er-explainer-icon">💡</span>' +
       '<div>' +
-        '<strong>Apa itu Engagement Rate (ER)?</strong>' +
-        '<span> Persentase orang yang tidak sekadar lihat kontenmu, tapi langsung like, komen, atau share. ' +
-        'Makin tinggi angkanya, makin banyak orang yang tertarik dengan kontenmu. ' +
-        'Di atas 3% sudah bagus.</span>' +
+        '<span id="an-er-explainer-text">Memuat penjelasan performa...</span>' +
       '</div>' +
     '</div>' +
     '<div id="an-narasi-ts" class="an-narasi-ts"></div>' +
@@ -437,18 +485,71 @@ function _renderStatCardsSkeleton() {
 
 /* ─── Section: Stat Cards Real ─── */
 function _renderStatCards(agg) {
-  function card(colorClass, label, val, sub, infoTip) {
+  var erLbl      = _anErLabel(agg.avgER);
+  var reachDelta = _anDelta(agg.reachThisMonth, agg.reachLastMonth);
+  var campDelta  = _anDelta(agg.countThisMonth, agg.countLastMonth);
+  var hasPaid    = agg.totalPaidReach > 0;
+
+  // card(colorClass, topLabel, bigVal, midLabel, sub, tip, delta)
+  // midLabel = optional second row between value and sub
+  function card(colorClass, topLabel, bigVal, midLabel, sub, tip, delta) {
+    var midHtml   = midLabel ? '<div class="kpi-mid-label">' + midLabel + '</div>' : '';
+    var deltaHtml = delta    ? '<div class="kpi-delta ' + delta.cls + '">' + delta.text + '</div>' : '';
     return '<div class="kpi-card ' + colorClass + '">' +
-      '<div class="kpi-label">' + label + '<span class="kpi-info" title="' + infoTip + '">ⓘ</span></div>' +
-      '<div class="kpi-value">' + val + '</div>' +
+      '<div class="kpi-label">' + topLabel + '<span class="kpi-info" title="' + tip + '">ⓘ</span></div>' +
+      '<div class="kpi-value">' + bigVal + '</div>' +
+      midHtml +
       '<div class="kpi-sub">' + sub + '</div>' +
+      deltaHtml +
     '</div>';
   }
+
+  // Box 1: reach
+  var reachVal = agg.totalReach > 0 ? _anFmtK(agg.totalReach) : '0';
+
+  // Box 3: ER
+  var erVal = agg.avgER != null ? agg.avgER.toFixed(1) + '%' : '0%';
+
+  // Box 4: paid reach
+  var paidVal, paidMid, paidSub, paidTip;
+  if (hasPaid) {
+    var paidPct = Math.round(agg.totalPaidReach / agg.totalReach * 100);
+    paidVal = paidPct + '%';
+    paidMid = _anFmtK(agg.totalPaidReach) + ' orang via iklan';
+    paidSub = 'dari boost atau sponsored post';
+    paidTip = 'Reach dari konten yang di-boost atau sponsored';
+  } else {
+    paidVal = '0';
+    paidMid = 'Belum ada iklan berbayar';
+    paidSub = 'Semua reach dari konten organik';
+    paidTip = 'Belum ada campaign berbayar atau boost aktif';
+  }
+
   return '<div class="kpi-row" id="an-sc-wrap">' +
-    card('purple', 'Total Reach',         _anFmtK(agg.totalReach),    'estimasi semua campaign',    'Estimasi total orang yang terpapar konten kamu') +
-    card('green',  'Avg Engagement Rate', agg.avgER != null ? _anFmtPct(agg.avgER) : '—', agg.total + ' campaign',  'Rata-rata (likes+comments+shares) / reach × 100') +
-    card('amber',  'Campaign Aktif',      String(agg.active),          'dari ' + agg.total + ' total', 'Campaign dengan status running') +
-    card('blue',   'Paid Reach',          _anFmtK(agg.totalPaidReach),'total berbayar',              'Reach dari konten yang di-boost atau sponsored') +
+    card('purple', 'Total Reach',
+         reachVal,
+         'Orang tahu bisnis kamu',
+         'dari ' + agg.total + ' campaign bulan ini',
+         'Estimasi total orang yang terpapar konten kamu',
+         reachDelta) +
+    card('green', 'Campaign berjalan',
+         String(agg.active),
+         null,
+         'bulan ini',
+         'Campaign dengan status running',
+         campDelta) +
+    card('amber', 'Performa Konten',
+         erVal,
+         erLbl.label,
+         erLbl.sub,
+         'Penilaian berdasarkan Engagement Rate: seberapa banyak yang like, komen, atau share',
+         null) +
+    card('blue', 'Iklan Berbayar',
+         paidVal,
+         paidMid,
+         paidSub,
+         paidTip,
+         null) +
   '</div>';
 }
 
@@ -1091,6 +1192,20 @@ function initAnalytics() {
     _anReplace('an-mood-wrap', _renderMoodAudiens(agg));
     _anReplace('an-pulse-wrap',_renderLocalPulse(agg));
     _anReplace('an-plat-wrap', _renderPlatformTerkuat(agg));
+
+    // Update ER explainer dengan label kualitatif dari agg
+    var erExpEl = document.getElementById('an-er-explainer-text');
+    if (erExpEl) {
+      var erLblExp = _anErLabel(agg.avgER);
+      if (agg.avgER != null) {
+        erExpEl.innerHTML = 'Kenapa konten kamu dinilai <strong>' + erLblExp.label + '</strong>? ' +
+          'Karena orang yang lihat kontenmu tidak sekadar scroll lewat — mereka like, komen, atau share. ' +
+          'Ini tanda konten kamu benar-benar menarik perhatian.';
+      } else {
+        erExpEl.innerHTML = 'Engagement Rate adalah ukuran seberapa banyak orang yang tidak sekadar lihat kontenmu, ' +
+          'tapi langsung like, komen, atau share. Makin tinggi, makin banyak yang tertarik.';
+      }
+    }
 
     // Metrics timestamp
     var nowIso = new Date().toISOString();
