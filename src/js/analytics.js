@@ -72,6 +72,11 @@ function _anAggregate(campaigns) {
   var stitchCandidates = [];
   var formatCount = {};
 
+  // bestCamp: Opsi B — absolute engagements tertinggi, reach >= 5
+  // Fallback ke tertinggi tanpa threshold kalau semua campaign di bawah 5
+  var BEST_CAMP_REACH_THRESHOLD = 5;
+  var _bestAbsEng = 0, _bestAbsEngFallback = 0, _bestCampFallback = null;
+
   // Month-over-month breakdown
   var _now = new Date();
   var _thisMonthStart = new Date(_now.getFullYear(), _now.getMonth(), 1).getTime();
@@ -88,9 +93,19 @@ function _anAggregate(campaigns) {
     totalPaidReach += (eng.paidReach || 0);
 
     var er = parseFloat(eng.engagementRate) || 0;
-    if (er > 0) {
-      erValues.push(er);
-      if (er > bestER) { bestER = er; bestCamp = c; }
+    if (er > 0) erValues.push(er);
+
+    // bestCamp: absolute engagements (reactions + comments + shares)
+    // Primary: reach >= threshold. Fallback: tanpa threshold (semua campaign)
+    var absEng = (eng.likes || 0) + (eng.comments || 0) + (eng.shares || 0);
+    if (absEng > _bestAbsEngFallback) {
+      _bestAbsEngFallback = absEng;
+      _bestCampFallback   = c;
+    }
+    if (reach >= BEST_CAMP_REACH_THRESHOLD && absEng > _bestAbsEng) {
+      _bestAbsEng = absEng;
+      bestCamp    = c;
+      bestER      = er;
     }
 
     rLove += (eng.reactionsLove || 0);
@@ -127,6 +142,12 @@ function _anAggregate(campaigns) {
       stitchCandidates.push({ text: caption, er: er, campaign: c });
     }
   });
+
+  // Fallback: kalau tidak ada campaign dengan reach >= 5, pakai yang absolut tertinggi
+  if (!bestCamp && _bestCampFallback) {
+    bestCamp = _bestCampFallback;
+    bestER   = parseFloat((_bestCampFallback._engagement || {}).engagementRate) || 0;
+  }
 
   var avgER = erValues.length
     ? erValues.reduce(function(s, v) { return s + v; }, 0) / erValues.length
