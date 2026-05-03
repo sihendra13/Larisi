@@ -615,13 +615,24 @@ function _renderCampaignBest(agg) {
     var eng = c._engagement || {};
     var firstPlat = (c.platforms || [])[0] || '';
     var platLabel = (c.platforms || []).map(function(p) { return (_AN_PLAT[p] || {}).name || p; }).join(', ');
-    var launchDate = c.launchTime || (c.created_at
-      ? new Date(c.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-      : '—');
+    var launchDate = c.launchTime || (c.created_at ? (function() {
+      var _d = new Date(c.created_at);
+      return _d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) +
+             ' · ' + _d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    })() : '—');
     var postUrl = c.post_url || null;
     var dateEl = postUrl
       ? '<a href="' + postUrl + '" target="_blank" rel="noopener" class="an-camp-date-link">' + launchDate + ' ↗</a>'
       : '<span>' + launchDate + '</span>';
+    // Username dari connected accounts (sama seperti monitor.js)
+    var _platApiMap = { ig:'instagram', 'ig-reel':'instagram', 'ig-story':'instagram', 'ig-feed':'instagram', 'ig-post':'instagram', meta:'facebook', 'meta-reel':'facebook', 'meta-story':'facebook', tiktok:'tiktok', youtube:'youtube' };
+    var _storedAccs = typeof _getStoredAccounts === 'function' ? _getStoredAccounts() : [];
+    var _matchedAcc = null;
+    for (var _ai = 0; _ai < _storedAccs.length; _ai++) {
+      if (_storedAccs[_ai].platform === (_platApiMap[firstPlat] || firstPlat)) { _matchedAcc = _storedAccs[_ai]; break; }
+    }
+    var campUsername = _matchedAcc ? ('@' + (_matchedAcc.username || '')) : '';
+
     var platIconEl = firstPlat
       ? '<div class="an-plat-icon ' + firstPlat + ' an-camp-plat-icon">' + _anPlatSvg(firstPlat) + '</div>'
       : '';
@@ -632,7 +643,7 @@ function _renderCampaignBest(agg) {
           '<div class="an-camp-top-info">' +
             '<div class="an-camp-name">' + (c.name || '—') + '</div>' +
             '<div class="an-camp-meta">' +
-              (platLabel ? '<span>' + platLabel + '</span><span style="color:var(--border);">·</span>' : '') +
+              (campUsername ? '<span class="an-camp-username">' + campUsername + '</span><span style="color:var(--border);">·</span>' : (platLabel ? '<span>' + platLabel + '</span><span style="color:var(--border);">·</span>' : '')) +
               dateEl +
             '</div>' +
           '</div>' +

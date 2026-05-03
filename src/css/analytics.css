@@ -1215,6 +1215,11 @@
   display: flex; align-items: center; gap: 5px;
   font-size: 12.5px; color: var(--secondary);
 }
+.an-camp-username {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--rausch);
+}
 .an-camp-date-link {
   color: var(--rausch);
   text-decoration: none;
