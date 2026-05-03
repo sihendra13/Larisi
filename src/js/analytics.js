@@ -852,12 +852,26 @@ function _renderRekomendasiWeek() {
 }
 
 /* ─── Section: Competitor Analysis ─── */
-var _anCompActivePlatform = 'ig';
+var _anCompActivePlatform  = 'ig';
+var _anCurrentCompResult   = null;
+var _anCurrentCompHandle   = '';
+var _anCurrentCompPlatform = 'ig';
+var _anCurrentStrategyData = null;
+var _AN_COMP_STRAT_KEY     = 'laras_competitor_strategies';
+
+function _anGetSavedStrategies() {
+  try { return JSON.parse(localStorage.getItem(_AN_COMP_STRAT_KEY) || '[]'); } catch(e) { return []; }
+}
+function _anPersistStrategies(arr) {
+  try { localStorage.setItem(_AN_COMP_STRAT_KEY, JSON.stringify(arr)); } catch(e) {}
+}
 
 function _renderCompetitorSection() {
+  var isPro = typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.FEATURES && RADAR_CONFIG.FEATURES.competitor_pro;
   return '<div class="an-comp-card">' +
     '<div class="an-comp-header">' +
       '<div class="an-comp-title"><span>🔍</span> Competitor Analysis</div>' +
+      (isPro ? '<span class="an-comp-pro-badge">PRO</span>' : '<span class="an-comp-free-badge">GRATIS</span>') +
     '</div>' +
     '<div class="an-comp-body">' +
       '<div class="an-comp-plat-tabs">' +
@@ -870,8 +884,13 @@ function _renderCompetitorSection() {
         '<button class="an-comp-analyze-btn" id="an-comp-btn" onclick="anAnalyzeCompetitor()">Analisa →</button>' +
       '</div>' +
       '<div id="an-comp-result-area"></div>' +
+      (isPro
+        ? '<div id="an-comp-pro-landscape"></div>'
+        : '<div class="an-comp-upgrade-nudge">⚡ Upgrade ke Pro untuk analisis hingga 3 pesaing sekaligus <button class="an-comp-nudge-btn" onclick="showPricingModal()">Lihat paket →</button></div>'
+      ) +
       '<div class="an-comp-disclaimer">Estimasi berdasarkan data publik · bukan angka dashboard pesaing</div>' +
     '</div>' +
+    '<div id="an-saved-strategies-wrap"></div>' +
   '</div>';
 }
 
@@ -975,7 +994,8 @@ function _anPopulateAI(ai, narasiTs) {
 
 /* ─── Competitor: Set Platform ─── */
 function anSetCompPlatform(btn, platform) {
-  _anCompActivePlatform = platform;
+  _anCompActivePlatform  = platform;
+  _anCurrentCompPlatform = platform;
   var tabs = document.querySelectorAll('.an-comp-plat-tab');
   tabs.forEach(function(t) { t.classList.remove('active'); });
   btn.classList.add('active');
@@ -1009,25 +1029,39 @@ async function anAnalyzeCompetitor() {
     return;
   }
 
-  var userER = agg.avgER ? agg.avgER.toFixed(1) : null;
-  var compER = parseFloat(result.comp_er) || null;
+  // Store module state for strategy modal
+  _anCurrentCompResult   = result;
+  _anCurrentCompHandle   = handle;
+  _anCurrentCompPlatform = _anCompActivePlatform;
+
+  var userER    = agg.avgER ? agg.avgER.toFixed(1) : null;
+  var compER    = parseFloat(result.comp_er) || null;
+  var userErLbl = _anErLabel(agg.avgER);
+  var compErLbl = compER ? _anErLabel(compER) : null;
 
   area.innerHTML =
     '<div class="an-comp-result">' +
+
     // Compare grid
     '<div class="an-comp-compare-grid">' +
       '<div class="an-comp-col">' +
         '<div class="an-comp-col-label">Kamu</div>' +
-        (userER ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Avg ER</span><span class="an-comp-metric-val accent">' + userER + '%</span></div>' : '') +
+        (userER
+          ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Avg ER</span><span class="an-comp-metric-val accent">' + userER + '%</span></div>' +
+            '<div class="an-comp-er-lbl user">' + userErLbl.label + '</div>'
+          : '') +
         '<div class="an-comp-metric"><span class="an-comp-metric-key">Campaign aktif</span><span class="an-comp-metric-val">' + agg.active + '</span></div>' +
         '<div class="an-comp-metric"><span class="an-comp-metric-key">Total reach</span><span class="an-comp-metric-val">' + _anFmtK(agg.totalReach) + '</span></div>' +
       '</div>' +
       '<div class="an-comp-col">' +
         '<div class="an-comp-col-label">Pesaing · ' + (result.comp_handle || handle) + '</div>' +
-        (result.comp_er ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Est. ER</span><span class="an-comp-metric-val">' + result.comp_er + '</span></div>' : '') +
-        (result.comp_freq ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Freq. posting</span><span class="an-comp-metric-val">' + result.comp_freq + '</span></div>' : '') +
+        (result.comp_er
+          ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Est. ER</span><span class="an-comp-metric-val">' + result.comp_er + '</span></div>' +
+            (compErLbl ? '<div class="an-comp-er-lbl comp">' + compErLbl.label + '</div>' : '')
+          : '') +
+        (result.comp_freq      ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Freq. posting</span><span class="an-comp-metric-val">' + result.comp_freq + '</span></div>' : '') +
         (result.comp_followers ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Est. followers</span><span class="an-comp-metric-val">' + result.comp_followers + '</span></div>' : '') +
-        (result.comp_format ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Format dominan</span><span class="an-comp-metric-val">' + result.comp_format + '</span></div>' : '') +
+        (result.comp_format    ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Format dominan</span><span class="an-comp-metric-val">' + result.comp_format + '</span></div>' : '') +
       '</div>' +
     '</div>' +
 
@@ -1060,10 +1094,214 @@ async function anAnalyzeCompetitor() {
       : '') +
 
     // Strategy CTA
-    '<button class="an-comp-strat-btn" onclick="switchMenu(\'monitor\')">Generate strategi lengkap untuk kalahkan pesaing ini →</button>' +
+    '<button class="an-comp-strat-btn" onclick="anOpenStrategyModal()">✨ Buat strategi untuk kalahkan pesaing ini →</button>' +
     '</div>';
 }
 window.anAnalyzeCompetitor = anAnalyzeCompetitor;
+
+/* ─── Strategy Modal ─── */
+function anOpenStrategyModal() {
+  if (!_anCurrentCompResult) return;
+
+  var existing = document.getElementById('an-strat-modal');
+  if (existing) existing.remove();
+
+  var handle   = _anCurrentCompHandle;
+  var platName = (_AN_PLAT[_anCurrentCompPlatform] || {}).name || _anCurrentCompPlatform;
+  var agg      = window._anLastAgg || {};
+  var result   = _anCurrentCompResult;
+
+  var modal = document.createElement('div');
+  modal.id        = 'an-strat-modal';
+  modal.className = 'an-strat-overlay';
+  modal.innerHTML =
+    '<div class="an-strat-sheet">' +
+      '<div class="an-strat-header">' +
+        '<div>' +
+          '<div class="an-strat-title">✨ Strategi vs ' + handle + '</div>' +
+          '<div class="an-strat-sub">' + platName + ' · Dibuat oleh SiLaris</div>' +
+        '</div>' +
+        '<button class="an-strat-close" onclick="anCloseStrategyModal()">✕</button>' +
+      '</div>' +
+      '<div id="an-strat-body" class="an-strat-body">' +
+        '<div class="an-strat-loading">' +
+          '<div class="an-comp-loading-dots"><div class="an-comp-loading-dot"></div><div class="an-comp-loading-dot"></div><div class="an-comp-loading-dot"></div></div>' +
+          '<span style="font-size:12px;color:var(--secondary);">SiLaris sedang merancang strategi...</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e) { if (e.target === modal) anCloseStrategyModal(); });
+
+  _anGenerateStrategy(handle, _anCurrentCompPlatform, result, agg)
+    .then(function(strat) {
+      if (!strat) {
+        var body = document.getElementById('an-strat-body');
+        if (body) body.innerHTML = '<div style="font-size:12px;color:var(--secondary);padding:8px 0;">Gagal generate strategi. Coba lagi nanti.</div>';
+        return;
+      }
+      _anCurrentStrategyData = { handle: handle, platform: _anCurrentCompPlatform, strategy: strat, compResult: result };
+      _renderStrategyContent(strat);
+    });
+}
+window.anOpenStrategyModal = anOpenStrategyModal;
+
+function anCloseStrategyModal() {
+  var modal = document.getElementById('an-strat-modal');
+  if (!modal) return;
+  modal.style.animation = 'stratSlideOut 0.18s ease forwards';
+  setTimeout(function() { if (modal.parentNode) modal.remove(); }, 200);
+}
+window.anCloseStrategyModal = anCloseStrategyModal;
+
+function _renderStrategyContent(strat) {
+  var body = document.getElementById('an-strat-body');
+  if (!body) return;
+  var stepsHtml = (strat.langkah || []).map(function(l, i) {
+    return '<div class="an-strat-step">' +
+      '<div class="an-strat-step-num">' + (i + 1) + '</div>' +
+      '<div class="an-strat-step-text">' + l + '</div>' +
+    '</div>';
+  }).join('');
+  body.innerHTML =
+    (strat.judul ? '<div class="an-strat-judul">' + strat.judul + '</div>' : '') +
+    '<div class="an-strat-steps">' + stepsHtml + '</div>' +
+    (strat.waktu ? '<div class="an-strat-waktu">⏱ ' + strat.waktu + '</div>' : '') +
+    '<div class="an-strat-actions">' +
+      '<button class="an-strat-save-btn" id="an-strat-save-btn" onclick="anSaveCurrentStrategy()">💾 Simpan Strategi</button>' +
+    '</div>';
+}
+
+/* ─── Generate Strategy via SiLaris ─── */
+async function _anGenerateStrategy(handle, platform, compResult, agg) {
+  var supabaseUrl = (typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.SUPABASE_URL) || '';
+  var supabaseKey = (typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.SUPABASE_ANON_KEY) || '';
+  if (!supabaseUrl) return null;
+
+  var platName = (_AN_PLAT[platform] || {}).name || platform;
+  var userER   = agg.avgER ? agg.avgER.toFixed(1) + '%' : 'belum tersedia';
+  var compER   = compResult.comp_er   || 'tidak diketahui';
+  var compFreq = compResult.comp_freq || 'tidak diketahui';
+  var compFmt  = compResult.comp_format || 'tidak diketahui';
+
+  var sysPrompt = [
+    'Kamu adalah SiLaris, Campaign Coach AI untuk UMKM Indonesia.',
+    'Tugas: Buat strategi konkret untuk membantu user unggul dari pesaing mereka di ' + platName + '.',
+    '',
+    'ATURAN KERAS: Setiap langkah maksimal 20 kata.',
+    'ATURAN KERAS: DILARANG gunakan tanda em-dash dalam output.',
+    'ATURAN KERAS: DILARANG menyebut kata "bisnis lokal" dalam output.',
+    'ATURAN KERAS: Gunakan bahasa santai dan langsung. Tidak formal.',
+    'ATURAN KERAS: Langkah harus spesifik dan bisa langsung dilakukan hari ini.',
+    '',
+    'Data perbandingan:',
+    '- User ER: ' + userER + ' | Pesaing ER: ' + compER,
+    '- Frekuensi pesaing: ' + compFreq,
+    '- Format dominan pesaing: ' + compFmt,
+    '- Total reach user: ' + _anFmtK(agg.totalReach || 0),
+    '',
+    'Kembalikan JSON (tanpa teks lain):',
+    '{',
+    '  "judul": "Satu kalimat: cara utama untuk mengungguli ' + handle + '",',
+    '  "langkah": [',
+    '    "Langkah spesifik 1 yang bisa dilakukan sekarang",',
+    '    "Langkah spesifik 2 tentang konten atau format yang perlu dicoba",',
+    '    "Langkah spesifik 3 tentang strategi frekuensi atau waktu posting",',
+    '    "Langkah spesifik 4 cara jadikan keunggulan pesaing jadi celah kamu"',
+    '  ],',
+    '  "waktu": "Estimasi waktu untuk lihat hasil"',
+    '}'
+  ].join('\n');
+
+  try {
+    var resp = await fetch(supabaseUrl + '/functions/v1/silaris-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + supabaseKey },
+      body: JSON.stringify({
+        systemPrompt: sysPrompt,
+        campaignData: { handle: handle, platform: platform },
+        autoInsight: true,
+        messages: []
+      })
+    });
+    var data = await resp.json();
+    if (data && data.reply) {
+      var text  = data.reply.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      var start = text.indexOf('{'), end = text.lastIndexOf('}');
+      if (start !== -1 && end !== -1) text = text.slice(start, end + 1);
+      return JSON.parse(text);
+    }
+  } catch(e) {
+    console.warn('[analytics] _anGenerateStrategy error:', e);
+  }
+  return null;
+}
+
+/* ─── Save Strategy to localStorage ─── */
+function anSaveCurrentStrategy() {
+  if (!_anCurrentStrategyData) return;
+  var strategies = _anGetSavedStrategies();
+  var entry = {
+    id:         Date.now(),
+    handle:     _anCurrentStrategyData.handle,
+    platform:   _anCurrentStrategyData.platform,
+    dateStr:    new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+    strategy:   _anCurrentStrategyData.strategy,
+    compResult: _anCurrentStrategyData.compResult
+  };
+  strategies.unshift(entry);
+  if (strategies.length > 10) strategies = strategies.slice(0, 10);
+  _anPersistStrategies(strategies);
+
+  var saveBtn = document.getElementById('an-strat-save-btn');
+  if (saveBtn) { saveBtn.textContent = '✓ Tersimpan'; saveBtn.disabled = true; }
+
+  _anRenderSavedStrategies();
+}
+window.anSaveCurrentStrategy = anSaveCurrentStrategy;
+
+/* ─── Delete Saved Strategy ─── */
+function anDeleteStrategy(id) {
+  var strategies = _anGetSavedStrategies().filter(function(s) { return s.id !== id; });
+  _anPersistStrategies(strategies);
+  _anRenderSavedStrategies();
+}
+window.anDeleteStrategy = anDeleteStrategy;
+
+/* ─── Render Saved Strategies Card ─── */
+function _anRenderSavedStrategies() {
+  var wrap = document.getElementById('an-saved-strategies-wrap');
+  if (!wrap) return;
+  var strategies = _anGetSavedStrategies();
+  if (!strategies.length) { wrap.innerHTML = ''; return; }
+
+  var itemsHtml = strategies.map(function(s) {
+    var platName  = (_AN_PLAT[s.platform] || {}).name || s.platform;
+    var judul     = (s.strategy && s.strategy.judul) || '';
+    var firstStep = (s.strategy && s.strategy.langkah && s.strategy.langkah[0]) || '';
+    return '<div class="an-saved-strat-item">' +
+      '<div class="an-saved-strat-top">' +
+        '<span class="an-saved-strat-handle">' + (s.handle || '') + '</span>' +
+        '<span class="an-saved-strat-plat">' + platName + '</span>' +
+        '<span class="an-saved-strat-date">' + (s.dateStr || '') + '</span>' +
+        '<button class="an-saved-strat-del" onclick="anDeleteStrategy(' + s.id + ')" title="Hapus">✕</button>' +
+      '</div>' +
+      (judul     ? '<div class="an-saved-strat-judul">' + judul + '</div>' : '') +
+      (firstStep ? '<div class="an-saved-strat-preview">' + firstStep + ' …</div>' : '') +
+    '</div>';
+  }).join('');
+
+  wrap.innerHTML =
+    '<div class="an-saved-strat-card">' +
+      '<div class="an-saved-strat-header" onclick="this.parentElement.classList.toggle(\'open\')">' +
+        '<div class="an-saved-strat-title">💾 Strategi Tersimpan <span class="an-saved-strat-count">' + strategies.length + '</span></div>' +
+        '<svg class="an-saved-strat-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>' +
+      '</div>' +
+      '<div class="an-saved-strat-body">' + itemsHtml + '</div>' +
+    '</div>';
+}
+window._anRenderSavedStrategies = _anRenderSavedStrategies;
 
 /* ─── Call SiLaris for Competitor ─── */
 async function _callSilarisCompetitor(handle, platform, agg) {
@@ -1076,6 +1314,11 @@ async function _callSilarisCompetitor(handle, platform, agg) {
     'Kamu adalah SiLaris, Campaign Coach AI untuk UMKM Indonesia.',
     'Tugas: Buat analisa pesaing estimatif untuk handle/URL yang diberikan di platform ' + platName + '.',
     'Ini adalah ESTIMASI — tidak ada akses ke data internal pesaing.',
+    '',
+    'ATURAN KERAS: Setiap teks insight maksimal 20 kata.',
+    'ATURAN KERAS: DILARANG gunakan tanda em-dash dalam output.',
+    'ATURAN KERAS: DILARANG menyebut kata "bisnis lokal" dalam output.',
+    'ATURAN KERAS: Gunakan bahasa santai dan langsung seperti berbicara ke teman UMKM.',
     '',
     'Data user sebagai pembanding:',
     '- Total campaign: ' + (agg.total || 0),
@@ -1213,6 +1456,7 @@ function initAnalytics() {
     _anReplace('an-mood-wrap', _renderMoodAudiens(agg));
     _anReplace('an-pulse-wrap',_renderLocalPulse(agg));
     _anReplace('an-plat-wrap', _renderPlatformTerkuat(agg));
+    _anRenderSavedStrategies();
 
     // Update ER explainer dengan label kualitatif dari agg
     var erExpEl = document.getElementById('an-er-explainer-text');
