@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Akun - Larisi</title>
+    <link rel="stylesheet" href="src/css/auth.css">
+    <!-- Load FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="centered-layout">
+
+    <!-- Background Dashboard Blur Mockup -->
+    <div class="dashboard-mockup">
+        <!-- Optional: A faint background image of the dashboard could go here -->
+    </div>
+
+    <!-- Onboarding Modal Container -->
+    <div class="modal-container">
+        
+        <!-- STEP 1: VERIFY EMAIL -->
+        <div id="step-1" class="step-container active">
+            <h2>Verifikasi Alamat Email Anda</h2>
+            <p class="subtitle" style="text-align: left; margin-bottom: 24px;">
+                Kami baru saja mengirim kode verifikasi ke email Anda.
+            </p>
+
+            <div class="form-group">
+                <label for="otp">Kode Verifikasi</label>
+                <input type="text" id="otp" placeholder="Masukkan 6 digit kode" maxlength="6">
+            </div>
+
+            <p class="help-text" style="margin-bottom: 24px;">
+                Jika Anda belum menerima email, cek folder spam atau <a href="#" style="color: var(--rausch);">Kirim ulang email</a>.
+            </p>
+
+            <button class="btn btn-primary" onclick="nextStep(2)">Verifikasi & Lanjut</button>
+        </div>
+
+        <!-- STEP 2: BUSINESS INFO -->
+        <div id="step-2" class="step-container">
+            <div class="stepper">
+                <div class="step active"></div>
+                <div class="step"></div>
+            </div>
+
+            <h2>Informasi Bisnis</h2>
+            <p class="subtitle" style="text-align: left; margin-bottom: 24px;">
+                Bantu kami menyesuaikan pengalaman Larisi khusus untuk Anda.
+            </p>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="ownerName">Nama Pemilik *</label>
+                    <input type="text" id="ownerName" placeholder="Budi Santoso">
+                </div>
+                <div class="form-group">
+                    <label for="whatsapp">Nomor WhatsApp *</label>
+                    <input type="tel" id="whatsapp" placeholder="+62 812 3456 7890">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="businessName">Nama Bisnis *</label>
+                <input type="text" id="businessName" placeholder="Warung Makan Berkah">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="category">Kategori Bisnis *</label>
+                    <select id="category">
+                        <option value="">Pilih Kategori...</option>
+                        <option value="fnb">Kuliner (F&B)</option>
+                        <option value="fashion">Fashion & Pakaian</option>
+                        <option value="jasa">Layanan / Jasa</option>
+                        <option value="retail">Retail / Toko Kelontong</option>
+                        <option value="kesehatan">Kesehatan & Kecantikan</option>
+                        <option value="elektronik">Elektronik & Gadget</option>
+                        <option value="otomotif">Otomotif & Bengkel</option>
+                        <option value="properti">Properti & Konstruksi</option>
+                        <option value="pendidikan">Pendidikan & Kursus</option>
+                        <option value="wisata">Pariwisata & Travel</option>
+                        <option value="lainnya">Lainnya...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="city">Kota / Kabupaten *</label>
+                    <input type="text" id="city" placeholder="Misal: Klaten, Jawa Tengah">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 16px;">
+                <label>Apakah bisnis Anda melayani pengiriman barang/pesanan?</label>
+                <div style="display: flex; gap: 24px;">
+                    <label style="font-weight: 400; font-size: 14px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="radio" name="delivery" value="yes" style="width: auto; margin: 0; cursor: pointer;"> Ya, melayani pengiriman
+                    </label>
+                    <label style="font-weight: 400; font-size: 14px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="radio" name="delivery" value="no" style="width: auto; margin: 0; cursor: pointer;"> Tidak (Hanya di tempat)
+                    </label>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="nextStep(3)">Simpan Profil</button>
+        </div>
+
+        <!-- STEP 3: CONNECT PROFILES -->
+        <div id="step-3" class="step-container">
+            <div class="stepper">
+                <div class="step active"></div>
+                <div class="step active"></div>
+            </div>
+
+            <h2>Hubungkan Akun</h2>
+            <p class="subtitle" style="text-align: left; margin-bottom: 24px;">
+                Hubungkan akun sosial media bisnis Anda untuk mulai mengelola postingan.
+            </p>
+
+            <div class="social-buttons">
+                <button class="btn-social" style="border-color: #1877F2; color: #1877F2;">
+                    <i class="fab fa-facebook" style="font-size: 18px;"></i> Facebook Page
+                </button>
+                <button class="btn-social" style="border-color: #E1306C; color: #E1306C;">
+                    <i class="fab fa-instagram" style="font-size: 18px;"></i> Instagram
+                </button>
+                <button class="btn-social" style="border-color: #000000; color: #000000;">
+                    <i class="fab fa-tiktok" style="font-size: 18px;"></i> TikTok
+                </button>
+                <button class="btn-social" style="border-color: #FF0000; color: #FF0000;">
+                    <i class="fab fa-youtube" style="font-size: 18px;"></i> YouTube
+                </button>
+            </div>
+
+            <button class="btn btn-primary" onclick="finishOnboarding()">Selesai</button>
+            <a href="#" class="skip-link" onclick="finishOnboarding()">Anda bisa menambah akun lainnya kapan saja</a>
+        </div>
+
+    </div>
+
+    <script>
+        function nextStep(stepNumber) {
+            // Hide all steps
+            document.querySelectorAll('.step-container').forEach(el => {
+                el.classList.remove('active');
+            });
+            // Show target step
+            document.getElementById('step-' + stepNumber).classList.add('active');
+        }
+
+        function finishOnboarding() {
+            // Ambil data paket yang tersimpan dari halaman registrasi
+            const savedPlan = localStorage.getItem('larisi_selected_plan') || 'freemium';
+            
+            // Tampilkan pesan sukses dengan menyebutkan paket
+            alert(`Setup Selesai!\n\nAnda masuk dengan paket: ${savedPlan.toUpperCase()}\n\nMengarahkan ke Dashboard...`);
+            
+            // Redirect ke dashboard lokal
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
