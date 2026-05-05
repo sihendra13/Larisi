@@ -42,7 +42,7 @@ function showLaunchModal() {
 
   var checks = [
     { ok: hasAsset,    text: 'Upload foto atau video kreasi kamu' },
-    { ok: hasAudience, text: 'Pilih target audiens (Lokal dan/atau Traveler)' },
+    { ok: hasAudience, text: 'Pilih target audiens (Warga Sekitar dan/atau Pengunjung)' },
     { ok: hasChannel,  text: chText }
   ];
 
