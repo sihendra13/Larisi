@@ -125,7 +125,7 @@
           </div>
 
           <div style="height:1px;background:var(--border);margin:0 -18px"></div>
-          <div class="section-label">Siapa Target Iklan Anda?</div>
+          <div class="section-label">Siapa Target Iklan Kamu?</div>
 
           <div class="audience-item">
             <svg class="aud-icon" id="localIcon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -152,7 +152,7 @@
       <div class="panel" style="padding:0;position:relative;overflow:visible;">
         <div class="map-search">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="mapSearchInput" placeholder="Tentukan lokasi bisnis atau titik target iklan Anda..." oninput="onSearchInput(this.value)" autocomplete="off">
+          <input id="mapSearchInput" placeholder="Tentukan lokasi bisnis atau titik target iklan Kamu..." oninput="onSearchInput(this.value)" autocomplete="off">
           <button id="mapSearchClear" onclick="clearMapSearch()" style="display:none;flex-shrink:0;background:none;border:none;cursor:pointer;padding:2px 0 2px 4px;color:#9ca3af;line-height:0;" onmouseover="this.style.color='#6b7280'" onmouseout="this.style.color='#9ca3af'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           <div id="searchDropdown" style="position:absolute;top:52px;left:0;right:0;background:#fff;border-radius:0 0 12px 12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:2000;display:none;max-height:200px;overflow-y:auto;"></div>
         </div>
@@ -192,21 +192,21 @@
 
             <!-- 1. Publish ke Channel Selector -->
             <div class="opt-mode-row">
-              <div class="opt-mode-tag">Publish ke Channel</div>
+              <div class="opt-mode-tag">Posting ke Media Sosial</div>
               <div class="preview-label-badge" id="previewLabel" onclick="cycleChannel()" style="cursor:pointer;user-select:none;" title="Klik untuk ganti platform">Instagram</div>
             </div>
 
             <!-- 2. Visual Filters -->
             <div>
-              <div class="section-label" style="margin-bottom:10px;">Visual Filters</div>
+              <div class="section-label" style="margin-bottom:10px;">Atur Tampilan Gambar</div>
               <div style="display:flex;flex-direction:column;gap:10px;">
                 <div class="filter-row">
-                  <div class="filter-label">Brightness</div>
+                  <div class="filter-label">Terang-Gelap</div>
                   <input type="range" min="0" max="200" value="100" oninput="brightnessVal=parseInt(this.value);document.getElementById('bVal').textContent=this.value+'%';applyFilters()">
                   <div class="filter-val" id="bVal">100%</div>
                 </div>
                 <div class="filter-row">
-                  <div class="filter-label">Contrast</div>
+                  <div class="filter-label">Ketajaman Warna</div>
                   <input type="range" min="0" max="200" value="100" oninput="contrastVal=parseInt(this.value);document.getElementById('cVal').textContent=this.value+'%';applyFilters()">
                   <div class="filter-val" id="cVal">100%</div>
                 </div>
@@ -216,11 +216,11 @@
             <!-- 3. AI Caption -->
             <div>
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <div class="section-label">AI Optimized Caption</div>
+                <div class="section-label">Pesan dioptimalkan oleh AI</div>
                 <div id="captionPlatformLabel" style="font-size:10px;font-weight:700;color:#791ADB;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:4px;"></div>
               </div>
               <div class="caption-box">
-                <textarea id="captionArea" placeholder="AI akan otomatis generate caption setelah foto diupload..." rows="5"></textarea>
+                <textarea id="captionArea" placeholder="Tunggu sebentar, AI akan menuliskan pesan untukmu. Kamu bebas mengeditnya kembali agar lebih sesuai." rows="5"></textarea>
                 <div class="caption-actions">
                   <button class="gen-btn" id="genBtn" onclick="generateCaption(true)">Generate ulang</button>
                 </div>
@@ -230,7 +230,7 @@
             <!-- 5. Connect Channels -->
             <div>
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--secondary);">Connect Channels</div>
+                <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--secondary);">Hubungkan Akun Media Sosial</div>
                 <button id="connectSettingsBtn" onclick="showManageChannelsModal()" style="display:none;background:none;border:none;cursor:pointer;padding:3px 5px;color:var(--secondary);border-radius:6px;line-height:1;transition:.15s;" title="Kelola akun terhubung" onmouseenter="this.style.color='#791ADB'" onmouseleave="this.style.color='var(--secondary)'">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                 </button>
@@ -238,7 +238,7 @@
               <div id="connectedAvatarsRow" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                 <button id="addChannelBtn" onclick="showConnectAccountsFlow()" class="add-channel-btn" title="Tambah Channel">
                   <span class="add-icon">+</span>
-                  <span class="add-label">Connect Channel</span>
+                  <span class="add-label">Hubungkan Akun Media Sosial</span>
                 </button>
               </div>
             </div>
@@ -329,12 +329,12 @@
       </div>
       <div class="bar-divider"></div>
       <div style="display:flex;flex-direction:column;gap:6px;flex:1;">
-        <div class="reach-label">Optimized Placements</div>
+        <div class="reach-label">Penempatan Iklan Otomatis</div>
         <div style="display:flex;align-items:center;gap:6px;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          <div class="placement-text">Multi-Channel Dynamic Split</div>
+          <div class="placement-text">Atur Budget Lebih Pintar</div>
         </div>
-        <div style="font-size:11px;color:var(--secondary);">AI akan otomatis membagi budget iklan Anda ke platform yang memberikan jangkauan terbaik secara real-time.</div>
+        <div style="font-size:11px;color:var(--secondary);">AI akan otomatis membagi budget iklan Kamu ke platform yang memberikan jangkauan terbaik secara real-time.</div>
       </div>
       <button class="launch-btn" onclick="launchRadar()">
         <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
