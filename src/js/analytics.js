@@ -666,7 +666,7 @@ function _renderCampaignBest(agg) {
       '<div class="an-card-icon">' +
         '<svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>' +
       '</div>' +
-      '<div><div class="an-card-title">Campaign Terbaik</div><div class="an-card-sub">performa tertinggi</div></div>' +
+      '<div><div class="an-card-title">Iklan Terbaik</div><div class="an-card-sub">Performa Tertinggi</div></div>' +
     '</div>' +
     '<div class="an-card-body">' + bestCampHTML + '</div>' +
   '</div>';
@@ -702,7 +702,7 @@ function _renderMoodAudiens(agg) {
       '<div class="an-card-icon">' +
         '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>' +
       '</div>' +
-      '<div><div class="an-card-title">Mood Audiens Minggu Ini</div><div class="an-card-sub">breakdown reactions semua campaign</div></div>' +
+      '<div><div class="an-card-title">Mood Audiens Minggu Ini</div><div class="an-card-sub">Breakdown Reactions Semua Campaign</div></div>' +
     '</div>' +
     '<div class="an-card-body">' +
       moodHTML +
@@ -790,7 +790,7 @@ function _renderLocalPulse(agg) {
       '<div class="an-card-icon" style="background:linear-gradient(135deg,rgba(121,26,219,0.15),rgba(121,26,219,0.05));">' +
         '<svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' +
       '</div>' +
-      '<div style="flex:1;"><div class="an-card-title">Local Pulse</div><div class="an-card-sub">pola lokal terbaik</div></div>' +
+      '<div style="flex:1;"><div class="an-card-title">Local Pulse</div><div class="an-card-sub">Pola Lokal Terbaik</div></div>' +
       '<span class="local-pulse-badge">LOKAL</span>' +
     '</div>' +
     '<div class="an-card-body">' + pulseHTML + '</div>' +
@@ -832,7 +832,7 @@ function _renderPlatformTerkuat(agg) {
       '<div class="an-card-icon">' +
         '<svg viewBox="0 0 24 24"><rect x="18" y="3" width="4" height="18" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="2" y="13" width="4" height="8" rx="1"/></svg>' +
       '</div>' +
-      '<div><div class="an-card-title">Platform Terkuat</div><div class="an-card-sub">engagement rate per platform</div></div>' +
+      '<div><div class="an-card-title">Platform Terkuat</div><div class="an-card-sub">Engagement Rate Per Platform</div></div>' +
     '</div>' +
     '<div class="an-card-body">' + platHTML + '</div>' +
   '</div>';
