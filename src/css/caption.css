@@ -64,7 +64,7 @@
 .gen-btn:hover { background: #791ADB; }
 
 /* Cap platform label */
-#captionPlatformLabel { font-size: 10px; font-weight: 700; color: #791ADB; text-transform: uppercase; letter-spacing: .5px; display: flex; align-items: center; gap: 4px; }
+#captionPlatformLabel { font-size: 10px; font-weight: 700; color: #791ADB; letter-spacing: .5px; display: flex; align-items: center; gap: 4px; }
 
 /* Tone row */
 .tone-row { display: flex; gap: 6px; flex-wrap: wrap; }

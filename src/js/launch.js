@@ -185,7 +185,7 @@ function _ensureConfirmModal() {
       <!-- Input nama campaign -->
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:12px;font-weight:600;color:#374151;letter-spacing:0.02em;">
-          NAMA PROMOSI
+          Nama Iklan
         </label>
         <input id="lcmCampName" type="text"
           style="border:1.5px solid #e5e7eb;border-radius:10px;
@@ -194,7 +194,7 @@ function _ensureConfirmModal() {
           transition:border-color 0.2s;"
           onfocus="this.style.borderColor='#791ADB'"
           onblur="this.style.borderColor='#e5e7eb'"
-          placeholder="Nama promosi..." />
+          placeholder="Nama iklan..." />
         <div style="font-size:11px;color:#9ca3af;">Terisi otomatis dari kategori usaha & lokasimu</div>
       </div>
 
@@ -202,7 +202,7 @@ function _ensureConfirmModal() {
       <div style="background:#f9fafb;border-radius:12px;padding:14px 16px;
         display:flex;flex-direction:column;gap:10px;">
         <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.05em;">
-          AKAN DIPOSTING KE
+          Akan Diposting Ke
         </div>
         <div id="lcmPlatformSummary" style="display:flex;align-items:center;gap:10px;">
           <!-- Diisi JS -->

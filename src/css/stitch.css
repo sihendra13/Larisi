@@ -14,6 +14,6 @@
   flex-shrink: 0;
 }
 .stitch-icon svg { width: 11px; height: 11px; stroke: #fff; fill: none; stroke-width: 2; }
-.stitch-title { font-size: 11px; font-weight: 700; color: var(--rausch); text-transform: uppercase; letter-spacing: .5px; }
+.stitch-title { font-size: 11px; font-weight: 700; color: var(--rausch); letter-spacing: .5px; }
 .stitch-desc { font-size: 11px; color: var(--near-black); line-height: 1.5; }
 .stitch-highlight { color: var(--rausch); font-weight: 700; }

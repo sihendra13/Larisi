@@ -6,7 +6,7 @@
   display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 .preview-meta { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-.preview-meta-label { font-size: 10px; color: var(--secondary); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+.preview-meta-label { font-size: 10px; color: var(--secondary); font-weight: 700; letter-spacing: .5px; }
 .ratio-badge {
   font-size: 10px; font-weight: 700; color: var(--near-black);
   background: var(--white); border: 1px solid var(--border);
@@ -368,7 +368,7 @@
   background: var(--surface);
   border-radius: var(--radius-btn);
 }
-.opt-mode-tag { font-size: 10px; font-weight: 700; color: var(--secondary); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
+.opt-mode-tag { font-size: 10px; font-weight: 700; color: var(--secondary); letter-spacing: .5px; margin-bottom: 2px; }
 .opt-mode-val { font-size: 11px; font-weight: 600; color: var(--near-black); letter-spacing: -0.1px; }
 .preview-label-badge {
   font-size: 12px; font-weight: 700;

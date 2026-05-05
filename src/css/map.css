@@ -46,7 +46,7 @@
   border-radius: 0 0 var(--radius-card) var(--radius-card);
 }
 .radius-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.radius-label { font-size: 11px; font-weight: 700; color: var(--secondary); text-transform: uppercase; letter-spacing: .5px; }
+.radius-label { font-size: 11px; font-weight: 700; color: var(--secondary); letter-spacing: .5px; }
 .radius-val { font-size: 11px; font-weight: 700; color: var(--rausch); }
 .drag-hint { font-size: 10px; color: var(--disabled); text-align: center; margin-top: 4px; }
 
