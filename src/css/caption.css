@@ -1,6 +1,6 @@
 /* ─── AI Editor right panel body ─── */
 .p3-body { display: flex; flex-direction: row; gap: 0; overflow: hidden; flex: 1; min-height: 0; }
-.p3-left { padding: 14px 18px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; flex: 1; border-right: 1px solid var(--border); min-width: 0; }
+.p3-left { padding: 14px 18px; display: flex; flex-direction: column; gap: 32px; overflow-y: auto; flex: 1; border-right: 1px solid var(--border); min-width: 0; }
 .p3-right { padding: 14px 18px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; flex: 1; min-width: 0; }
 .p3-left::-webkit-scrollbar, .p3-right::-webkit-scrollbar { width: 4px; }
 .p3-left::-webkit-scrollbar-thumb, .p3-right::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
