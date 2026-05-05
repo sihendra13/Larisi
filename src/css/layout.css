@@ -82,7 +82,7 @@ body {
 .header {
   background: var(--white);
   border-bottom: 1px solid var(--border);
-  padding: 0 84px 0 24px;
+  padding: 0 24px;
   height: 56px;
   display: flex;
   align-items: center;
@@ -155,7 +155,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 16px 84px 16px 24px;
+  padding: 16px 24px;
   gap: 12px;
 }
 
