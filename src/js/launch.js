@@ -232,7 +232,7 @@ function _ensureConfirmModal() {
           transition:background 0.2s;"
           onmouseover="this.style.background='#7C3AED'"
           onmouseout="this.style.background='#111827'">
-          🚀 Tayangkan Sekarang →
+          Tayangkan Sekarang
         </button>
       </div>
     </div>
