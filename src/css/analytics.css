@@ -90,7 +90,7 @@
 .kpi-card.blue::after   { background: #3b82f6; }
 
 .kpi-label {
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--secondary);
   text-transform: uppercase;
@@ -1045,7 +1045,7 @@
   stroke-linecap: round; stroke-linejoin: round;
 }
 .an-si-name { font-size: 13px; font-weight: 700; color: var(--rausch); }
-.an-si-tag  { font-size: 10px; color: var(--secondary); margin-top: 1px; }
+.an-si-tag  { font-size: 12.5px; color: var(--secondary); margin-top: 1px; }
 .an-si-narasi {
   font-size: 14px;
   line-height: 1.7;
@@ -1373,7 +1373,7 @@
   border-bottom: 1px solid var(--border);
 }
 .an-rekom-week-title {
-  font-size: 14px; font-weight: 700; color: var(--near-black);
+  font-size: 13px; font-weight: 700; color: var(--near-black);
   display: flex; align-items: center; gap: 8px;
 }
 .an-rekom-week-body {
@@ -1445,7 +1445,7 @@
   display: flex; align-items: center; justify-content: space-between;
 }
 .an-comp-title {
-  font-size: 14px; font-weight: 700; color: var(--near-black);
+  font-size: 13px; font-weight: 700; color: var(--near-black);
   display: flex; align-items: center; gap: 8px;
 }
 .an-comp-body {
