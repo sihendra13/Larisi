@@ -289,8 +289,8 @@ function switchMenu(view) {
 
   if (view === 'monitor') {
     mon.style.display = 'flex';
-    if (titleEl) titleEl.textContent = 'Campaign Live Monitor';
-    if (subEl)   subEl.textContent   = 'Monitor & interact with your live campaigns in real-time.';
+    if (titleEl) titleEl.textContent = 'Kelola Iklan Aktif';
+    if (subEl)   subEl.textContent   = 'Pantau dan atur iklanmu yang sedang berjalan secara real-time.';
     if (icons[1]) icons[1].classList.add('active');
     renderCampaigns();
     startReachCounters();
@@ -834,7 +834,7 @@ function buildCampaignCard(c) {
   var isRunning = c.status === 'running';
   var isPaused  = c.status === 'paused';
   var statusColor = isRunning ? '#16a34a' : (isPaused ? '#d97706' : '#9ca3af');
-  var statusLbl   = isRunning ? 'Running' : (isPaused ? 'Paused' : 'Ended');
+  var statusLbl   = isRunning ? 'Berjalan' : (isPaused ? 'Dihentikan' : 'Selesai');
   var pct = Math.min(100, Math.round((c.reach / (c.reachTarget || 1)) * 100));
 
   var platColors = { ig:'#E1306C', tiktok:'#010101', meta:'#1877F2', youtube:'#FF0000' };
@@ -978,8 +978,7 @@ function buildCampaignCard(c) {
     +     'background:' + (isRunning ? '#22c55e' : statusColor) + ';'
     +     'display:inline-block;'
     +     (isRunning ? 'animation:pulseDot 2s infinite;' : '') + '"></span>'
-    +   '<span style="font-size:10px;font-weight:700;color:' + statusColor + ';'
-    +     'text-transform:uppercase;">' + statusLbl + '</span>'
+    +   '<span style="font-size:10px;font-weight:700;color:' + statusColor + ';">' + statusLbl + '</span>'
     +   '<button onclick="event.stopPropagation();showDeleteConfirmModal('
     +     JSON.stringify({
             id: c.id,
