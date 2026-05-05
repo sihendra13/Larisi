@@ -304,8 +304,8 @@ function switchMenu(view) {
     if (typeof initAnalytics === 'function') initAnalytics();
   } else {
     cmd.style.display = 'flex';
-    if (titleEl) titleEl.textContent = 'Creative Command Center';
-    if (subEl)   subEl.textContent   = 'Orchestrate your cross-platform digital presence with precision.';
+    if (titleEl) titleEl.textContent = 'Dapur koten';
+    if (subEl)   subEl.textContent   = 'Siapkan foto, video dan pesan terbaikmu di sini untuk tampil maksimal.';
     if (icons[0]) icons[0].classList.add('active');
     stopReachCounters();
   }

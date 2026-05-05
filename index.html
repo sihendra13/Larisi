@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RADAR — Creative Command Center</title>
+  <title>RADAR — Dapur koten</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Circular+Std:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -47,8 +47,8 @@
   <!-- Header -->
   <div class="header">
     <div>
-      <div class="header-title" id="headerTitle">Creative Command Center</div>
-      <div class="header-sub" id="headerSub">Orchestrate your cross-platform digital presence with precision.</div>
+      <div class="header-title" id="headerTitle">Dapur koten</div>
+      <div class="header-sub" id="headerSub">Siapkan foto, video dan pesan terbaikmu di sini untuk tampil maksimal.</div>
     </div>
     <div class="header-right">
       <div class="search-bar">
@@ -72,8 +72,8 @@
             <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           </div>
           <div>
-            <div class="panel-title">Creative Assets</div>
-            <div class="panel-sub">Max 5 Photos or 1 Video</div>
+            <div class="panel-title">Aset Kreatif</div>
+            <div class="panel-sub">Maksimal 5 Foto atau 1 Video</div>
           </div>
         </div>
         <div class="panel-body">
@@ -82,8 +82,8 @@
             <div class="plus-icon">
               <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </div>
-            <div class="upload-label">Upload</div>
-            <div class="upload-caption">Drag photos here or click to browse</div>
+            <div class="upload-label">Unggah Foto/Video</div>
+            <div class="upload-caption">Geser foto ke sini atau klik untuk pilih</div>
           </div>
           <input type="file" id="fileInput" accept="image/*,video/*" multiple style="display:none" onchange="handleUpload(event)">
           <div class="uploaded-thumbs" id="thumbs" style="display:none"></div>
@@ -125,13 +125,13 @@
           </div>
 
           <div style="height:1px;background:var(--border);margin:0 -18px"></div>
-          <div class="section-label">Target Audience</div>
+          <div class="section-label">Siapa Target Iklan Anda?</div>
 
           <div class="audience-item">
             <svg class="aud-icon" id="localIcon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             <div style="flex:1;">
               <div class="aud-title" id="localTitle">Warga Sekitar</div>
-              <div class="aud-desc" id="localDesc">Target users who currently live in the selected radar area.</div>
+              <div class="aud-desc" id="localDesc">Penduduk Lokal atau Orang yang tinggal di sekitar lokasi yang Anda pilih.</div>
             </div>
             <div class="toggle" id="toggleLocal" onclick="toggleLocalFn()"><div class="toggle-knob"></div></div>
           </div>
@@ -140,7 +140,7 @@
             <svg class="aud-icon" viewBox="0 0 24 24" id="travelerIcon"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             <div style="flex:1;">
               <div class="aud-title" id="travelerTitle">Pengunjung</div>
-              <div class="aud-desc" id="travelerDesc">Target users who are currently visiting or recently visited the area.</div>
+              <div class="aud-desc" id="travelerDesc">Pendatang atau orang yang sedang berkunjung atau baru saja melewati lokasi ini.</div>
             </div>
             <div class="toggle" id="toggleTraveler" onclick="toggleTravelerFn()" style="cursor:pointer"><div class="toggle-knob"></div></div>
           </div>
