@@ -174,8 +174,8 @@ function _ensureConfirmModal() {
           display:flex;align-items:center;justify-content:center;
           font-size:20px;flex-shrink:0;">🚀</div>
         <div>
-          <div style="font-size:16px;font-weight:700;color:#111;">Konfirmasi Launch</div>
-          <div style="font-size:12px;color:#6b7280;margin-top:1px;">Periksa sebelum publish</div>
+          <div style="font-size:16px;font-weight:700;color:#111;">Konfirmasi</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:1px;">Cek dulu sebelum tayang</div>
         </div>
         <button id="lcmClose" onclick="closeLaunchConfirmModal()"
           style="margin-left:auto;background:none;border:none;cursor:pointer;
@@ -185,7 +185,7 @@ function _ensureConfirmModal() {
       <!-- Input nama campaign -->
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:12px;font-weight:600;color:#374151;letter-spacing:0.02em;">
-          NAMA CAMPAIGN
+          NAMA PROMOSI
         </label>
         <input id="lcmCampName" type="text"
           style="border:1.5px solid #e5e7eb;border-radius:10px;
@@ -194,15 +194,15 @@ function _ensureConfirmModal() {
           transition:border-color 0.2s;"
           onfocus="this.style.borderColor='#791ADB'"
           onblur="this.style.borderColor='#e5e7eb'"
-          placeholder="Nama campaign..." />
-        <div style="font-size:11px;color:#9ca3af;">Pre-filled dari persona + lokasi kamu</div>
+          placeholder="Nama promosi..." />
+        <div style="font-size:11px;color:#9ca3af;">Terisi otomatis dari kategori usaha & lokasimu</div>
       </div>
 
       <!-- Ringkasan publish -->
       <div style="background:#f9fafb;border-radius:12px;padding:14px 16px;
         display:flex;flex-direction:column;gap:10px;">
         <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.05em;">
-          AKAN DIPUBLISH KE
+          AKAN DIPOSTING KE
         </div>
         <div id="lcmPlatformSummary" style="display:flex;align-items:center;gap:10px;">
           <!-- Diisi JS -->
@@ -232,7 +232,7 @@ function _ensureConfirmModal() {
           transition:background 0.2s;"
           onmouseover="this.style.background='#7C3AED'"
           onmouseout="this.style.background='#111827'">
-          🚀 Launch Sekarang →
+          🚀 Tayangkan Sekarang →
         </button>
       </div>
     </div>
