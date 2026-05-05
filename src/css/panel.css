@@ -33,7 +33,7 @@
   letter-spacing: -0.18px;
   line-height: 1.2;
 }
-.panel-sub { font-size: 11px; color: var(--secondary); margin-top: 4px; line-height: 1.2; }
+.panel-sub { font-size: 11px; color: var(--secondary); margin-top: 2px; line-height: 1.2; }
 
 .panel-body {
   padding: 16px 18px;
