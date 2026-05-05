@@ -43,7 +43,32 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background .15s;
+  transition: all .15s;
+  position: relative;
+}
+.sb-icon::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 52px;
+  top: 50%;
+  transform: translateY(-50%) translateX(-10px);
+  background: var(--white);
+  color: var(--near-black);
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border: 1px solid var(--border);
+  z-index: 100;
+}
+.sb-icon:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
 }
 .sb-icon:hover { background: var(--surface); }
 .sb-icon.active { background: var(--surface); }
