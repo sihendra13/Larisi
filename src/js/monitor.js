@@ -289,7 +289,7 @@ function switchMenu(view) {
 
   if (view === 'monitor') {
     mon.style.display = 'flex';
-    if (titleEl) titleEl.textContent = 'Kelola Iklan Aktif';
+    if (titleEl) titleEl.textContent = 'Kelola Iklan';
     if (subEl)   subEl.textContent   = 'Pantau dan atur iklanmu yang sedang berjalan secara real-time.';
     if (icons[1]) icons[1].classList.add('active');
     renderCampaigns();
@@ -297,8 +297,8 @@ function switchMenu(view) {
     loadCampaignsFromSupabase();
   } else if (view === 'analytics') {
     if (an) an.style.display = 'flex';
-    if (titleEl) titleEl.textContent = 'Analytics & Estimate Hub';
-    if (subEl)   subEl.textContent   = 'Ukur performa, bandingkan estimasi, dan temukan insight lokalmu.';
+    if (titleEl) titleEl.textContent = 'Performa Iklan';
+    if (subEl)   subEl.textContent   = 'Lihat hasil iklanmu & temukan saran pintar untuk jangkau pembeli yang lebih banyak.';
     if (icons[2]) icons[2].classList.add('active');
     stopReachCounters();
     if (typeof initAnalytics === 'function') initAnalytics();
