@@ -9,7 +9,7 @@ function updateReach() {
   var footerEl    = document.getElementById('reachNum');
 
   if (!audLocal && !audTraveler) {
-    if (popEl)    popEl.textContent    = 'REACH: 0 PEOPLE';
+    if (popEl)    popEl.textContent    = 'Jangkauan: 0 orang';
     if (footerEl) footerEl.textContent = '0';
     updatePct('', []);
     _updateReachLocLabel(0);
@@ -20,7 +20,7 @@ function updateReach() {
   var localPop = audLocal    ? areaPop                    : 0;
   var travPop  = audTraveler ? Math.round(areaPop * 0.22) : 0;
   var totalPop = localPop + travPop;
-  if (popEl) popEl.textContent = 'REACH: ' + totalPop.toLocaleString() + ' PEOPLE';
+  if (popEl) popEl.textContent = 'Jangkauan: ' + totalPop.toLocaleString() + ' orang';
 
   var internetUsers = Math.round(totalPop * 0.795);
 
