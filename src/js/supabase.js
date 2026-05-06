@@ -125,23 +125,30 @@ async function getUserProfile(userId) {
  * updateUserProfile(profileData)
  */
 async function updateUserProfile(profileData) {
-    const user = await getCurrentUser();
-    if (!user) return { error: 'Not authenticated' };
-    
-    const client = getSupabaseClient();
-    const { data, error } = await client.from('profiles')
-        .upsert({
-            id: user.id,
-            ...profileData,
-            updated_at: new Date()
-        })
-        .select()
-        .single();
-    
-    if (data) {
-        localStorage.setItem('radar_user_profile', JSON.stringify(data));
+    try {
+        const user = await getCurrentUser();
+        if (!user) return { error: { message: 'Sesi habis, silakan login kembali' } };
+        
+        const client = getSupabaseClient();
+        const { data, error } = await client.from('profiles')
+            .upsert({
+                id: user.id,
+                ...profileData,
+                updated_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+        
+        if (error) throw error;
+
+        if (data) {
+            localStorage.setItem('radar_user_profile', JSON.stringify(data));
+        }
+        return { data, error: null };
+    } catch (err) {
+        console.error('[supabase] updateUserProfile error:', err);
+        return { data: null, error: err };
     }
-    return { data, error };
 }
 
 /**
