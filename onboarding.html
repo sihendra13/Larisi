@@ -140,9 +140,26 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="src/js/supabase.js"></script>
     <script>
-        // Ambil email dari URL
+        // Ambil data dari URL
         const urlParams = new URLSearchParams(window.location.search);
         const userEmail = urlParams.get('email');
+        const startStep = urlParams.get('step');
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Jika dipaksa ke step tertentu (misal: step=2 karena Confirm Email OFF)
+            if (startStep === '2') {
+                document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
+                document.getElementById('step-2').classList.add('active');
+                return;
+            }
+
+            // Cek jika user sebenarnya sudah login & terkonfirmasi
+            const user = await window.getCurrentUser();
+            if (user && user.email_confirmed_at) {
+                document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
+                document.getElementById('step-2').classList.add('active');
+            }
+        });
 
         async function nextStep(stepNumber) {
             // STEP 1 -> 2: Verifikasi OTP

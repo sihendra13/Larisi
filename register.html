@@ -137,9 +137,12 @@
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Create Account';
             } else {
-                // Berhasil - Supabase akan mengirim email konfirmasi
-                // Arahkan ke onboarding (Step 1 adalah verifikasi email)
-                window.location.href = 'onboarding.html?email=' + encodeURIComponent(email);
+                // Jika session langsung aktif (Confirm Email OFF di Supabase)
+                if (data.session) {
+                    window.location.href = 'onboarding.html?step=2';
+                } else {
+                    window.location.href = 'onboarding.html?email=' + encodeURIComponent(email);
+                }
             }
         });
     </script>
