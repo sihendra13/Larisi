@@ -196,7 +196,7 @@
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Menyimpan...';
 
-                const { error } = await window.updateUserProfile({
+                const { error: saveError } = await window.updateUserProfile({
                     full_name: ownerName,
                     business_name: businessName,
                     whatsapp: whatsapp,
@@ -205,8 +205,8 @@
                     delivery_service: delivery
                 });
 
-                if (error) {
-                    alert('Gagal menyimpan profil: ' + error.message);
+                if (saveError) {
+                    alert('Gagal menyimpan profil: ' + (saveError.message || saveError));
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Simpan Profil';
                     return;
