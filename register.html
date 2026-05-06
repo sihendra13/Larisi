@@ -126,6 +126,9 @@
             submitBtn.disabled = true;
             submitBtn.textContent = 'Memproses...';
 
+            // Sign out sesi lama dulu — pastikan register selalu fresh
+            try { await window.signOut && getSupabaseClient().auth.signOut(); } catch(e) {}
+
             const { data, error } = await window.signUp(email, password, {
                 first_name: firstName,
                 last_name: lastName,
@@ -137,12 +140,9 @@
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Create Account';
             } else {
-                // Jika session langsung aktif (Confirm Email OFF di Supabase)
-                if (data.session) {
-                    window.location.href = 'onboarding.html?step=2';
-                } else {
-                    window.location.href = 'onboarding.html?email=' + encodeURIComponent(email);
-                }
+                // Selalu arahkan ke OTP step — biarkan onboarding.html yang handle
+                // (jika Confirm Email OFF di Supabase, onboarding akan detect & skip OTP)
+                window.location.href = 'onboarding.html?email=' + encodeURIComponent(email);
             }
         });
     </script>

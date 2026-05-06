@@ -145,14 +145,22 @@
         const startStep = urlParams.get('step');
 
         window.addEventListener('DOMContentLoaded', async () => {
-            // Jika dipaksa ke step tertentu (misal: step=2 karena Confirm Email OFF)
+            // Jika ada email param di URL → user baru saja register, WAJIB lewat OTP dulu
+            // Jangan skip ke step 2 meski ada session aktif
+            if (userEmail) {
+                // Tetap di step 1 (OTP) — tidak cek session
+                return;
+            }
+
+            // Jika dipaksa ke step tertentu via URL param (tidak dari flow register normal)
             if (startStep === '2') {
                 document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
                 document.getElementById('step-2').classList.add('active');
                 return;
             }
 
-            // Cek jika user sebenarnya sudah login & terkonfirmasi
+            // Jika navigasi langsung ke onboarding.html tanpa params:
+            // cek apakah user sudah login & email sudah dikonfirmasi → skip ke step 2
             const user = await window.getCurrentUser();
             if (user && user.email_confirmed_at) {
                 document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
