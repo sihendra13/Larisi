@@ -4,6 +4,10 @@
 document.addEventListener('DOMContentLoaded', function() {
   updateReach();
 
+  // Auto-select persona tile based on business category from onboarding profile.
+  // Runs after all modules are loaded; silently skips if no profile or tile not found.
+  if (typeof _autoSelectFromBizProfile === 'function') _autoSelectFromBizProfile();
+
   // Sync format default sesuai radio button yang checked di HTML
   var checkedFmt = document.querySelector('input[name="fmt"]:checked');
   if (checkedFmt && typeof selectFormat === 'function') {

@@ -297,7 +297,11 @@ async function refreshAnalyticsData() {
 function _buildAnalyticsSystemPrompt(agg) {
   var ctx = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : { region: 'default', regionLabel: 'Indonesia' };
 
-  // ── Opening line universal per region (TODO: upgrade per kategori bisnis setelah onboarding selesai) ──
+  // ── Business profile context (from onboarding via localStorage) ──
+  var bizName     = ctx.businessName     || null;
+  var bizCategory = ctx.businessCategory || null;
+
+  // ── Opening line universal per region ──
   var _openingMap = {
     surabaya: 'Hei Rek! Yuk lihat hasil campaign kamu bulan ini.',
     malang:   'Hei Rek! Yuk lihat hasil campaign kamu bulan ini.',
@@ -351,6 +355,8 @@ function _buildAnalyticsSystemPrompt(agg) {
     '"' + openingLine + '"',
     '',
     'DATA NYATA USER:',
+    '- Nama bisnis: ' + (bizName || '(belum diisi)'),
+    '- Kategori bisnis: ' + (bizCategory || 'Umum'),
     '- Total campaign: ' + agg.total,
     '- Campaign aktif: ' + agg.active,
     '- Total reach: ' + _anFmtK(agg.totalReach),
@@ -361,6 +367,7 @@ function _buildAnalyticsSystemPrompt(agg) {
     '- Jam posting paling sering: ' + String(agg.bestHour).padStart(2,'0') + ':00',
     '- Hari posting paling sering: ' + agg.bestDay,
     '- Format dominan: ' + agg.topFormat,
+    bizCategory ? '- PENTING: Semua saran, hashtag, dan rekomendasi konten WAJIB relevan dengan industri "' + bizCategory + '".' : '',
     '',
     'INSTRUKSI narasi_p1 (ISI FIELD INI — maks 2 kalimat):',
     '  Mulai PERSIS dengan kalimat pembuka di atas.',

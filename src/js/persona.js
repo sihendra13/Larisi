@@ -116,3 +116,39 @@ function openEditPersona() {
   var editBtn = document.getElementById('personaEditBtn');
   if (editBtn) editBtn.style.display = 'none';
 }
+
+/* ── Mapping: onboarding category → cat-tile cat value ── */
+var _BIZ_CAT_TO_TILE = {
+  fnb:        'Kuliner',
+  fashion:    'FashionWanita',
+  kesehatan:  'Beauty',
+  elektronik: 'Gadget',
+  properti:   'Properti',
+  wisata:     'Wisata'
+  // jasa, retail, otomotif, pendidikan, lainnya → no auto-tile (leave as General)
+};
+
+/**
+ * _autoSelectFromBizProfile()
+ * Called on DOMContentLoaded. If user completed onboarding with a business
+ * category, pre-select the matching persona tile so caption + stitch are
+ * immediately relevant — without requiring a file upload.
+ * Only runs if the master persona hasn't been locked yet.
+ */
+function _autoSelectFromBizProfile() {
+  if (masterPersonaLocked) return;
+  var biz = window.userBizProfile && window.userBizProfile.category;
+  if (!biz) return;
+  var tileKey = _BIZ_CAT_TO_TILE[biz];
+  if (!tileKey) return;
+
+  /* Find matching tile and simulate click */
+  var tiles = document.querySelectorAll('.cat-tile');
+  for (var i = 0; i < tiles.length; i++) {
+    var onclick = tiles[i].getAttribute('onclick') || '';
+    if (onclick.indexOf("'" + tileKey + "'") !== -1 || onclick.indexOf('"' + tileKey + '"') !== -1) {
+      selectCat(tiles[i], tileKey);
+      return;
+    }
+  }
+}

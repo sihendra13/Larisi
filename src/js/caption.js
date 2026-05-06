@@ -30,8 +30,30 @@ function getCurrentPlatformKey() {
   return 'ig-story';
 }
 
+/* Mapping: onboarding category → caption template key */
+var _BIZ_CAT_TO_CAPTION = {
+  fnb:        'Kuliner',
+  fashion:    'Fashion',
+  jasa:       'General',
+  retail:     'General',
+  kesehatan:  'Beauty/Self-care',
+  elektronik: 'General',
+  otomotif:   'General',
+  properti:   'Real Estate',
+  pendidikan: 'General',
+  wisata:     'Tourism',
+  lainnya:    'General'
+};
+
 function getPersonaKey() {
-  if (!currentPersona) return 'General';
+  if (!currentPersona) {
+    // Fallback: use business category from onboarding if no persona set yet
+    var biz = window.userBizProfile && window.userBizProfile.category;
+    if (biz && _BIZ_CAT_TO_CAPTION[biz] && _BIZ_CAT_TO_CAPTION[biz] !== 'General') {
+      return _BIZ_CAT_TO_CAPTION[biz];
+    }
+    return 'General';
+  }
   var p = currentPersona.toLowerCase();
 
   /* Match persona name to caption template key */
@@ -44,7 +66,19 @@ function getPersonaKey() {
   if (p.indexOf('beauty') !== -1 || p.indexOf('skincare') !== -1 || p.indexOf('self-care') !== -1) return 'Beauty/Self-care';
   if (p.indexOf('tourism') !== -1 || p.indexOf('wisata') !== -1 || p.indexOf('travel') !== -1) return 'Tourism';
   if (p.indexOf('automotive') !== -1 || p.indexOf('vespa') !== -1 || p.indexOf('motor') !== -1) return 'Retro Automotive';
-  if (p.indexOf('general') !== -1) return 'General';
+  if (p.indexOf('general') !== -1) {
+    // Even for 'General' persona, try to improve with biz profile category
+    var bizFallback = window.userBizProfile && window.userBizProfile.category;
+    if (bizFallback && _BIZ_CAT_TO_CAPTION[bizFallback] && _BIZ_CAT_TO_CAPTION[bizFallback] !== 'General') {
+      return _BIZ_CAT_TO_CAPTION[bizFallback];
+    }
+    return 'General';
+  }
+  // Final fallback: check biz profile before returning General
+  var bizFallback = window.userBizProfile && window.userBizProfile.category;
+  if (bizFallback && _BIZ_CAT_TO_CAPTION[bizFallback] && _BIZ_CAT_TO_CAPTION[bizFallback] !== 'General') {
+    return _BIZ_CAT_TO_CAPTION[bizFallback];
+  }
   return 'General';
 }
 
