@@ -18,4 +18,11 @@ document.addEventListener('DOMContentLoaded', function() {
   console.log('[init] activeFormat:', activeFormat,
               '| activeChannel:', activeChannel,
               '| activePlatform:', activePlatform);
+
+  // Tier 1: Prefetch campaigns on load.
+  // 500ms delay → beri waktu Supabase auth + radarSessionId ter-set.
+  // Kalau gagal → silent, existing flow (loadCampaignsFromSupabase on menu click) jadi fallback.
+  setTimeout(function() {
+    if (typeof _prefetchCampaigns === 'function') _prefetchCampaigns();
+  }, 500);
 });

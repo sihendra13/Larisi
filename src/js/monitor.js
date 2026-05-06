@@ -1926,3 +1926,123 @@ var ManualGuideGenerator = {
 
 /* ─── Window exports ─── */
 window.switchMenu = switchMenu;
+
+/* ═══════════════════════════════════════════════════════════════
+   TIER 1 — Campaign Prefetch + localStorage Cache
+   ─────────────────────────────────────────────────────────────
+   Additive only. loadCampaignsFromSupabase() tidak diubah sama sekali.
+   Fallback: kalau prefetch/cache gagal → existing flow jalan normal
+   saat user klik Menu 2 (loadCampaignsFromSupabase on switchMenu).
+   ═══════════════════════════════════════════════════════════════ */
+var _CAMP_CACHE_KEY = 'radar_camp_cache_v1';
+var _CAMP_CACHE_TTL = 5 * 60 * 1000; // 5 menit
+
+function _saveCampCache(rows) {
+  try {
+    localStorage.setItem(_CAMP_CACHE_KEY, JSON.stringify({
+      rows: rows,
+      ts:   Date.now(),
+      sid:  window.radarSessionId || ''
+    }));
+  } catch(e) {}
+}
+
+function _readCampCache() {
+  try {
+    var raw = localStorage.getItem(_CAMP_CACHE_KEY);
+    if (!raw) return null;
+    var obj = JSON.parse(raw);
+    if (!obj || !Array.isArray(obj.rows) || !obj.rows.length) return null;
+    if (Date.now() - obj.ts > _CAMP_CACHE_TTL) return null;
+    // Invalidate kalau session berbeda (user ganti akun)
+    if (obj.sid && window.radarSessionId && obj.sid !== window.radarSessionId) return null;
+    return obj.rows;
+  } catch(e) { return null; }
+}
+
+// Proses raw Supabase rows → campaign objects dan push ke CAMPAIGNS[].
+// Logic identik dengan loadCampaignsFromSupabase — dedup via supabase_id dijaga.
+// Return: jumlah campaign baru yang ditambahkan (0 = semua sudah ada).
+function _processCampRows(rows) {
+  var platMap = { ig:'ig', tiktok:'tiktok', meta:'meta', youtube:'youtube',
+                  instagram:'ig', facebook:'meta' };
+  var added = 0;
+  rows.forEach(function(row) {
+    var exists = CAMPAIGNS.some(function(c) { return c.supabase_id === row.id; });
+    if (exists) return;
+    var platforms = (row.platforms || []).map(function(p) { return platMap[p] || p; });
+    if (!platforms.length) platforms = ['ig'];
+    var platLabel = platforms.map(function(p) { return p.toUpperCase(); }).join(', ');
+    var dateStr   = row.created_at
+      ? new Date(row.created_at).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' })
+      : '';
+    CAMPAIGNS.unshift({
+      id:               row.id,
+      supabase_id:      row.id,
+      post_id:          row.post_id            || null,
+      post_url:         row.post_url           || null,
+      platform_post_id: row.platform_post_id   || null,
+      format:           row.format             || 'post',
+      name:             row.nama_campaign      || 'Campaign',
+      status:           row.status === 'active' ? 'running' : (row.status || 'running'),
+      platforms:        platforms,
+      reach:            row.estimated_reach_min || 0,
+      reachTarget:      row.estimated_reach_max || 10000,
+      budget:           row.budget_idr          || 0,
+      budgetUsed:       0,
+      sparkData:        [0,0,0,0,0,0],
+      thumbColor:       '#791ADB',
+      thumbUrl:         row.thumb_url || localStorage.getItem('radar_thumb_' + row.id) || null,
+      launchTime:       dateStr,
+      created_at:       row.created_at || null,
+      aiOpening:
+        'Campaign <strong>' + (row.nama_campaign || 'Campaign') + '</strong>\n\n' +
+        'Lokasi: <strong>' + (row.kecamatan || '—') + '</strong> · Radius ' + (row.radius_km || 1) + ' km\n' +
+        'Kategori: <strong>' + (row.kategori || '—') + '</strong>\n' +
+        'Platform: <strong>' + platLabel + '</strong>\n' +
+        'Estimasi reach: <strong>' + formatReach(row.estimated_reach_min || 0) +
+        ' – ' + formatReach(row.estimated_reach_max || 0) + '</strong>\n' +
+        (dateStr ? 'Diluncurkan: ' + dateStr + '\n' : '') +
+        '\nAda yang ingin dianalisis dari campaign ini?',
+      aiChips:          ['Lihat performa', 'Optimalkan targeting', 'Bagikan ke tim'],
+      aiChipResponses:  {}
+    });
+    added++;
+  });
+  if (added > 0) window.CAMPAIGNS_LOADED = true;
+  return added;
+}
+
+async function _prefetchCampaigns() {
+  if (typeof getCampaigns !== 'function') return; // guard: supabase belum siap
+
+  try {
+    // ── Fast path: sajikan dari localStorage cache ─────────────────
+    var cached = _readCampCache();
+    if (cached) {
+      var n = _processCampRows(cached);
+      if (n > 0) {
+        console.log('[prefetch] ' + n + ' campaign(s) dari cache (<5ms)');
+        var monEl = document.getElementById('view-monitor');
+        if (monEl && monEl.style.display !== 'none') renderCampaigns();
+      }
+    }
+
+    // ── Background refresh: stale-while-revalidate ─────────────────
+    var fresh = await getCampaigns();
+    if (fresh && fresh.length) {
+      _saveCampCache(fresh);
+      var m = _processCampRows(fresh); // dedup: skip yang sudah ada
+      if (m > 0) {
+        console.log('[prefetch] ' + m + ' campaign(s) baru dari Supabase');
+        var monEl2 = document.getElementById('view-monitor');
+        if (monEl2 && monEl2.style.display !== 'none') renderCampaigns();
+      }
+    }
+
+  } catch(e) {
+    // Silent fail — fallback ke loadCampaignsFromSupabase() saat user klik Monitor
+    console.warn('[prefetch] gagal, fallback ke flow normal:', e.message);
+  }
+}
+window._prefetchCampaigns = _prefetchCampaigns;
