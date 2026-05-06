@@ -2046,3 +2046,142 @@ async function _prefetchCampaigns() {
   }
 }
 window._prefetchCampaigns = _prefetchCampaigns;
+
+/* ═══════════════════════════════════════════════════════════════
+   TIER 2 — Persistent Feed Cache (PostForMe → localStorage)
+   ─────────────────────────────────────────────────────────────
+   Additive only. _loadAnalyticsForCard() tidak diubah sama sekali.
+   Strategy: pre-populate _analyticsCache dari localStorage sebelum
+   _loadAnalyticsForCard dipanggil → dia menemukan cache terisi,
+   skip PostForMe call. Snapshot balik ke localStorage tiap 2 menit.
+   Fallback: kalau cache expired/kosong → existing PostForMe fetch jalan normal.
+   ═══════════════════════════════════════════════════════════════ */
+var _FEED_CACHE_PREFIX = 'radar_feed_v1_';
+var _FEED_CACHE_TTL    = 15 * 60 * 1000; // 15 menit
+
+function _saveFeedToStorage(accId, posts) {
+  try {
+    localStorage.setItem(_FEED_CACHE_PREFIX + accId, JSON.stringify({
+      posts: posts,
+      ts:    Date.now()
+    }));
+  } catch(e) {}
+}
+
+function _loadFeedFromStorage(accId) {
+  try {
+    var raw = localStorage.getItem(_FEED_CACHE_PREFIX + accId);
+    if (!raw) return null;
+    var obj = JSON.parse(raw);
+    if (!obj || !Array.isArray(obj.posts) || !obj.posts.length) return null;
+    if (Date.now() - obj.ts > _FEED_CACHE_TTL) return null;
+    return obj.posts;
+  } catch(e) { return null; }
+}
+
+// Pre-populate _analyticsCache (in-memory) dari localStorage.
+// _loadAnalyticsForCard() cek _analyticsCache sebelum hit PostForMe —
+// kalau sudah terisi dan belum expired, dia skip fetch. Ini memanfaatkan
+// mekanisme yang sudah ada tanpa menyentuh kodenya.
+function _preloadFeedCaches() {
+  var accounts = typeof _getStoredAccounts === 'function' ? _getStoredAccounts() : [];
+  var loaded = 0;
+  accounts.forEach(function(acc) {
+    if (!acc || !acc.id) return;
+    var posts = _loadFeedFromStorage(acc.id);
+    if (!posts) return;
+    // Pre-populate in-memory cache ─ _loadAnalyticsForCard akan menemukan ini
+    _analyticsCache[acc.id]     = posts;
+    // Set timestamp ke "sekarang - 1 detik" agar dianggap fresh (dalam ANALYTICS_CACHE_TTL 2 menit)
+    // _loadAnalyticsForCard akan skip fetch PostForMe untuk sesi ini
+    _analyticsCacheTime[acc.id] = Date.now() - 1000;
+    loaded++;
+  });
+  if (loaded > 0) console.log('[tier2] pre-loaded ' + loaded + ' feed cache(s) dari localStorage');
+}
+
+// Snapshot _analyticsCache yang sudah terisi ke localStorage.
+// Dipanggil tiap 2 menit — saat _loadAnalyticsForCard baru saja fetch dari PostForMe,
+// hasilnya tersimpan ke _analyticsCache, lalu snapshot ini menulisnya ke localStorage.
+function _snapshotFeedCaches() {
+  var saved = 0;
+  Object.keys(_analyticsCache).forEach(function(accId) {
+    var posts = _analyticsCache[accId];
+    if (Array.isArray(posts) && posts.length > 0) {
+      _saveFeedToStorage(accId, posts);
+      saved++;
+    }
+  });
+  if (saved > 0) console.log('[tier2] snapshot ' + saved + ' feed cache(s) ke localStorage');
+}
+
+// Snapshot tiap 2 menit (setelah _loadAnalyticsForCard punya waktu untuk fetch)
+setInterval(_snapshotFeedCaches, 2 * 60 * 1000);
+window._preloadFeedCaches  = _preloadFeedCaches;
+window._snapshotFeedCaches = _snapshotFeedCaches;
+
+/* ═══════════════════════════════════════════════════════════════
+   TIER 3 — Supabase Realtime Campaign Sync
+   ─────────────────────────────────────────────────────────────
+   Additive only. waitForCampaigns() polling di analytics.js tidak diubah.
+   Strategy: subscribe ke perubahan tabel campaigns — kalau ada campaign
+   baru/update, CAMPAIGNS_LOADED langsung di-set dan loadCampaignsFromSupabase
+   dipanggil (dedup logic sudah ada di sana).
+   Fallback: kalau Realtime disconnect/error → waitForCampaigns() polling
+   500ms tetap jalan seperti biasa — tidak ada yang break.
+   ═══════════════════════════════════════════════════════════════ */
+function _startRealtimeCampaignSync() {
+  try {
+    var client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    if (!client || typeof client.channel !== 'function') {
+      console.warn('[tier3] Supabase client belum siap, fallback ke polling');
+      return;
+    }
+
+    var channel = client
+      .channel('radar-campaigns-' + (window.radarSessionId || 'anon'))
+      .on('postgres_changes', {
+        event:  '*',
+        schema: 'public',
+        table:  'campaigns'
+      }, function(payload) {
+        console.log('[tier3] Realtime campaign change:', payload.eventType);
+        // Trigger fresh load — dedup di loadCampaignsFromSupabase mencegah duplikat
+        if (typeof loadCampaignsFromSupabase === 'function') {
+          loadCampaignsFromSupabase();
+        }
+        // Update cache setelah data berubah
+        if (typeof getCampaigns === 'function') {
+          getCampaigns().then(function(rows) {
+            if (rows && rows.length) _saveCampCache(rows);
+          }).catch(function() {});
+        }
+      })
+      .subscribe(function(status) {
+        if (status === 'SUBSCRIBED') {
+          console.log('[tier3] Realtime campaigns subscribed');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('[tier3] Realtime ' + status + ' — polling fallback aktif');
+          // Tidak perlu aksi — waitForCampaigns() polling tetap jalan sebagai fallback
+        }
+      });
+
+    window._realtimeCampaignChannel = channel;
+
+    // Auto-reconnect jika visibility berubah (tab kembali aktif)
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible' && window._realtimeCampaignChannel) {
+        var state = window._realtimeCampaignChannel.state;
+        if (state === 'closed' || state === 'errored') {
+          console.log('[tier3] Tab aktif kembali, reconnect Realtime...');
+          _startRealtimeCampaignSync();
+        }
+      }
+    });
+
+  } catch(e) {
+    console.warn('[tier3] _startRealtimeCampaignSync error, fallback ke polling:', e.message);
+    // Silent fail — polling tetap jalan
+  }
+}
+window._startRealtimeCampaignSync = _startRealtimeCampaignSync;

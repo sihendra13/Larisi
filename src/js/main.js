@@ -25,4 +25,15 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
     if (typeof _prefetchCampaigns === 'function') _prefetchCampaigns();
   }, 500);
+
+  // Tier 2: Pre-load feed caches dari localStorage → isi _analyticsCache sebelum
+  // _loadAnalyticsForCard dipanggil. Synchronous, tidak butuh delay.
+  if (typeof _preloadFeedCaches === 'function') _preloadFeedCaches();
+
+  // Tier 3: Supabase Realtime subscription untuk campaign changes.
+  // 1000ms delay → pastikan Supabase client + auth sudah siap.
+  // Kalau gagal → waitForCampaigns() polling 500ms tetap jalan sebagai fallback.
+  setTimeout(function() {
+    if (typeof _startRealtimeCampaignSync === 'function') _startRealtimeCampaignSync();
+  }, 1000);
 });
