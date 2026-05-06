@@ -39,23 +39,23 @@ var SILARIS_MAX_HISTORY = 6;
 
 /* ─── buildSilarisContext() — Priority fallback logic ─── */
 function buildSilarisContext() {
-  // PRIORITY 1: Data lengkap dari localStorage (nanti dari Supabase user_profile)
-  var stored = null;
+  // PRIORITY 1: Data dari Supabase Profile (hasil onboarding)
+  var profile = null;
   try {
-    var raw = localStorage.getItem('silaris_user_profile');
-    if (raw) stored = JSON.parse(raw);
+    profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
   } catch(e) {}
 
-  if (stored && stored.business_category && stored.region) {
+  if (profile && profile.business_name) {
     return {
       mode:             'FULL',
-      businessName:     stored.business_name     || null,
-      businessCategory: stored.business_category,
-      region:           stored.region,
-      regionLabel:      stored.region_label      || stored.region,
-      greeting:         stored.greeting          || 'Halo!',
-      cta:              stored.cta               || 'Cek Sekarang!',
-      dialekStyle:      stored.dialek_style      || 'default'
+      businessName:     profile.business_name,
+      businessCategory: profile.category || 'Umum',
+      region:           profile.city || 'default',
+      regionLabel:      profile.city || 'Indonesia',
+      greeting:         'Halo!',
+      cta:              profile.delivery_service ? 'Siap kirim ke seluruh Indonesia!' : 'Mampir ke toko kami!',
+      dialekStyle:      'default',
+      owner:            profile.full_name || ''
     };
   }
 

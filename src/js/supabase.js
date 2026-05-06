@@ -23,6 +23,153 @@ function getSupabaseClient() {
 }
 
 /* ─────────────────────────────────────────
+   Authentication Functions
+   ───────────────────────────────────────── */
+
+/**
+ * signUp(email, password, metadata)
+ */
+async function signUp(email, password, metadata) {
+    const client = getSupabaseClient();
+    const { data, error } = await client.auth.signUp({
+        email,
+        password,
+        options: {
+            data: metadata || {},
+            emailRedirectTo: window.location.origin + '/onboarding.html'
+        }
+    });
+    return { data, error };
+}
+
+/**
+ * verifyOtp(email, token, type)
+ * type can be 'signup', 'invite', 'magiclink', etc.
+ */
+async function verifyOtp(email, token, type = 'signup') {
+    const client = getSupabaseClient();
+    const { data, error } = await client.auth.verifyOtp({
+        email,
+        token,
+        type
+    });
+    return { data, error };
+}
+
+/**
+ * resendOtp(email, type)
+ */
+async function resendOtp(email, type = 'signup') {
+    const client = getSupabaseClient();
+    const { data, error } = await client.auth.resend({
+        type,
+        email,
+        options: {
+            emailRedirectTo: window.location.origin + '/onboarding.html'
+        }
+    });
+    return { data, error };
+}
+
+/**
+ * signIn(email, password)
+ */
+async function signIn(email, password) {
+    const client = getSupabaseClient();
+    const { data, error } = await client.auth.signInWithPassword({
+        email,
+        password
+    });
+    return { data, error };
+}
+
+/**
+ * signOut()
+ */
+async function signOut() {
+    const client = getSupabaseClient();
+    const { error } = await client.auth.signOut();
+    if (!error) {
+        localStorage.removeItem('radar_user_profile');
+        window.location.href = 'login.html';
+    }
+    return { error };
+}
+
+/**
+ * getCurrentUser()
+ */
+async function getCurrentUser() {
+    const client = getSupabaseClient();
+    const { data: { user } } = await client.auth.getUser();
+    return user;
+}
+
+/**
+ * getUserProfile(userId)
+ */
+async function getUserProfile(userId) {
+    const client = getSupabaseClient();
+    const { data, error } = await client.from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+    
+    if (data) {
+        localStorage.setItem('radar_user_profile', JSON.stringify(data));
+    }
+    return { data, error };
+}
+
+/**
+ * updateUserProfile(profileData)
+ */
+async function updateUserProfile(profileData) {
+    const user = await getCurrentUser();
+    if (!user) return { error: 'Not authenticated' };
+    
+    const client = getSupabaseClient();
+    const { data, error } = await client.from('profiles')
+        .upsert({
+            id: user.id,
+            ...profileData,
+            updated_at: new Date()
+        })
+        .select()
+        .single();
+    
+    if (data) {
+        localStorage.setItem('radar_user_profile', JSON.stringify(data));
+    }
+    return { data, error };
+}
+
+/**
+ * signInWithSocial(provider)
+ * provider: 'google' or 'facebook'
+ */
+async function signInWithSocial(provider) {
+    const client = getSupabaseClient();
+    const { data, error } = await client.auth.signInWithOAuth({
+        provider: provider,
+        options: {
+            redirectTo: window.location.origin + '/onboarding.html'
+        }
+    });
+    return { data, error };
+}
+
+window.signUp = signUp;
+window.signIn = signIn;
+window.signOut = signOut;
+window.signInWithSocial = signInWithSocial;
+window.verifyOtp = verifyOtp;
+window.resendOtp = resendOtp;
+window.getCurrentUser = getCurrentUser;
+window.getUserProfile = getUserProfile;
+window.updateUserProfile = updateUserProfile;
+
+/* ─────────────────────────────────────────
    Session Management
    Session ID persisten per browser session
    ───────────────────────────────────────── */
@@ -134,6 +281,7 @@ async function saveCampaign(campaignData) {
     var result = await client
       .from('campaigns')
       .insert({
+        user_id:             (await getCurrentUser())?.id || null,
         session_id:          window.radarSessionId,
         nama_campaign:       d.nama        || null,
         kecamatan:           d.kecamatan   || null,

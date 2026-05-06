@@ -26,15 +26,12 @@
             </p>
 
             <div class="form-group">
-                <label for="otp">Kode Verifikasi</label>
-                <input type="text" id="otp" placeholder="Masukkan 6 digit kode" maxlength="6">
+                <input type="text" id="otp" placeholder="000000" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 700;">
             </div>
-
-            <p class="help-text" style="margin-bottom: 24px;">
-                Jika Anda belum menerima email, cek folder spam atau <a href="#" style="color: var(--rausch);">Kirim ulang email</a>.
+            <button class="btn btn-primary" onclick="nextStep(2)">Verifikasi Kode</button>
+            <p style="margin-top: 20px; font-size: 13px; color: var(--secondary);">
+                Tidak menerima kode? <a href="#" onclick="handleResend(event)" id="resend-link" style="color: var(--rausch); font-weight: 600;">Kirim ulang</a>
             </p>
-
-            <button class="btn btn-primary" onclick="nextStep(2)">Verifikasi & Lanjut</button>
         </div>
 
         <!-- STEP 2: BUSINESS INFO -->
@@ -138,23 +135,113 @@
     </div>
 
     <script>
-        function nextStep(stepNumber) {
-            // Hide all steps
+    <!-- Supabase SDK & Auth Logic -->
+    <script src="src/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="src/js/supabase.js"></script>
+    <script>
+        // Ambil email dari URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const userEmail = urlParams.get('email');
+
+        async function nextStep(stepNumber) {
+            // STEP 1 -> 2: Verifikasi OTP
+            if (stepNumber === 2) {
+                const otp = document.getElementById('otp').value;
+                if (!otp || otp.length < 6) {
+                    alert('Masukkan 6 digit kode verifikasi');
+                    return;
+                }
+
+                const { data, error } = await window.verifyOtp(userEmail, otp, 'signup');
+
+                if (error) {
+                    alert('Verifikasi Gagal: ' + error.message);
+                    return;
+                }
+            }
+
+            // STEP 2 -> 3: Simpan Profil Bisnis
+            if (stepNumber === 3) {
+                const submitBtn = document.querySelector('#step-2 .btn-primary');
+                const ownerName = document.getElementById('ownerName').value;
+                const businessName = document.getElementById('businessName').value;
+                const whatsapp = document.getElementById('whatsapp').value;
+                const category = document.getElementById('category').value;
+                const city = document.getElementById('city').value;
+                const delivery = document.querySelector('input[name="delivery"]:checked')?.value === 'yes';
+
+                if (!ownerName || !businessName || !category || !city) {
+                    alert('Mohon lengkapi semua data bertanda *');
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Menyimpan...';
+
+                const { error } = await window.updateUserProfile({
+                    full_name: ownerName,
+                    business_name: businessName,
+                    whatsapp: whatsapp,
+                    category: category,
+                    city: city,
+                    delivery_service: delivery
+                });
+
+                if (error) {
+                    alert('Gagal menyimpan profil: ' + error.message);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Simpan Profil';
+                    return;
+                }
+            }
+
+            // Ganti tampilan step
             document.querySelectorAll('.step-container').forEach(el => {
                 el.classList.remove('active');
             });
-            // Show target step
             document.getElementById('step-' + stepNumber).classList.add('active');
         }
 
-        function finishOnboarding() {
+        async function handleResend(e) {
+            e.preventDefault();
+            const link = document.getElementById('resend-link');
+            if (link.style.opacity === '0.5') return;
+
+            link.style.opacity = '0.5';
+            link.textContent = 'Mengirim...';
+
+            const { error } = await window.resendOtp(userEmail);
+            
+            if (error) {
+                alert('Gagal mengirim ulang: ' + error.message);
+                link.style.opacity = '1';
+                link.textContent = 'Kirim ulang';
+            } else {
+                alert('Kode baru telah dikirim ke email Anda.');
+                let seconds = 60;
+                const timer = setInterval(() => {
+                    seconds--;
+                    link.textContent = `Tunggu ${seconds}s`;
+                    if (seconds <= 0) {
+                        clearInterval(timer);
+                        link.style.opacity = '1';
+                        link.textContent = 'Kirim ulang';
+                    }
+                }, 1000);
+            }
+        }
+
+        async function finishOnboarding() {
             // Ambil data paket yang tersimpan dari halaman registrasi
             const savedPlan = localStorage.getItem('larisi_selected_plan') || 'freemium';
             
-            // Tampilkan pesan sukses dengan menyebutkan paket
-            alert(`Setup Selesai!\n\nAnda masuk dengan paket: ${savedPlan.toUpperCase()}\n\nMengarahkan ke Dashboard...`);
+            // Simpan status onboarding selesai ke profile (optional)
+            await window.updateUserProfile({
+                onboarding_completed: true,
+                selected_plan: savedPlan
+            });
             
-            // Redirect ke dashboard lokal
             window.location.href = 'index.html';
         }
     </script>

@@ -1,9 +1,25 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RADAR — Dapur Konten</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RADAR — Larisi Dashboard</title>
+    
+    <!-- Auth Guard: Cek session sebelum render halaman -->
+    <script src="src/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="src/js/supabase.js"></script>
+    <script>
+        (async function() {
+            const user = await window.getCurrentUser();
+            if (!user) {
+                window.location.href = 'login.html';
+            } else {
+                // Pre-load profile data
+                await window.getUserProfile(user.id);
+            }
+        })();
+    </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Circular+Std:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -57,7 +73,32 @@
       </div>
       <div id="bufferIndicator"></div>
       <div class="notif-btn"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg></div>
-      <div class="avatar">BO</div>
+                <div class="user-profile-wrap" style="position: relative;">
+                    <div class="user-info" style="text-align: right; margin-right: 12px; display: none;" id="user-info-text">
+                        <div class="user-name" id="display-business-name" style="font-size: 14px; font-weight: 700; color: var(--near-black);">Bisnis Saya</div>
+                        <div class="user-role" id="display-user-name" style="font-size: 11px; color: var(--secondary);">Pemilik</div>
+                    </div>
+                    <div class="avatar" id="user-avatar-btn" style="cursor: pointer; transition: transform 0.2s;" onmouseenter="this.style.transform='scale(1.05)'" onmouseleave="this.style.transform='scale(1)'">
+                        <span id="user-initials">--</span>
+                    </div>
+                    
+                    <!-- Logout Dropdown -->
+                    <div id="logout-dropdown" style="display: none; position: absolute; top: 52px; right: 0; background: white; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 180px; z-index: 1000; padding: 8px 0; animation: slideDown 0.2s ease;">
+                        <style>
+                            @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+                            .dropdown-item { padding: 10px 16px; font-size: 13px; color: var(--near-black); cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.2s; }
+                            .dropdown-item:hover { background: var(--bg-soft); color: var(--rausch); }
+                            .dropdown-divider { height: 1px; background: var(--border); margin: 4px 0; }
+                        </style>
+                        <div class="dropdown-item" onclick="showSection('section-settings')">
+                            <i class="fas fa-cog"></i> Pengaturan Akun
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" onclick="window.signOut()" style="color: #dc2626;">
+                            <i class="fas fa-sign-out-alt"></i> Keluar
+                        </div>
+                    </div>
+                </div>
     </div>
   </div>
 
@@ -436,7 +477,38 @@
   <!-- html2canvas CDN -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <!-- Export engine -->
-  <script src="src/js/export.js"></script>
+    <script src="src/js/export.js"></script>
+
+    <!-- Initialize Auth State UI -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+            
+            if (profile && profile.full_name) {
+                // Update Initials
+                const initials = profile.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                document.getElementById('user-initials').textContent = initials;
+                
+                // Update Name & Business
+                document.getElementById('display-business-name').textContent = profile.business_name || 'Bisnis Larisi';
+                document.getElementById('display-user-name').textContent = profile.full_name;
+                document.getElementById('user-info-text').style.display = 'block';
+            }
+
+            // Toggle Dropdown
+            const avatarBtn = document.getElementById('user-avatar-btn');
+            const dropdown = document.getElementById('logout-dropdown');
+            
+            avatarBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+            });
+
+            document.addEventListener('click', () => {
+                dropdown.style.display = 'none';
+            });
+        });
+    </script>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="src/data/locations.js"></script>
