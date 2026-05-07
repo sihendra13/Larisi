@@ -159,6 +159,28 @@ async function signInWithSocial(provider) {
     return { data, error };
 }
 
+/**
+ * sendPasswordReset(email)
+ * Kirim email reset password via Supabase
+ */
+async function sendPasswordReset(email) {
+    const client = getSupabaseClient();
+    const { data, error } = await client.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/reset-password.html'
+    });
+    return { data, error };
+}
+
+/**
+ * updatePassword(newPassword)
+ * Ganti password user yang sedang login (setelah klik link reset)
+ */
+async function updatePassword(newPassword) {
+    const client = getSupabaseClient();
+    const { data, error } = await client.auth.updateUser({ password: newPassword });
+    return { data, error };
+}
+
 window.signUp = signUp;
 window.signIn = signIn;
 window.signOut = signOut;
@@ -168,6 +190,8 @@ window.resendOtp = resendOtp;
 window.getCurrentUser = getCurrentUser;
 window.getUserProfile = getUserProfile;
 window.updateUserProfile = updateUserProfile;
+window.sendPasswordReset = sendPasswordReset;
+window.updatePassword = updatePassword;
 
 /* ─────────────────────────────────────────
    Session Management
