@@ -35,25 +35,143 @@ function showPersonaDirect(p, detected) {
   generateCaption(false);
 }
 
-function startScanWithFile(filename, fileCount) {
+/* ── Vision conflict state ── */
+var _visionConflictData = null;
+
+/**
+ * _showVisionConflict(visionKey, visionLabel, bizKey)
+ * Tampilkan UI pilihan ketika AI mendeteksi kategori berbeda dari profil bisnis.
+ */
+function _showVisionConflict(visionKey, visionLabel, bizKey) {
+  _visionConflictData = { visionKey: visionKey, bizKey: bizKey };
+
+  var vc = document.getElementById('visionConflict');
+  if (!vc) {
+    /* Tidak ada UI konflik — langsung pakai hasil AI */
+    _applyVisionPersona(visionKey);
+    return;
+  }
+
+  var bizP = (typeof personaDB !== 'undefined' && personaDB[bizKey]) || { name: bizKey };
+  var vlEl = document.getElementById('conflictVisionLabel');
+  var blEl = document.getElementById('conflictBizLabel');
+  if (vlEl) vlEl.textContent = visionLabel;
+  if (blEl) blEl.textContent = bizP.name;
+
+  vc.classList.add('visible');
+}
+
+/**
+ * _applyVisionPersona(key)
+ * Terapkan persona dari kunci personaDB, lock master persona.
+ */
+function _applyVisionPersona(key) {
+  var p = (typeof personaDB !== 'undefined' && personaDB[key]) || (personaDB && personaDB.General);
+  if (!p) return;
+  currentPersona = key;
+  captionAltIndex = 0;
+  showPersonaDirect({
+    name:   p.name,
+    target: p.target,
+    age:    p.age || (p.tags && p.tags[0]) || 'Usia 18–45',
+    gender: p.gender || 'Mixed',
+  }, true /* detected = true → sembunyikan catNudge */);
+  masterPersonaLocked = true;
+}
+
+/**
+ * _resolveConflict(useVision)
+ * Dipanggil dari tombol di #visionConflict.
+ * useVision=true  → pakai hasil AI
+ * useVision=false → pakai profil bisnis
+ */
+function _resolveConflict(useVision) {
+  var vc = document.getElementById('visionConflict');
+  if (vc) vc.classList.remove('visible');
+
+  if (!_visionConflictData) return;
+
+  var key = useVision ? _visionConflictData.visionKey : _visionConflictData.bizKey;
+  _visionConflictData = null;
+  _applyVisionPersona(key);
+}
+window._resolveConflict = _resolveConflict;
+
+/**
+ * startScanWithFile(filename, fileCount)
+ * Async — tunggu base64 dari FileReader, panggil Groq Vision,
+ * lalu tampilkan persona atau conflict nudge.
+ * Minimum 2 detik animasi scanning agar UX terasa natural.
+ */
+async function startScanWithFile(filename, fileCount) {
   if (masterPersonaLocked) {
     showScanningOnly(fileCount);
     return;
   }
+
+  var startTime = Date.now();
+
   var scanText = document.getElementById('scanText');
-  if (scanText) {
-    scanText.textContent = 'Scanning your asset for optimal targeting...';
-  }
+  if (scanText) scanText.textContent = 'AI sedang menganalisis kontenmu...';
   document.getElementById('scanning').classList.add('visible');
   document.getElementById('personaCard').classList.remove('visible');
   document.getElementById('catNudge').classList.remove('visible');
-  setTimeout(function() {
-    document.getElementById('scanning').classList.remove('visible');
-    var p = detectPersona(filename);
+  var vc = document.getElementById('visionConflict');
+  if (vc) vc.classList.remove('visible');
+
+  /* ── Tunggu base64 dari FileReader (async, max 3 detik) ── */
+  var base64 = null;
+  if (typeof uploadedDataURLs !== 'undefined') {
+    for (var _i = 0; _i < 30; _i++) {
+      if (uploadedDataURLs[0]) { base64 = uploadedDataURLs[0]; break; }
+      await new Promise(function(r) { setTimeout(r, 100); });
+    }
+  }
+
+  /* ── Panggil Groq Vision bila tersedia ── */
+  var visionKey      = null;
+  var visionLabel    = null;
+
+  if (base64 && typeof analyzeImageCategory === 'function') {
+    try {
+      var bizCat = window.userBizProfile && window.userBizProfile.category;
+      var vResult = await analyzeImageCategory(base64, bizCat);
+      if (vResult.key) {
+        visionKey   = vResult.key;
+        visionLabel = vResult.label;
+      }
+    } catch(e) {
+      console.warn('[persona] vision call error:', e);
+    }
+  }
+
+  /* ── Pastikan animasi minimal 2 detik ── */
+  var elapsed   = Date.now() - startTime;
+  var remaining = Math.max(0, 2000 - elapsed);
+  if (remaining > 0) {
+    await new Promise(function(r) { setTimeout(r, remaining); });
+  }
+
+  document.getElementById('scanning').classList.remove('visible');
+
+  if (visionKey) {
+    /* Cek konflik dengan profil bisnis */
+    var bizCategory = window.userBizProfile && window.userBizProfile.category;
+    var bizTileKey  = bizCategory && (typeof _BIZ_CAT_TO_TILE !== 'undefined') && _BIZ_CAT_TO_TILE[bizCategory];
+    var hasConflict = bizTileKey && bizTileKey !== visionKey;
+
+    if (hasConflict) {
+      _showVisionConflict(visionKey, visionLabel, bizTileKey);
+    } else {
+      _applyVisionPersona(visionKey);
+    }
+  } else {
+    /* Fallback ke deteksi berbasis nama file */
+    var p        = detectPersona(filename);
     var detected = p.name !== 'General Content';
     showPersonaDirect(p, detected);
-    masterPersonaLocked = true; /* Lock after first scan */
-  }, 2000);
+    masterPersonaLocked = true;
+  }
 }
 
 function startScan() { startScanWithFile(''); }
