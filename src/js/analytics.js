@@ -75,7 +75,7 @@ function _stitchSimilarity(a, b) {
 /* ─── Aggregate Campaign Data ─── */
 function _anAggregate(campaigns) {
   var real = (campaigns || []).filter(function(c) { return !c.isDemo; });
-  var totalReach = 0, totalPaidReach = 0, activeCount = 0;
+  var totalReach = 0, totalPaidReach = 0, activeCount = 0, reachCount = 0;
   var erValues = [], bestCamp = null, bestER = -1;
   var platStats = {};
   var rLove = 0, rLike = 0, rHaha = 0, rWow = 0;
@@ -102,6 +102,7 @@ function _anAggregate(campaigns) {
     var eng = c._engagement || {};
     var reach = (eng.reach != null && !isNaN(eng.reach)) ? Number(eng.reach) : 0;
     totalReach += reach;
+    if (reach > 0) reachCount++;
     totalPaidReach += (eng.paidReach || 0);
 
     var er = 0;
@@ -202,6 +203,7 @@ function _anAggregate(campaigns) {
     active: activeCount,
     totalReach: totalReach,
     totalPaidReach: totalPaidReach,
+    reachCount: reachCount,    // jumlah iklan yang punya data reach > 0
     avgER: avgER,
     bestCamp: bestCamp,
     bestER: bestER,
@@ -1338,6 +1340,7 @@ async function anAnalyzeCompetitor() {
   var compER    = parseFloat(result.comp_er) || null;
   var userErLbl = _anErLabel(agg.avgER);
   var compErLbl = compER ? _anErLabel(compER) : null;
+  var platName  = (_AN_PLAT[_anCompActivePlatform] || {}).name || _anCompActivePlatform; // untuk label tooltip estimasi
 
   area.innerHTML =
     '<div class="an-comp-result">' +
@@ -1351,16 +1354,16 @@ async function anAnalyzeCompetitor() {
             '<div class="an-comp-er-lbl user">' + userErLbl.label + '</div>'
           : '') +
         '<div class="an-comp-metric"><span class="an-comp-metric-key">Iklan aktif</span><span class="an-comp-metric-val">' + agg.active + '</span></div>' +
-        '<div class="an-comp-metric"><span class="an-comp-metric-key">Total reach</span><span class="an-comp-metric-val">' + _anFmtK(agg.totalReach) + '</span></div>' +
+        '<div class="an-comp-metric"><span class="an-comp-metric-key">Total reach</span><div style="line-height:1.2"><span class="an-comp-metric-val">' + _anFmtK(agg.totalReach) + '</span>' + (agg.reachCount ? '<div class="an-comp-reach-note">dari ' + agg.reachCount + ' iklan</div>' : '') + '</div></div>' +
       '</div>' +
       '<div class="an-comp-col">' +
         '<div class="an-comp-col-label">Pesaing · ' + (result.comp_handle || handle) + '</div>' +
         (result.comp_er
-          ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Est. ER</span><span class="an-comp-metric-val">' + result.comp_er + '</span></div>' +
+          ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Est. ER <span class="an-comp-est-tip" title="Estimasi berdasarkan pola umum akun sejenis di ' + platName + '. Bukan data real-time.">?</span></span><span class="an-comp-metric-val">' + result.comp_er + '</span></div>' +
             (compErLbl ? '<div class="an-comp-er-lbl comp">' + compErLbl.label + '</div>' : '')
           : '') +
         (result.comp_freq      ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Freq. posting</span><span class="an-comp-metric-val">' + result.comp_freq + '</span></div>' : '') +
-        (result.comp_followers ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Est. followers</span><span class="an-comp-metric-val">' + result.comp_followers + '</span></div>' : '') +
+        (result.comp_followers ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Est. followers <span class="an-comp-est-tip" title="Estimasi kasar berdasarkan pola engagement. Bukan data akun asli.">?</span></span><span class="an-comp-metric-val">' + result.comp_followers + '</span></div>' : '') +
         (result.comp_format    ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Format dominan</span><span class="an-comp-metric-val">' + result.comp_format + '</span></div>' : '') +
       '</div>' +
     '</div>' +
@@ -1394,7 +1397,7 @@ async function anAnalyzeCompetitor() {
       : '') +
 
     // Strategy CTA
-    '<button class="an-comp-strat-btn" onclick="anOpenStrategyModal()">✨ Buat strategi untuk kalahkan pesaing ini →</button>' +
+    '<button class="an-comp-strat-btn" onclick="anOpenStrategyModal()">✨ Buat strategi khusus untuk kalahkan ' + handle + ' →</button>' +
     '</div>';
 }
 window.anAnalyzeCompetitor = anAnalyzeCompetitor;
@@ -1418,7 +1421,7 @@ function anOpenStrategyModal() {
     '<div class="an-strat-sheet">' +
       '<div class="an-strat-header">' +
         '<div>' +
-          '<div class="an-strat-title">✨ Strategi vs ' + handle + '</div>' +
+          '<div class="an-strat-title">✨ Strategimu vs ' + (handle.startsWith('@') ? handle : '@' + handle) + '</div>' +
           '<div class="an-strat-sub">' + platName + ' · Dibuat oleh SiLaris</div>' +
         '</div>' +
         '<button class="an-strat-close" onclick="anCloseStrategyModal()">✕</button>' +
@@ -1429,10 +1432,14 @@ function anOpenStrategyModal() {
           '<span style="font-size:12px;color:var(--secondary);">SiLaris sedang merancang strategi...</span>' +
         '</div>' +
       '</div>' +
+      '<div id="an-strat-footer" class="an-strat-footer"></div>' +
     '</div>';
 
   document.body.appendChild(modal);
   modal.addEventListener('click', function(e) { if (e.target === modal) anCloseStrategyModal(); });
+  var _stratEscFn = function(e) { if (e.key === 'Escape') anCloseStrategyModal(); };
+  document.addEventListener('keydown', _stratEscFn);
+  modal._stratEscFn = _stratEscFn;
 
   _anGenerateStrategy(handle, _anCurrentCompPlatform, result, agg)
     .then(function(strat) {
@@ -1450,27 +1457,59 @@ window.anOpenStrategyModal = anOpenStrategyModal;
 function anCloseStrategyModal() {
   var modal = document.getElementById('an-strat-modal');
   if (!modal) return;
-  modal.style.animation = 'stratSlideOut 0.18s ease forwards';
-  setTimeout(function() { if (modal.parentNode) modal.remove(); }, 200);
+  if (modal._stratEscFn) document.removeEventListener('keydown', modal._stratEscFn);
+  modal.style.animation = 'stratFadeOut 0.2s ease forwards';
+  setTimeout(function() { if (modal.parentNode) modal.remove(); }, 220);
 }
 window.anCloseStrategyModal = anCloseStrategyModal;
 
 function _renderStrategyContent(strat) {
-  var body = document.getElementById('an-strat-body');
+  var body   = document.getElementById('an-strat-body');
+  var footer = document.getElementById('an-strat-footer');
   if (!body) return;
+
+  // ── Keunggulanmu (hijau) ──
+  var keunggulanHtml = strat.keunggulan
+    ? '<div class="an-strat-section an-strat-section-green">' +
+        '<div class="an-strat-section-label">✅ Keunggulanmu</div>' +
+        '<div class="an-strat-section-text">' + strat.keunggulan + '</div>' +
+      '</div>'
+    : (strat.judul ? '<div class="an-strat-judul">' + strat.judul + '</div>' : '');
+
+  // ── Celah yang Bisa Dimanfaatkan (amber) ──
+  var celahHtml = strat.celah
+    ? '<div class="an-strat-section an-strat-section-amber">' +
+        '<div class="an-strat-section-label">⚡ Celah yang Bisa Dimanfaatkan</div>' +
+        '<div class="an-strat-section-text">' + strat.celah + '</div>' +
+      '</div>'
+    : '';
+
+  // ── Langkah Pertama (ungu) ──
   var stepsHtml = (strat.langkah || []).map(function(l, i) {
     return '<div class="an-strat-step">' +
       '<div class="an-strat-step-num">' + (i + 1) + '</div>' +
       '<div class="an-strat-step-text">' + l + '</div>' +
     '</div>';
   }).join('');
-  body.innerHTML =
-    (strat.judul ? '<div class="an-strat-judul">' + strat.judul + '</div>' : '') +
-    '<div class="an-strat-steps">' + stepsHtml + '</div>' +
-    (strat.waktu ? '<div class="an-strat-waktu">⏱ ' + strat.waktu + '</div>' : '') +
-    '<div class="an-strat-actions">' +
-      '<button class="an-strat-save-btn" id="an-strat-save-btn" onclick="anSaveCurrentStrategy()">💾 Simpan Strategi</button>' +
-    '</div>';
+  var langkahHtml = stepsHtml
+    ? '<div class="an-strat-section an-strat-section-purple">' +
+        '<div class="an-strat-section-label">🎯 Langkah Pertama</div>' +
+        '<div class="an-strat-steps">' + stepsHtml + '</div>' +
+      '</div>'
+    : '';
+
+  var waktuHtml = strat.waktu
+    ? '<div class="an-strat-waktu">⏱ ' + strat.waktu + '</div>'
+    : '';
+
+  body.innerHTML = keunggulanHtml + celahHtml + langkahHtml + waktuHtml;
+
+  if (footer) {
+    footer.innerHTML =
+      '<button class="an-strat-save-btn" id="an-strat-save-btn" onclick="anSaveCurrentStrategy()">' +
+        '💾 Simpan &amp; Mulai Sekarang →' +
+      '</button>';
+  }
 }
 
 /* ─── Generate Strategy via SiLaris ─── */
@@ -1503,14 +1542,14 @@ async function _anGenerateStrategy(handle, platform, compResult, agg) {
     '',
     'Kembalikan JSON (tanpa teks lain):',
     '{',
-    '  "judul": "Satu kalimat: cara utama untuk mengungguli ' + handle + '",',
+    '  "keunggulan": "1 kalimat: apa yang user sudah lakukan lebih baik dari ' + handle + ' — sertakan angka ER nyata jika ada",',
+    '  "celah": "1 kalimat: peluang konkret yang bisa dimanfaatkan sekarang berdasarkan data pesaing",',
     '  "langkah": [',
-    '    "Langkah spesifik 1 yang bisa dilakukan sekarang",',
-    '    "Langkah spesifik 2 tentang konten atau format yang perlu dicoba",',
-    '    "Langkah spesifik 3 tentang strategi frekuensi atau waktu posting",',
-    '    "Langkah spesifik 4 cara jadikan keunggulan pesaing jadi celah kamu"',
+    '    "Langkah spesifik 1 yang bisa dilakukan hari ini",',
+    '    "Langkah spesifik 2 tentang format atau konten yang perlu dicoba",',
+    '    "Langkah spesifik 3 tentang frekuensi atau waktu posting yang optimal"',
     '  ],',
-    '  "waktu": "Estimasi waktu untuk lihat hasil"',
+    '  "waktu": "Estimasi waktu untuk lihat hasil pertama"',
     '}'
   ].join('\n');
 
@@ -1547,6 +1586,7 @@ function anSaveCurrentStrategy() {
     handle:     _anCurrentStrategyData.handle,
     platform:   _anCurrentStrategyData.platform,
     dateStr:    new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+    status:     'baru',
     strategy:   _anCurrentStrategyData.strategy,
     compResult: _anCurrentStrategyData.compResult
   };
@@ -1555,9 +1595,13 @@ function anSaveCurrentStrategy() {
   _anPersistStrategies(strategies);
 
   var saveBtn = document.getElementById('an-strat-save-btn');
-  if (saveBtn) { saveBtn.textContent = '✓ Tersimpan'; saveBtn.disabled = true; }
+  if (saveBtn) { saveBtn.textContent = '✓ Tersimpan!'; saveBtn.disabled = true; }
 
   _anRenderSavedStrategies();
+  setTimeout(function() {
+    anCloseStrategyModal();
+    if (typeof switchMenu === 'function') switchMenu('command');
+  }, 700);
 }
 window.anSaveCurrentStrategy = anSaveCurrentStrategy;
 
@@ -1569,28 +1613,82 @@ function anDeleteStrategy(id) {
 }
 window.anDeleteStrategy = anDeleteStrategy;
 
+/* ─── Toggle Strategy Status (⚪ baru → 🔵 sedang → ✅ selesai) ─── */
+function anToggleStratStatus(id) {
+  var strategies = _anGetSavedStrategies();
+  var s = strategies.find(function(x) { return x.id === id; });
+  if (!s) return;
+  var cycle = { baru: 'sedang', sedang: 'selesai', selesai: 'baru' };
+  s.status = cycle[s.status || 'baru'] || 'sedang';
+  _anPersistStrategies(strategies);
+  _anRenderSavedStrategies();
+}
+window.anToggleStratStatus = anToggleStratStatus;
+
+/* ─── Launch Iklan from Saved Strategy ─── */
+function anLaunchFromStrat(id) {
+  var strategies = _anGetSavedStrategies();
+  var s = strategies.find(function(x) { return x.id === id; });
+  // Pre-fill active channel berdasarkan platform yang disimpan
+  if (s && s.platform) {
+    var platMap = { ig: 'instagram', meta: 'facebook', tiktok: 'tiktok', youtube: 'youtube' };
+    var ch = platMap[s.platform];
+    if (ch && typeof window.activeChannel !== 'undefined') window.activeChannel = ch;
+  }
+  if (typeof switchMenu === 'function') switchMenu('command');
+}
+window.anLaunchFromStrat = anLaunchFromStrat;
+
 /* ─── Render Saved Strategies Card ─── */
-function _anRenderSavedStrategies() {
+var _anStratShowAll = false;
+function _anRenderSavedStrategies(showAll) {
+  if (showAll !== undefined) _anStratShowAll = !!showAll;
   var wrap = document.getElementById('an-saved-strategies-wrap');
   if (!wrap) return;
   var strategies = _anGetSavedStrategies();
   if (!strategies.length) { wrap.innerHTML = ''; return; }
 
-  var itemsHtml = strategies.map(function(s) {
-    var platName  = (_AN_PLAT[s.platform] || {}).name || s.platform;
-    var judul     = (s.strategy && s.strategy.judul) || '';
-    var firstStep = (s.strategy && s.strategy.langkah && s.strategy.langkah[0]) || '';
+  var PAGE     = 3;
+  var displayed = _anStratShowAll ? strategies : strategies.slice(0, PAGE);
+  var hasMore   = !_anStratShowAll && strategies.length > PAGE;
+
+  var statusIcons  = { baru: '⚪', sedang: '🔵', selesai: '✅' };
+  var statusLabels = { baru: 'Baru', sedang: 'Berjalan', selesai: 'Selesai' };
+
+  var itemsHtml = displayed.map(function(s) {
+    var platName   = (_AN_PLAT[s.platform] || {}).name || s.platform;
+    // keunggulan jika AI baru (field baru), fallback ke judul (field lama)
+    var judul      = (s.strategy && (s.strategy.keunggulan || s.strategy.judul)) || '';
+    var firstStep  = (s.strategy && s.strategy.langkah && s.strategy.langkah[0]) || '';
+    var status     = s.status || 'baru';
+    var statusIcon  = statusIcons[status]  || '⚪';
+    var statusLabel = statusLabels[status] || 'Baru';
+    var isSelesai   = status === 'selesai';
+
     return '<div class="an-saved-strat-item">' +
       '<div class="an-saved-strat-top">' +
+        '<span class="an-saved-strat-status" onclick="anToggleStratStatus(' + s.id + ')" title="Klik untuk ubah status">' + statusIcon + ' ' + statusLabel + '</span>' +
         '<span class="an-saved-strat-handle">' + (s.handle || '') + '</span>' +
         '<span class="an-saved-strat-plat">' + platName + '</span>' +
         '<span class="an-saved-strat-date">' + (s.dateStr || '') + '</span>' +
         '<button class="an-saved-strat-del" onclick="anDeleteStrategy(' + s.id + ')" title="Hapus">✕</button>' +
       '</div>' +
       (judul     ? '<div class="an-saved-strat-judul">' + judul + '</div>' : '') +
-      (firstStep ? '<div class="an-saved-strat-preview">' + firstStep + ' …</div>' : '') +
+      (firstStep ? '<div class="an-saved-strat-preview">' + firstStep + '</div>' : '') +
+      '<div class="an-saved-strat-actions">' +
+        '<button class="an-saved-strat-act-btn an-saved-strat-act-launch" onclick="anLaunchFromStrat(' + s.id + ')">🚀 Buat Iklan Sekarang</button>' +
+        '<button class="an-saved-strat-act-btn an-saved-strat-act-done' + (isSelesai ? ' done' : '') + '" onclick="anToggleStratStatus(' + s.id + ')">' +
+          (isSelesai ? '✅ Selesai' : '✓ Tandai Selesai') +
+        '</button>' +
+      '</div>' +
     '</div>';
   }).join('');
+
+  var showMoreHtml = hasMore
+    ? '<button class="an-saved-strat-show-more" onclick="_anRenderSavedStrategies(true)">Lihat semua ' + strategies.length + ' strategi →</button>'
+    : (_anStratShowAll && strategies.length > PAGE
+        ? '<button class="an-saved-strat-show-more" onclick="_anRenderSavedStrategies(false)">← Lebih sedikit</button>'
+        : '');
 
   wrap.innerHTML =
     '<div class="an-saved-strat-card">' +
@@ -1598,7 +1696,7 @@ function _anRenderSavedStrategies() {
         '<div class="an-saved-strat-title">💾 Strategi Tersimpan <span class="an-saved-strat-count">' + strategies.length + '</span></div>' +
         '<svg class="an-saved-strat-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>' +
       '</div>' +
-      '<div class="an-saved-strat-body">' + itemsHtml + '</div>' +
+      '<div class="an-saved-strat-body">' + itemsHtml + showMoreHtml + '</div>' +
     '</div>';
 }
 window._anRenderSavedStrategies = _anRenderSavedStrategies;
