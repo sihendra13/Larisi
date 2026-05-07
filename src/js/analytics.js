@@ -561,11 +561,11 @@ function _renderStatCards(agg) {
          'dari ' + agg.total + ' iklan bulan ini',
          'Estimasi total orang yang terpapar konten kamu',
          reachDelta) +
-    card('green', 'Campaign berjalan',
+    card('green', 'Iklan berjalan',
          String(agg.active),
          null,
          'bulan ini',
-         'Campaign dengan status running',
+         'Iklan dengan status running',
          campDelta) +
     card('amber', 'Performa Konten',
          erVal,
@@ -666,7 +666,7 @@ function _renderCampaignBest(agg) {
   } else {
     bestCampHTML =
       '<div style="font-size:12px;color:var(--secondary);padding:12px 0;line-height:1.6;">' +
-        'Belum ada data engagement. Kunjungi <strong>Campaign Monitor</strong> untuk memuat data performa.' +
+        'Belum ada data engagement. Kunjungi <strong>Kelola Iklan</strong> untuk memuat data performa.' +
       '</div>';
   }
   return '<div class="an-white-card" id="an-camp-wrap">' +
@@ -710,7 +710,7 @@ function _renderMoodAudiens(agg) {
       '<div class="an-card-icon">' +
         '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>' +
       '</div>' +
-      '<div><div class="an-card-title">Mood Audiens Minggu Ini</div><div class="an-card-sub">Breakdown Reactions Semua Campaign</div></div>' +
+      '<div><div class="an-card-title">Mood Audiens Minggu Ini</div><div class="an-card-sub">Breakdown Reactions Semua Iklan</div></div>' +
     '</div>' +
     '<div class="an-card-body">' +
       moodHTML +
@@ -1078,7 +1078,7 @@ async function anAnalyzeCompetitor() {
           ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Avg ER</span><span class="an-comp-metric-val accent">' + userER + '%</span></div>' +
             '<div class="an-comp-er-lbl user">' + userErLbl.label + '</div>'
           : '') +
-        '<div class="an-comp-metric"><span class="an-comp-metric-key">Campaign aktif</span><span class="an-comp-metric-val">' + agg.active + '</span></div>' +
+        '<div class="an-comp-metric"><span class="an-comp-metric-key">Iklan aktif</span><span class="an-comp-metric-val">' + agg.active + '</span></div>' +
         '<div class="an-comp-metric"><span class="an-comp-metric-key">Total reach</span><span class="an-comp-metric-val">' + _anFmtK(agg.totalReach) + '</span></div>' +
       '</div>' +
       '<div class="an-comp-col">' +
