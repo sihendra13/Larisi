@@ -72,10 +72,9 @@ function _anAggregate(campaigns) {
   var stitchCandidates = [];
   var formatCount = {};
 
-  // bestCamp: Opsi B — absolute engagements tertinggi, reach >= 5
-  // Fallback ke tertinggi tanpa threshold kalau semua campaign di bawah 5
-  var BEST_CAMP_REACH_THRESHOLD = 5;
-  var _bestAbsEng = 0, _bestAbsEngFallback = 0, _bestCampFallback = null;
+  // bestCamp: iklan dengan absolute engagements (likes+comments+shares) tertinggi
+  // Tanpa threshold reach — absEng sudah cukup sebagai filter natural
+  var _bestAbsEng = 0;
 
   // Month-over-month breakdown
   var _now = new Date();
@@ -98,14 +97,9 @@ function _anAggregate(campaigns) {
       if (er > 0) erValues.push(er);
     }
 
-    // bestCamp: absolute engagements (reactions + comments + shares)
-    // Primary: reach >= threshold. Fallback: tanpa threshold (semua campaign)
+    // bestCamp: iklan dengan absolute engagements tertinggi (tanpa syarat reach minimum)
     var absEng = (eng.likes || 0) + (eng.comments || 0) + (eng.shares || 0);
-    if (absEng > _bestAbsEngFallback) {
-      _bestAbsEngFallback = absEng;
-      _bestCampFallback   = c;
-    }
-    if (reach >= BEST_CAMP_REACH_THRESHOLD && absEng > _bestAbsEng) {
+    if (absEng > _bestAbsEng) {
       _bestAbsEng = absEng;
       bestCamp    = c;
       bestER      = er;
@@ -145,12 +139,6 @@ function _anAggregate(campaigns) {
       stitchCandidates.push({ text: caption, er: er, campaign: c });
     }
   });
-
-  // Fallback: kalau tidak ada campaign dengan reach >= 5, pakai yang absolut tertinggi
-  if (!bestCamp && _bestCampFallback) {
-    bestCamp = _bestCampFallback;
-    bestER   = parseFloat((_bestCampFallback._engagement || {}).engagementRate) || 0;
-  }
 
   var avgER = erValues.length
     ? erValues.reduce(function(s, v) { return s + v; }, 0) / erValues.length
