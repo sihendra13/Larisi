@@ -343,8 +343,9 @@ var _BIZ_CAT_TO_TILE = {
   kesehatan:  'Beauty',
   elektronik: 'Gadget',
   properti:   'Properti',
-  wisata:     'Wisata'
-  // jasa, retail, otomotif, pendidikan, lainnya → no auto-tile (leave as General)
+  wisata:     'Wisata',
+  otomotif:   'Otomotif'
+  // jasa, retail, pendidikan, lainnya → no auto-tile (leave as General)
 };
 
 /**

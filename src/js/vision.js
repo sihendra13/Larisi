@@ -9,7 +9,7 @@ var _VISION_TO_PERSONA = {
   makanan:    'Kuliner',
   minuman:    'Kuliner',
   pakaian:    'FashionWanita',  // default; bisa di-override oleh biz profile
-  kendaraan:  null,             // tidak ada persona spesifik → fallback General
+  kendaraan:  'Otomotif',
   elektronik: 'Gadget',
   properti:   'Properti',
   kosmetik:   'Beauty',

@@ -9,11 +9,12 @@ var personaDB = {
   Gadget:  {name:'Tech / Electronics', target:'Tech Enthusiasts & Professionals', tags:['Usia 18–40','Tech','Digital'],    age:'18–40', gender:'Mixed',      conf:84, stitch:'{greeting} — Setup impian tersedia di {loc}! Gas upgrade sekarang. {cta}'},
   Wisata:  {name:'Tourism',            target:'Solo Travelers & Vacationers',  tags:['Usia 22–40','Traveler','Petualang'],conf:87, stitch:'{greeting} — Destinasi terbaik {dist}km dari {loc} menunggu kamu. {cta}'},
   Pet:     {name:'Pet Supplies',       target:'Cat & Dog Owners',              tags:['Usia 20–38','Pet lover','Keluarga'],conf:83, stitch:'{greeting} — Anabul bahagia, semua tersedia di {loc}. {dist}km. {cta}'},
-  Seni:    {name:'Creative / Arts',    target:'Artists & Art Lovers',          tags:['Usia 20–40','Kreator','Seni'],      conf:80, stitch:'{greeting} — Karya lokal otentik dari seniman {loc}. {dist}km. {cta}'},
-  General: {name:'General Content',    target:'Broad Local Awareness',         tags:['Semua usia','Lokal','Umum'],         conf:62, stitch:'{greeting} — Ada yang baru di {loc}, {dist}km dari kamu! {cta}'}
+  Seni:     {name:'Creative / Arts',    target:'Artists & Art Lovers',          tags:['Usia 20–40','Kreator','Seni'],      conf:80,  stitch:'{greeting} — Karya lokal otentik dari seniman {loc}. {dist}km. {cta}'},
+  Otomotif: {name:'Otomotif',           target:'Car & Motorcycle Enthusiasts',  tags:['Usia 20–45','Otomotif','Kendaraan'], age:'20–45', gender:'Mixed', conf:83, stitch:'{greeting} — Motor & mobil impian ada di {loc}! {dist}km dari kamu. {cta}'},
+  General:  {name:'General Content',    target:'Broad Local Awareness',         tags:['Semua usia','Lokal','Umum'],         conf:62,  stitch:'{greeting} — Ada yang baru di {loc}, {dist}km dari kamu! {cta}'}
 };
 
-var personaKeys = ['Kuliner','FashionWanita','FashionPria','FashionMuslim','Properti','Beauty','Bayi','Gadget','Wisata','Pet','Seni'];
+var personaKeys = ['Kuliner','FashionWanita','FashionPria','FashionMuslim','Properti','Beauty','Bayi','Gadget','Wisata','Pet','Seni','Otomotif'];
 
 /* ── Filename-based persona detection ── */
 var filenamePersonaMap = [
@@ -22,7 +23,7 @@ var filenamePersonaMap = [
   {keys:['gamis','hijab','muslim','syari','kerudung'],           p:{name:'Fashion Muslim',             target:'Muslimah & Hijab Enthusiasts',               age:'Usia 18–40', gender:'Perempuan'}},
   {keys:['baju','dress','fashion','style','pakaian'],           p:{name:'Fashion Wanita Modern',      target:'Modern Women & Style Enthusiasts',            age:'Usia 18–35', gender:'Mixed'}},
   {keys:['buku','novel','bacaan'],                              p:{name:'Literature & Education',     target:'Book Lovers & Students',                    age:'Usia 15–35', gender:'Mixed'}},
-  {keys:['vespa','motor','auto'],                               p:{name:'Retro Automotive',           target:'Scooterists & Classic Hobbyists',            age:'Usia 25–45', gender:'Mixed'}},
+  {keys:['vespa','motor','mobil','otomotif','auto','kendaraan','sparepart','bengkel','modif'], p:{name:'Otomotif', target:'Car & Motorcycle Enthusiasts', age:'Usia 20–45', gender:'Mixed'}},
   {keys:['makanan','burger','cafe','food','kuliner'],           p:{name:'Culinary/Cafe',              target:'Foodies & Urban Professionals',              age:'Usia 22–40', gender:'Mixed'}},
   {keys:['properti','rumah','griya'],                           p:{name:'Real Estate',                target:'Young Families & Investors',                 age:'Usia 28–50', gender:'Mixed'}},
   {keys:['skincare','kosmetik','beauty'],                       p:{name:'Beauty/Self-care',           target:'Skincare & Makeup Lovers',                   age:'Usia 17–35', gender:'Perempuan'}},
