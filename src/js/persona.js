@@ -129,22 +129,48 @@ async function startScanWithFile(filename, fileCount) {
   var vc = document.getElementById('visionConflict');
   if (vc) vc.classList.remove('visible');
 
-  /* ── VIDEO: tidak bisa dianalisis Groq, langsung pakai profil bisnis ── */
+  /* ── VIDEO: tidak bisa dianalisis Groq — cek filename dulu, fallback ke profil bisnis ── */
   var isVideo = (typeof uploadMode !== 'undefined' && uploadMode === 'video');
   if (isVideo) {
     if (scanText) scanText.textContent = 'Menyiapkan kontenmu...';
     await new Promise(function(r) { setTimeout(r, 1000); });
     document.getElementById('scanning').classList.remove('visible');
 
-    var _bizCatVid = window.userBizProfile && window.userBizProfile.category;
-    var _bizKeyVid = _bizCatVid && (typeof _BIZ_CAT_TO_TILE !== 'undefined') && _BIZ_CAT_TO_TILE[_bizCatVid];
-    if (_bizKeyVid) {
-      _applyVisionPersona(_bizKeyVid);
+    var _pVid       = detectPersona(filename);
+    var _detVid     = _pVid.name !== 'General Content';
+    var _bizCatVid  = window.userBizProfile && window.userBizProfile.category;
+    var _bizKeyVid  = _bizCatVid && (typeof _BIZ_CAT_TO_TILE !== 'undefined')
+                        ? (_BIZ_CAT_TO_TILE[_bizCatVid] || null) : null;
+
+    if (_detVid) {
+      /* Filename mendeteksi kategori spesifik (mis. vespa, hijab, gadget)
+         → cari key personaDB yang cocok, lalu cek konflik */
+      var _fnKeyVid = null;
+      if (typeof personaDB !== 'undefined') {
+        var _fkKeys = Object.keys(personaDB);
+        for (var _fki = 0; _fki < _fkKeys.length; _fki++) {
+          if (personaDB[_fkKeys[_fki]].name === _pVid.name) { _fnKeyVid = _fkKeys[_fki]; break; }
+        }
+      }
+
+      if (_fnKeyVid && _bizKeyVid && _fnKeyVid !== _bizKeyVid) {
+        /* Konflik: filename beda dari profil bisnis → tanya user */
+        var _bizLblVid = personaDB[_bizKeyVid] ? personaDB[_bizKeyVid].name : (_bizCatVid || 'Konten Umum');
+        _showVisionConflict(_fnKeyVid, _pVid.name, _bizKeyVid, _bizLblVid);
+      } else {
+        /* Tidak konflik atau profil bisnis tidak dikenali → pakai hasil filename */
+        _applyVisionPersona(_fnKeyVid || (_bizKeyVid || null));
+        if (!_fnKeyVid && !_bizKeyVid) { showPersonaDirect(_pVid, true); masterPersonaLocked = true; }
+      }
     } else {
-      /* Profil bisnis tidak dikenali → catNudge */
-      var _pVid = detectPersona(filename);
-      showPersonaDirect(_pVid, false);
-      masterPersonaLocked = true;
+      /* Filename generik (TEs AI podcast, dll) → pakai profil bisnis */
+      if (_bizKeyVid) {
+        _applyVisionPersona(_bizKeyVid);
+      } else {
+        /* Tidak ada profil bisnis juga → catNudge */
+        showPersonaDirect(_pVid, false);
+        masterPersonaLocked = true;
+      }
     }
     return;
   }
