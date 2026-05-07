@@ -349,11 +349,22 @@ async function connectPostForMe(platform) {
         window.removeEventListener('message', msgHandler);
         clearInterval(poll);
         console.log('[postforme] resync triggered for platform:', platform);
-        // Simpan placeholder langsung agar UI update seketika
-        // _fetchConnectedAccounts() akan update ID & username real di background
+
+        // Jika sudah ada akun dengan ID real untuk platform ini,
+        // jangan timpa dengan placeholder — cukup refresh UI.
+        var _fakePat = /^pfm_[a-z]+_\d+$/;
+        var _stored  = _getStoredAccounts();
+        var _existing = _stored.filter(function(a) { return a.platform === platform; })[0];
+        if (_existing && _existing.id && !_fakePat.test(_existing.id)) {
+          console.log('[postforme] resync: akun sudah valid, skip placeholder');
+          updateBufferIndicator();
+          updateChannelChipsWithUsername();
+          return;
+        }
+
+        // Belum ada ID real → simpan placeholder & coba fetch
         var tempId = 'pfm_' + platform + '_' + Date.now();
         _saveAndUpdateUI(platform, tempId, null);
-        // Fetch data real dari PostForMe (update ID & username)
         setTimeout(function() { _fetchConnectedAccounts(); }, 800);
         return;
       }
