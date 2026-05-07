@@ -239,15 +239,24 @@ window.radarSupabaseKey  = RADAR_CONFIG.SUPABASE_ANON_KEY;
    showAnToast(msg)
    Helper toast — pakai #an-toast yang sudah ada di HTML
    ───────────────────────────────────────── */
-function showAnToast(msg) {
+function showAnToast(msg, type) {
   var el = document.getElementById('an-toast');
   if (!el) return;
-  el.textContent = msg;
+
+  // Ikon centang hijau untuk pesan sukses
+  var iconHtml = (type === 'success')
+    ? '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><circle cx="8" cy="8" r="8" fill="#22c55e"/><path d="M4 8.5l2.5 2.5 5-5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    : '';
+
+  // Sanitasi msg agar aman untuk innerHTML
+  var span = document.createElement('span');
+  span.textContent = msg;
+  el.innerHTML = iconHtml + span.outerHTML;
   el.style.display = 'flex';
   clearTimeout(el._hideTimer);
   el._hideTimer = setTimeout(function() {
     el.style.display = 'none';
-  }, 3000);
+  }, 4500);
 }
 
 /* ─────────────────────────────────────────

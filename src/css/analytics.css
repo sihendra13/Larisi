@@ -514,6 +514,8 @@
   z-index: 9998;
   pointer-events: none;
   animation: anToastIn 0.2s ease;
+  align-items: center;
+  gap: 8px;
 }
 @keyframes anToastIn {
   from { opacity: 0; transform: translateX(-50%) translateY(8px); }

@@ -229,7 +229,7 @@ async function _syncAndAddAccount(platform) {
 
     console.log('[postforme] _syncAndAddAccount: found', platform, accountId, username);
     _saveAndUpdateUI(platform, accountId, username, avatarUrl);
-    if (typeof showAnToast === 'function') showAnToast('✓ Akun ' + platform + ' berhasil disinkronkan!');
+    if (typeof showAnToast === 'function') showAnToast('✓ Akun ' + platform + ' berhasil disinkronkan!', 'success');
     return true;
   } catch(e) {
     console.warn('[postforme] _syncAndAddAccount error:', e.message);
@@ -271,7 +271,7 @@ function _saveAndUpdateUI(platform, accountId, username, avatarUrl) {
   // Tutup modal otomatis setelah 1.8 detik
   setTimeout(function() { _closePfmModal(); }, 1800);
 
-  if (typeof showAnToast === 'function') showAnToast('✓ Akun ' + platform + ' berhasil terhubung!');
+  if (typeof showAnToast === 'function') showAnToast('✓ Akun ' + platform + ' berhasil terhubung!', 'success');
 }
 
 /* ─── Connect via OAuth ────────────────────────────────────── */
@@ -1478,7 +1478,7 @@ async function publishViaPostForMe(canvas, campaignData) {
     }
 
     if (typeof showAnToast === 'function') {
-      showAnToast('✓ Postingan berhasil dikirim ke ' + platNames + '!');
+      showAnToast('✓ Postingan berhasil dikirim ke ' + platNames + '!', 'success');
     }
     return { success: true, postId: postId, postUrl: postUrl };
 
