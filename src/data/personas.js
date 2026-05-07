@@ -12,14 +12,15 @@ var personaDB = {
   Seni:     {name:'Creative / Arts',    target:'Artists & Art Lovers',          tags:['Usia 20–40','Kreator','Seni'],      conf:80,  stitch:'{greeting} — Karya lokal otentik dari seniman {loc}. {dist}km. {cta}'},
   Otomotif:   {name:'Otomotif',           target:'Car & Motorcycle Enthusiasts',  tags:['Usia 20–45','Otomotif','Kendaraan'],  age:'20–45', gender:'Mixed',    conf:83, stitch:'{greeting} — Motor & mobil impian ada di {loc}! {dist}km dari kamu. {cta}'},
   Pendidikan: {name:'Pendidikan',         target:'Students, Parents & Learners',  tags:['Usia 15–45','Pelajar','Orang tua'],   age:'15–45', gender:'Mixed',    conf:81, stitch:'{greeting} — Belajar lebih mudah bareng kami di {loc}! {dist}km dari kamu. {cta}'},
+  Kerajinan:  {name:'Kerajinan / Craft',  target:'Craft Lovers & Handmade Fans',  tags:['Usia 20–45','Kreator','Handmade'],    age:'20–45', gender:'Mixed',    conf:82, stitch:'{greeting} — Kerajinan tangan otentik dari {loc}! {dist}km dari kamu. {cta}'},
   General:    {name:'General Content',    target:'Broad Local Awareness',         tags:['Semua usia','Lokal','Umum'],           conf:62,  stitch:'{greeting} — Ada yang baru di {loc}, {dist}km dari kamu! {cta}'}
 };
 
-var personaKeys = ['Kuliner','FashionWanita','FashionPria','FashionMuslim','Properti','Beauty','Bayi','Gadget','Wisata','Pet','Seni','Otomotif','Pendidikan'];
+var personaKeys = ['Kuliner','FashionWanita','FashionPria','FashionMuslim','Properti','Beauty','Bayi','Gadget','Wisata','Pet','Seni','Otomotif','Pendidikan','Kerajinan'];
 
 /* ── Filename-based persona detection ── */
 var filenamePersonaMap = [
-  {keys:['buku daun','buku kulit','kulit kayu','craft'],        p:{name:'Artisanal & Handcrafted',   target:'Craft Enthusiasts & Eco-Art Collectors',   age:'Usia 22–40', gender:'Mixed'}},
+  {keys:['craft','kerajinan','handmade','anyaman','batik tulis','tenun','ukir','rajut','bordir','souvenir'], p:{name:'Kerajinan / Craft', target:'Craft Lovers & Handmade Fans', age:'Usia 20–45', gender:'Mixed'}},
   {keys:['batik','kain batik','batik tulis'],                   p:{name:'Heritage & Cultural Fashion',target:'Batik Enthusiasts & Professionals',         age:'Usia 20–45', gender:'Mixed'}},
   {keys:['gamis','hijab','muslim','syari','kerudung'],           p:{name:'Fashion Muslim',             target:'Muslimah & Hijab Enthusiasts',               age:'Usia 18–40', gender:'Perempuan'}},
   {keys:['baju','dress','fashion','style','pakaian'],           p:{name:'Fashion Wanita Modern',      target:'Modern Women & Style Enthusiasts',            age:'Usia 18–35', gender:'Mixed'}},

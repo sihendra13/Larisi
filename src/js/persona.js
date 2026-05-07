@@ -345,7 +345,8 @@ var _BIZ_CAT_TO_TILE = {
   properti:   'Properti',
   wisata:     'Wisata',
   otomotif:   'Otomotif',
-  pendidikan: 'Pendidikan'
+  pendidikan: 'Pendidikan',
+  kerajinan:  'Kerajinan'
   // jasa, retail, lainnya → terlalu luas → catNudge manual
 };
 
