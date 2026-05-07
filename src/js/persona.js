@@ -123,12 +123,33 @@ async function startScanWithFile(filename, fileCount) {
   var startTime = Date.now();
 
   var scanText = document.getElementById('scanText');
-  if (scanText) scanText.textContent = 'AI sedang menganalisis kontenmu...';
   document.getElementById('scanning').classList.add('visible');
   document.getElementById('personaCard').classList.remove('visible');
   document.getElementById('catNudge').classList.remove('visible');
   var vc = document.getElementById('visionConflict');
   if (vc) vc.classList.remove('visible');
+
+  /* ── VIDEO: tidak bisa dianalisis Groq, langsung pakai profil bisnis ── */
+  var isVideo = (typeof uploadMode !== 'undefined' && uploadMode === 'video');
+  if (isVideo) {
+    if (scanText) scanText.textContent = 'Menyiapkan kontenmu...';
+    await new Promise(function(r) { setTimeout(r, 1000); });
+    document.getElementById('scanning').classList.remove('visible');
+
+    var _bizCatVid = window.userBizProfile && window.userBizProfile.category;
+    var _bizKeyVid = _bizCatVid && (typeof _BIZ_CAT_TO_TILE !== 'undefined') && _BIZ_CAT_TO_TILE[_bizCatVid];
+    if (_bizKeyVid) {
+      _applyVisionPersona(_bizKeyVid);
+    } else {
+      /* Profil bisnis tidak dikenali → catNudge */
+      var _pVid = detectPersona(filename);
+      showPersonaDirect(_pVid, false);
+      masterPersonaLocked = true;
+    }
+    return;
+  }
+
+  if (scanText) scanText.textContent = 'AI sedang menganalisis kontenmu...';
 
   /* ── Tunggu base64 dari FileReader (async, max 3 detik) ── */
   var base64 = null;
