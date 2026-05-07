@@ -733,7 +733,11 @@ function _renderCampaignBest(agg) {
       '<div class="an-card-icon">' +
         '<svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>' +
       '</div>' +
-      '<div><div class="an-card-title">Iklan Terbaik</div><div class="an-card-sub">Performa Tertinggi</div></div>' +
+      '<div>' +
+        '<div class="an-card-title">Iklan Terbaik</div>' +
+        '<div class="an-card-sub">Performa Tertinggi</div>' +
+        '<div class="an-best-camp-info">Dipilih berdasarkan Engagement Rate tertinggi, konten yang paling banyak memicu reaksi dari orang yang melihatnya. Reach tinggi tanpa interaksi tidak lebih baik dari reach kecil dengan banyak interaksi.</div>' +
+      '</div>' +
     '</div>' +
     '<div class="an-card-body">' + bestCampHTML + '</div>' +
   '</div>';
