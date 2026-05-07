@@ -67,8 +67,9 @@ function _anAggregate(campaigns) {
   var erValues = [], bestCamp = null, bestER = -1;
   var platStats = {};
   var rLove = 0, rLike = 0, rHaha = 0, rWow = 0;
-  var hourBuckets = new Array(24).fill(0);
-  var dayBuckets  = new Array(7).fill(0);
+  var hourBuckets   = new Array(24).fill(0);  // count-based (untuk fallback Kondisi B)
+  var hourBucketER  = new Array(24).fill(0);  // ER-weighted (untuk Kondisi A)
+  var dayBuckets    = new Array(7).fill(0);
   var stitchCandidates = [];
   var formatCount = {};
 
@@ -122,7 +123,9 @@ function _anAggregate(campaigns) {
 
     var ts = c.created_at ? new Date(c.created_at) : null;
     if (ts) {
-      hourBuckets[ts.getHours()]++;
+      var h = ts.getHours();
+      hourBuckets[h]++;
+      if (er > 0) hourBucketER[h] += er;  // akumulasi ER per jam
       dayBuckets[ts.getDay()]++;
       var tsMs = ts.getTime();
       if (tsMs >= _thisMonthStart) {
@@ -144,8 +147,10 @@ function _anAggregate(campaigns) {
     ? erValues.reduce(function(s, v) { return s + v; }, 0) / erValues.length
     : null;
 
-  var maxHourCount = Math.max.apply(null, hourBuckets);
-  var bestHour = maxHourCount > 0 ? hourBuckets.indexOf(maxHourCount) : 19;
+  var maxHourCount  = Math.max.apply(null, hourBuckets);
+  var bestHour      = maxHourCount > 0 ? hourBuckets.indexOf(maxHourCount) : 19;
+  var maxHourER     = Math.max.apply(null, hourBucketER);
+  var bestHourER    = maxHourER > 0 ? hourBucketER.indexOf(maxHourER) : bestHour;
   var dayNames  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
   var maxDayCount  = Math.max.apply(null, dayBuckets);
   var bestDayIdx   = maxDayCount > 0 ? dayBuckets.indexOf(maxDayCount) : 2;
@@ -181,7 +186,8 @@ function _anAggregate(campaigns) {
     moodData: moodData,
     totalReact: totalReact,
     hasMoodData: totalReact > 0,
-    bestHour: bestHour,
+    bestHour:   bestHour,    // count-based — dipakai Kondisi B
+    bestHourER: bestHourER,  // ER-weighted — dipakai Kondisi A
     bestDay: dayNames[bestDayIdx],
     distinctDays: distinctDays,
     topFormat: fmtLabels[topFmt] || topFmt,
@@ -820,13 +826,13 @@ function _renderLocalPulse(agg) {
   // Kapital setiap kata ("yogyakarta" → "Yogyakarta", "jawa barat" → "Jawa Barat")
   var regLabelCap = (regLabel || '').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
 
-  var hStart = String(agg.bestHour).padStart(2,'0');
-  var hEnd   = String((agg.bestHour + 2) % 24).padStart(2,'0');
-  var bestTimeStr = agg.total > 0 ? hStart + ':00 – ' + hEnd + ':00' : '19:00 – 21:00';
-
-  // Kondisi A: >=10 iklan tersebar di >=2 hari berbeda → data waktu sudah representatif
-  // Kondisi B: data belum cukup → tampilkan disclaimer jujur
+  // Kondisi A: >=10 iklan, tersebar >=2 hari, ada ER valid → pakai jam ER-weighted
+  // Kondisi B: data belum cukup → pakai jam count-based + disclaimer jujur
   var hasEnoughTimeData = agg.total >= 10 && (agg.distinctDays || 0) >= 2;
+  var activeHour = hasEnoughTimeData ? agg.bestHourER : agg.bestHour;
+  var hStart = String(activeHour).padStart(2,'0');
+  var hEnd   = String((activeHour + 2) % 24).padStart(2,'0');
+  var bestTimeStr = agg.total > 0 ? hStart + ':00 – ' + hEnd + ':00' : '19:00 – 21:00';
   var jamSubtext = hasEnoughTimeData
     ? 'Berdasarkan performa engagement iklan aktif kamu'
     : 'Berdasarkan jam posting iklan kamu, akan lebih akurat setelah lebih banyak iklan berjalan di hari berbeda';
