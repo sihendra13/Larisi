@@ -338,8 +338,8 @@ function _buildAnalyticsSystemPrompt(agg) {
     ? 'Jelaskan: ER masih bisa ditingkatkan dengan konten lebih relevan ke audiens lokal, coba variasi format atau sapaan lokal khas daerah.'
     : 'Jelaskan: belum cukup data untuk menilai ER karena reach masih sangat sedikit. Ajak tambah lebih banyak iklan.';
 
-  var clueTodoInstruction = bestIklan && agg.totalPaidReach === 0
-    ? 'Rekomendasikan boost "' + bestIklan + '" dengan Rp 20-50rb selama 3 hari sebagai PILIHAN bukan keharusan. Ini iklan dengan engagement tertinggi.'
+  var clueTodoInstruction = bestIklan
+    ? 'Tulis langsung ke user: Boost "' + bestIklan + '" dengan Rp 20-50rb selama 3 hari, iklan dengan engagement tertinggi kamu, paling efisien diperkuat minggu ini.'
     : 'Berikan 1 aksi konkret berdasarkan platform ' + topPlatName + ' dengan ER tertinggi.';
 
   return [
@@ -487,8 +487,8 @@ function _buildAnalyticsFallback(agg) {
     reachDisplay + ' reach itu normal dan sehat untuk bisnis yang baru aktif di media sosial, fondasi kamu sudah kuat. ' + trendLine;
 
   // clue_todo
-  var clueTodo = bestIklan && agg.totalPaidReach === 0
-    ? 'Kalau mau memperluas jangkauan, coba boost "' + bestIklan + '" dengan Rp 20-50rb selama 3 hari. Ini iklan dengan engagement tertinggi, paling efisien untuk diperkuat minggu ini.'
+  var clueTodo = bestIklan
+    ? 'Boost "' + bestIklan + '" dengan Rp 20-50rb selama 3 hari, iklan dengan engagement tertinggi kamu, paling efisien diperkuat minggu ini.'
     : 'Konsistensi adalah kunci. Terus posting dengan frekuensi yang sama dan pantau konten mana yang paling banyak di-engage.';
 
   return {
@@ -552,7 +552,9 @@ function _renderSilarisNarasi() {
       '</div>' +
     '</div>' +
     '<div id="an-narasi-ts" class="an-narasi-ts"></div>' +
-    '<button class="an-si-cta" onclick="switchMenu(\'command\')">Buat Iklan Baru Sekarang</button>' +
+    '<div id="an-si-cta-wrap">' +
+      '<button class="an-si-cta" onclick="switchMenu(\'command\')">Buat Iklan Baru Sekarang</button>' +
+    '</div>' +
   '</div>';
 }
 
@@ -1049,6 +1051,27 @@ function _anPopulateAI(ai, narasiTs, agg) {
   // Best camp note
   var bn = document.getElementById('an-best-note');
   if (bn) bn.textContent = 'Iklan ini punya engagement rate tertinggi di antara semua iklan kamu. Jadikan sebagai template untuk iklan berikutnya.';
+
+  // CTA buttons: 2 buttons if bestCamp exists, 1 button fallback
+  var ctaWrap = document.getElementById('an-si-cta-wrap');
+  if (ctaWrap) {
+    var _bestC     = agg && agg.bestCamp;
+    var _bestCId   = _bestC ? (_bestC.id || _bestC.supabase_id || '') : '';
+    var _bestCName = _bestC ? (_bestC.name || _bestC.nama_campaign || '') : '';
+    if (_bestCName && _bestCId) {
+      ctaWrap.innerHTML =
+        '<div class="an-si-cta-row">' +
+          '<button class="an-si-cta" onclick="switchMenu(\'monitor\');setTimeout(function(){if(typeof selectCampaign===\'function\')selectCampaign(\'' + _bestCId + '\');},400);">' +
+            '🚀 Boost ' + _bestCName +
+          '</button>' +
+          '<button class="an-si-cta an-si-cta-outline" onclick="switchMenu(\'command\')">' +
+            '+ Buat Iklan Baru' +
+          '</button>' +
+        '</div>';
+    } else {
+      ctaWrap.innerHTML = '<button class="an-si-cta" onclick="switchMenu(\'command\')">Buat Iklan Baru Sekarang</button>';
+    }
+  }
 
   // Rekomendasi steps
   var weekBody = document.getElementById('an-rekom-week-body');
@@ -1557,9 +1580,10 @@ function initAnalytics() {
     if (erExpEl) {
       var erLblExp = _anErLabel(agg.avgER);
       if (agg.avgER != null) {
+        var erPct = agg.avgER.toFixed(1);
         erExpEl.innerHTML = 'Kenapa konten kamu dinilai <strong>' + erLblExp.label + '</strong>? ' +
-          'Karena orang yang lihat kontenmu tidak sekadar scroll lewat, mereka like, komen, atau share. ' +
-          'Ini tanda konten kamu benar-benar menarik perhatian.';
+          'ER ' + erPct + '% artinya dari setiap 100 orang yang melihat, ada ' + erPct + ' interaksi terjadi, ' +
+          'ini jauh di atas rata-rata dan sangat positif.';
       } else {
         erExpEl.innerHTML = 'Engagement Rate adalah ukuran seberapa banyak orang yang tidak sekadar lihat kontenmu, ' +
           'tapi langsung like, komen, atau share. Makin tinggi, makin banyak yang tertarik.';

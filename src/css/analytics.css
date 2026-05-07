@@ -1123,6 +1123,17 @@
   transition: background .15s;
 }
 .an-si-cta:hover { background: var(--rausch); }
+.an-si-cta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.an-si-cta-outline {
+  background: transparent;
+  color: var(--near-black);
+  border: 1.5px solid var(--near-black);
+}
+.an-si-cta-outline:hover { background: var(--surface); }
 
 /* ─── Two Column Grid (equal, for legacy) ─── */
 .an-two-col {
