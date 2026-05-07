@@ -731,6 +731,7 @@ function _buildStitchPreviews(agg) {
     var platLabel = (s.campaign.platforms || []).map(function(p) { return (_AN_PLAT[p] || {}).name || p; }).join(', ');
     var thumb = s.campaign.thumbUrl && !s.campaign.thumbUrl.startsWith('blob:') ? s.campaign.thumbUrl : null;
     var thumbColor = s.campaign.thumbColor || '#791ADB';
+    var campName = s.campaign.name || s.campaign.nama_campaign || 'iklan ini';
     return '<div class="an-stitch-item">' +
       '<div class="an-stitch-thumb">' +
         (thumb
@@ -741,6 +742,7 @@ function _buildStitchPreviews(agg) {
       '<div class="an-stitch-detail">' +
         '<div class="an-stitch-text">' + shortText + '</div>' +
         '<div class="an-stitch-er">ER ' + s.er.toFixed(1) + '% · ' + platLabel + '</div>' +
+        '<div class="an-stitch-source">Caption ini digunakan di iklan <strong>"' + campName + '"</strong> dan menghasilkan ER tertinggi</div>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -777,6 +779,7 @@ function _renderLocalPulse(agg) {
       '<div><div class="an-pulse-key">Sapaan Lokal Terbaik</div>' +
         '<div class="an-pulse-val">"' + dial.greeting + '"</div>' +
         '<div class="an-pulse-note">Sapaan khas <span class="an-pulse-highlight">' + regLabel + '</span>, terbukti meningkatkan engagement lokal</div>' +
+        '<div class="an-pulse-note" style="margin-top:4px;font-style:italic;opacity:0.75;">Berdasarkan lokasi bisnis kamu di ' + regLabel + ' — bukan dari data iklan, ini rekomendasi dari database lokal.</div>' +
       '</div>' +
     '</div>' +
     '<div class="an-pulse-item">' +
