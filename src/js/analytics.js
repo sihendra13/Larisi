@@ -88,7 +88,7 @@ function _anAggregate(campaigns) {
     if (c.status === 'running') activeCount++;
 
     var eng = c._engagement || {};
-    var reach = (eng.reach != null ? eng.reach : 0) || c.reach || c.reachMax || c.reachTarget || 0;
+    var reach = (eng.reach != null && !isNaN(eng.reach)) ? Number(eng.reach) : 0;
     totalReach += reach;
     totalPaidReach += (eng.paidReach || 0);
 
@@ -933,7 +933,7 @@ function _renderUpgradePro() {
 }
 
 /* ─── Populate AI Sections ─── */
-function _anPopulateAI(ai, narasiTs) {
+function _anPopulateAI(ai, narasiTs, agg) {
   if (!ai) return;
 
   // Narasi
@@ -984,8 +984,17 @@ function _anPopulateAI(ai, narasiTs) {
   if (bn) bn.textContent = 'Campaign ini punya engagement rate tertinggi di antara semua campaign kamu. Jadikan sebagai template untuk campaign berikutnya.';
 
   // Rekomendasi steps
-  if (ai.rekomendasi && ai.rekomendasi.length) {
-    var weekBody = document.getElementById('an-rekom-week-body');
+  var weekBody = document.getElementById('an-rekom-week-body');
+  var _totalCamps = agg && agg.total != null ? agg.total : (ai.rekomendasi ? 999 : 0);
+  var MIN_CAMPS_FOR_REKOM = 5;
+  if (weekBody && _totalCamps < MIN_CAMPS_FOR_REKOM) {
+    weekBody.innerHTML =
+      '<div style="padding:16px 4px;text-align:center;color:var(--secondary);font-size:13px;line-height:1.6;">' +
+        '<div style="font-size:20px;margin-bottom:8px;">📊</div>' +
+        'Butuh minimal 5 campaign untuk rekomendasi akurat.<br>' +
+        '<span style="font-size:12px;opacity:0.8;">Tambah campaign dan data akan dianalisis otomatis.</span>' +
+      '</div>';
+  } else if (ai.rekomendasi && ai.rekomendasi.length) {
     if (weekBody) {
       weekBody.innerHTML = ai.rekomendasi.slice(0, 3).map(function(r, i) {
         var pillCls  = r.platform || 'ig';
@@ -1504,19 +1513,19 @@ function initAnalytics() {
 
     if (useCache) {
       console.log('[analytics] narasi from cache, created:', narasiCache.created_at);
-      _anPopulateAI(narasiCache.payload, narasiCache.created_at);
+      _anPopulateAI(narasiCache.payload, narasiCache.created_at, agg);
     } else {
       _callSilarisAnalytics(agg)
         .then(async function(ai) {
           var result = ai || _buildAnalyticsFallback(agg);
           var tsNow = new Date().toISOString();
-          _anPopulateAI(result, tsNow);
+          _anPopulateAI(result, tsNow, agg);
           await _anSetCache(userId, 'narasi', result, aggSnap, 60);
         })
         .catch(async function() {
           var result = _buildAnalyticsFallback(agg);
           var tsNow = new Date().toISOString();
-          _anPopulateAI(result, tsNow);
+          _anPopulateAI(result, tsNow, agg);
           await _anSetCache(userId, 'narasi', result, aggSnap, 60);
         });
     }
