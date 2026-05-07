@@ -779,7 +779,7 @@ function _renderLocalPulse(agg) {
       '<div><div class="an-pulse-key">Sapaan Lokal Terbaik</div>' +
         '<div class="an-pulse-val">"' + dial.greeting + '"</div>' +
         '<div class="an-pulse-note">Sapaan khas <span class="an-pulse-highlight">' + regLabel + '</span>, terbukti meningkatkan engagement lokal</div>' +
-        '<div class="an-pulse-note" style="margin-top:4px;font-style:italic;opacity:0.75;">Berdasarkan lokasi bisnis kamu di ' + regLabel + ' — bukan dari data iklan, ini rekomendasi dari database lokal.</div>' +
+        '<div class="an-pulse-note" style="margin-top:4px;font-style:italic;opacity:0.8;">💡 Tambahkan sapaan ini ke caption iklanmu — konten dengan sentuhan lokal lebih mudah menarik perhatian audiens di sekitar ' + regLabel + '.</div>' +
       '</div>' +
     '</div>' +
     '<div class="an-pulse-item">' +
