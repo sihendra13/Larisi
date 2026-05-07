@@ -334,7 +334,7 @@ function _buildAnalyticsSystemPrompt(agg) {
   // Gap + aksi P2
   var hasGap = agg.totalPaidReach === 0 || agg.platList.length < 2;
   var p2Guide = agg.totalPaidReach === 0
-    ? 'Gap: paid reach masih 0%. Aksi konkret: rekomendasikan boost campaign "' + (agg.bestCamp ? agg.bestCamp.name : 'terbaik') + '" dengan Rp 20-50rb selama 3 hari. Contoh: "Satu peluang besar yang belum disentuh: paid reach kamu masih 0%. Coba boost campaign terbaikmu minggu ini dengan Rp 20-50rb selama 3 hari — ini kombinasi paling efisien untuk lipatgandakan jangkauanmu sekarang."'
+    ? 'Gap: paid reach masih 0%. Aksi konkret: rekomendasikan boost iklan "' + (agg.bestCamp ? agg.bestCamp.name : 'terbaik') + '" dengan Rp 20-50rb selama 3 hari. Contoh: "Satu peluang besar yang belum disentuh: paid reach kamu masih 0%. Coba boost iklan terbaikmu minggu ini dengan Rp 20-50rb selama 3 hari, ini kombinasi paling efisien untuk lipatgandakan jangkauanmu sekarang."'
     : agg.platList.length < 2
     ? 'Gap: baru aktif di ' + agg.platList.length + ' platform. Aksi: rekomendasikan expand ke platform baru yang relevan dengan bisnis ini. Contoh: "Satu peluang yang belum disentuh: kamu masih hanya aktif di ' + agg.platList.length + ' platform — audiens potensialmu di platform lain belum terjangkau sama sekali."'
     : 'Semua metrik sudah baik. Tulis tantangan naik level: konsistensi + ekspansi ke format atau platform baru. Contoh: "Semua metrik sudah hijau — tantangan berikutnya adalah mempertahankan konsistensi ini sambil mencoba format baru untuk menjangkau segmen audiens yang lebih luas."';
@@ -393,7 +393,7 @@ function _buildAnalyticsSystemPrompt(agg) {
     '    {"platform": "meta", "hari": "Rabu", "jam": "12:00", "aksi": "aksi spesifik fb", "alasan": "alasan konkret"},',
     '    {"platform": "tiktok", "hari": "Jumat", "jam": "20:00", "aksi": "aksi spesifik tiktok", "alasan": "alasan konkret"}',
     '  ],',
-    '  "rekom_cta": "Buat iklan [format spesifik] sekarang"',
+    '  "rekom_cta": "Buat Iklan [Format Spesifik] Sekarang"',
     '}'
   ].join('\n');
 }
@@ -457,7 +457,7 @@ function _buildAnalyticsFallback(agg) {
       { platform: 'meta', hari: 'Rabu', jam: '12:00', aksi: noPaid ? 'Boost post terbaik dengan budget Rp 30rb selama 3 hari' : 'Post konten edukatif singkat di Facebook', alasan: 'Tengah hari Rabu adalah waktu tertinggi scrolling Facebook untuk audiens dewasa' },
       { platform: 'tiktok', hari: 'Jumat', jam: '20:00', aksi: 'Upload video 15-30 detik dengan musik trending lokal', alasan: 'Jumat malam adalah puncak engagement TikTok sebelum weekend' }
     ],
-    rekom_cta: 'Buat iklan baru sekarang'
+    rekom_cta: 'Buat Iklan Baru Sekarang'
   };
 }
 
@@ -495,7 +495,7 @@ function _renderSilarisNarasi() {
       '</div>' +
     '</div>' +
     '<div id="an-narasi-ts" class="an-narasi-ts"></div>' +
-    '<button class="an-si-cta" onclick="switchMenu(\'command\')">Buat iklan baru sekarang</button>' +
+    '<button class="an-si-cta" onclick="switchMenu(\'command\')">Buat Iklan Baru Sekarang</button>' +
   '</div>';
 }
 
@@ -666,7 +666,7 @@ function _renderCampaignBest(agg) {
   } else {
     bestCampHTML =
       '<div style="font-size:12px;color:var(--secondary);padding:12px 0;line-height:1.6;">' +
-        'Belum ada data engagement. Kunjungi <strong>Kelola Iklan</strong> untuk memuat data performa.' +
+        'Belum ada data engagement. Kunjungi <strong>Kelola Iklan</strong> untuk melihat data performa.' +
       '</div>';
   }
   return '<div class="an-white-card" id="an-camp-wrap">' +
@@ -865,7 +865,7 @@ function _renderRekomendasiWeek() {
       }).join('') +
     '</div>' +
     '<div class="an-rekom-week-cta">' +
-      '<button class="an-rekom-week-cta-btn" id="an-rekom-cta-btn" onclick="switchMenu(\'command\')">Buat iklan baru sekarang →</button>' +
+      '<button class="an-rekom-week-cta-btn" id="an-rekom-cta-btn" onclick="switchMenu(\'command\')">Buat Iklan Baru Sekarang →</button>' +
     '</div>' +
   '</div>';
 }
