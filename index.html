@@ -89,9 +89,9 @@
 <div class="main">
   <!-- Header -->
   <div class="header">
-    <div>
+    <div style="min-width: 0; overflow: hidden; flex-shrink: 1;">
       <div class="header-title" id="headerTitle">Dapur Konten</div>
-      <div class="header-sub" id="headerSub">Siapkan foto, video dan pesan terbaikmu di sini untuk tampil maksimal.</div>
+      <div class="header-sub" id="headerSub" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Siapkan foto, video dan pesan terbaikmu di sini untuk tampil maksimal.</div>
     </div>
     <div class="header-right">
       <div class="search-bar">
@@ -100,10 +100,10 @@
       </div>
       <div id="bufferIndicator"></div>
       <div class="notif-btn"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg></div>
-                <div class="user-profile-wrap" style="position: relative;">
-                    <div class="user-info" style="text-align: right; margin-right: 12px; display: none;" id="user-info-text">
-                        <div class="user-name" id="display-business-name" style="font-size: 14px; font-weight: 700; color: var(--near-black);">Bisnis Saya</div>
-                        <div class="user-role" id="display-user-name" style="font-size: 11px; color: var(--secondary);">Pemilik</div>
+                <div class="user-profile-wrap" style="position: relative; display: flex; align-items: center;">
+                    <div class="user-info" style="text-align: right; margin-right: 12px; display: none; max-width: 148px; overflow: hidden;" id="user-info-text">
+                        <div class="user-name" id="display-business-name" style="font-size: 13px; font-weight: 700; color: var(--near-black); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Bisnis Saya</div>
+                        <div class="user-role" id="display-user-name" style="font-size: 11px; color: var(--secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Pemilik</div>
                     </div>
                     <div class="avatar" id="user-avatar-btn" style="cursor: pointer; transition: transform 0.2s;" onmouseenter="this.style.transform='scale(1.05)'" onmouseleave="this.style.transform='scale(1)'">
                         <span id="user-initials">--</span>
