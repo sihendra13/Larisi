@@ -339,22 +339,17 @@ async function connectPostForMe(platform) {
       if (event.origin !== window.location.origin) return;
       if (!event.data) return;
 
-      // ── Resync: isSuccess=false → akun mungkin sudah terhubung di PostForMe ──
+      // ── Resync: isSuccess=false → akun sudah ada di PostForMe, sync ulang ──
       if (event.data.type === 'postforme_oauth_resync') {
         window.removeEventListener('message', msgHandler);
         clearInterval(poll);
         console.log('[postforme] resync triggered for platform:', platform);
-        _syncAndAddAccount(platform).then(function(synced) {
-          if (!synced) {
-            // Tidak ditemukan di PostForMe → akun memang belum terhubung, restore UI
-            if (btn) {
-              btn.querySelector('span:last-child').textContent = 'Hubungkan';
-              btn.disabled = false;
-              btn.onclick  = function() { connectPostForMe(platform); };
-            }
-            if (typeof showAnToast === 'function') showAnToast('Koneksi dibatalkan.');
-          }
-        });
+        // Simpan placeholder langsung agar UI update seketika
+        // _fetchConnectedAccounts() akan update ID & username real di background
+        var tempId = 'pfm_' + platform + '_' + Date.now();
+        _saveAndUpdateUI(platform, tempId, null);
+        // Fetch data real dari PostForMe (update ID & username)
+        setTimeout(function() { _fetchConnectedAccounts(); }, 800);
         return;
       }
 
