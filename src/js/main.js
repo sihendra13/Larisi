@@ -4,9 +4,9 @@
 document.addEventListener('DOMContentLoaded', function() {
   updateReach();
 
-  // Auto-select persona tile based on business category from onboarding profile.
-  // Runs after all modules are loaded; silently skips if no profile or tile not found.
-  if (typeof _autoSelectFromBizProfile === 'function') _autoSelectFromBizProfile();
+  // NOTE: _autoSelectFromBizProfile() intentionally NOT called here.
+  // Master Persona should only be set when the user uploads a file (AI scan)
+  // or manually picks a category — not auto-restored on every page refresh.
 
   // Sync format default sesuai radio button yang checked di HTML
   var checkedFmt = document.querySelector('input[name="fmt"]:checked');
