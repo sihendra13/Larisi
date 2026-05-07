@@ -1501,4 +1501,16 @@ var publishViaBuffer = publishViaPostForMe;
 document.addEventListener('DOMContentLoaded', function() {
   updateBufferIndicator();
   updateChannelChipsWithUsername();
+
+  // Auto-fix: jika ada akun dengan ID placeholder (pfm_platform_timestamp),
+  // langsung fetch real ID dari PostForMe tanpa user harus klik manual.
+  // Ini menangani user yang sudah punya placeholder ID di localStorage.
+  (function _autoFixFakeIds() {
+    var fakePat = /^pfm_[a-z]+_\d+$/;
+    var stored  = _getStoredAccounts();
+    var hasFake = stored.some(function(a) { return !a.id || fakePat.test(a.id); });
+    if (hasFake) {
+      setTimeout(function() { _fetchConnectedAccounts(); }, 1500);
+    }
+  })();
 });
