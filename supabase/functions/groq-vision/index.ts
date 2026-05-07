@@ -1,10 +1,8 @@
 // RADAR — Edge Function: groq-vision
 // Analisis gambar dengan Groq Vision API untuk mendeteksi kategori konten.
-// Mengembalikan satu kata kategori yang dipetakan ke Master Persona.
 //
 // ─── Deploy ───────────────────────────────────────────────────
 // supabase functions deploy groq-vision --no-verify-jwt
-// (GROQ_API_KEY sudah di-set di Supabase Secrets)
 // ─────────────────────────────────────────────────────────────
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -18,9 +16,7 @@ const allowedOrigins = [
 
 function getCors(req: Request) {
   const origin = req.headers.get("origin") || "";
-  const allowOrigin = allowedOrigins.includes(origin)
-    ? origin
-    : allowedOrigins[0];
+  const allowOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
   return {
     "Access-Control-Allow-Origin":  allowOrigin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -28,37 +24,133 @@ function getCors(req: Request) {
   };
 }
 
-// Kategori valid yang bisa dikembalikan Groq
-const VALID_CATS = [
-  "makanan", "minuman", "pakaian", "kendaraan", "elektronik",
-  "properti", "kosmetik", "bayi", "tanaman", "hewan",
-  "manusia", "dokumen", "furniture", "olahraga", "seni", "general",
+const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+// Model vision yang tersedia di Groq — coba urutan ini
+const VISION_MODELS = [
+  "llama-3.2-11b-vision-preview",
+  "llama-3.2-90b-vision-preview",
+  "meta-llama/llama-4-scout-17b-16e-instruct",
 ];
 
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+// Label English → Indonesian category
+const LABEL_MAP: Record<string, string> = {
+  food:        "makanan",
+  drink:       "minuman",
+  beverage:    "minuman",
+  clothing:    "pakaian",
+  fashion:     "pakaian",
+  vehicle:     "kendaraan",
+  electronics: "elektronik",
+  gadget:      "elektronik",
+  property:    "properti",
+  house:       "properti",
+  cosmetics:   "kosmetik",
+  skincare:    "kosmetik",
+  baby:        "bayi",
+  plant:       "tanaman",
+  animal:      "hewan",
+  pet:         "hewan",
+  person:      "manusia",
+  people:      "manusia",
+  document:    "dokumen",
+  furniture:   "furniture",
+  sport:       "olahraga",
+  sports:      "olahraga",
+  art:         "seni",
+  craft:       "seni",
+  // Indonesian juga (jaga-jaga)
+  makanan:    "makanan",
+  minuman:    "minuman",
+  pakaian:    "pakaian",
+  kendaraan:  "kendaraan",
+  elektronik: "elektronik",
+  properti:   "properti",
+  kosmetik:   "kosmetik",
+  bayi:       "bayi",
+  tanaman:    "tanaman",
+  hewan:      "hewan",
+  manusia:    "manusia",
+  dokumen:    "dokumen",
+  olahraga:   "olahraga",
+  seni:       "seni",
+};
 
-const SYSTEM_PROMPT = `You are an image classification system. Respond with exactly ONE Indonesian word from the provided list. No explanations, no sentences, no other words.`;
+const VALID_CATS = new Set(Object.values(LABEL_MAP));
 
-const PROMPT = `What is the main object in this photo? Choose exactly ONE word:
+const PROMPT = `Look at this image carefully. What is the MAIN SUBJECT?
 
-makanan — food, burger, rice, noodles, cake, snack, any food
-minuman — drink, coffee, tea, juice, beverage
-pakaian — clothing, shirt, dress, hijab, pants, fashion
-kendaraan — vehicle, car, motorcycle, bicycle
-elektronik — phone, laptop, gadget, camera, electronics
-properti — house, building, apartment, real estate
-kosmetik — makeup, lipstick, skincare, beauty product
-bayi — baby product, diaper, stroller, toy
-tanaman — plant, flower, tree, leaf
-hewan — animal, cat, dog, bird, pet
-manusia — person, selfie, human face, people
-furniture — chair, table, sofa, cabinet
-olahraga — sport, shoes, gym equipment, exercise
-seni — art, painting, craft, artwork
+Choose the single best matching label:
+- food (burger, rice, cake, any food item)
+- drink (coffee, tea, juice, any beverage)
+- clothing (shirt, dress, hijab, pants, any fashion item)
+- vehicle (car, motorcycle, bicycle, scooter)
+- electronics (phone, laptop, camera, gadget)
+- property (house, building, apartment, room interior)
+- cosmetics (makeup, lipstick, skincare product, beauty item)
+- baby (baby product, diaper, toy, stroller)
+- plant (flower, tree, leaf, garden)
+- animal (cat, dog, bird, pet)
+- person (face, selfie, people, human)
+- document (book, paper, certificate, text)
+- furniture (chair, table, sofa, cabinet)
+- sport (exercise, gym, shoes, sports equipment)
+- art (painting, craft, artwork, handmade)
 
-Reply with ONE WORD only (e.g.: makanan):`;
+Reply with ONE WORD only. Example: food`;
 
+async function callGroq(
+  apiKey: string,
+  model: string,
+  imageBase64: string,
+  mime: string,
+): Promise<{ raw: string; status: number; error?: string }> {
+  const resp = await fetch(GROQ_API_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type":  "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text",      text: PROMPT },
+            { type: "image_url", image_url: { url: `data:${mime};base64,${imageBase64}` } },
+          ],
+        },
+      ],
+      max_tokens:  20,
+      temperature: 0,
+    }),
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    return { raw: "", status: resp.status, error: errText };
+  }
+
+  type GroqResp = { choices?: Array<{ message?: { content?: string } }> };
+  const data = await resp.json() as GroqResp;
+  const raw  = (data?.choices?.[0]?.message?.content || "").trim().toLowerCase();
+  return { raw, status: 200 };
+}
+
+function parseCategory(raw: string): string {
+  // Coba exact match pada kata-kata dalam respons
+  const words = raw.split(/[\s,.:;!?()\-]+/).filter(Boolean);
+  for (const word of words) {
+    const clean = word.replace(/[^a-z]/g, "");
+    if (LABEL_MAP[clean]) return LABEL_MAP[clean];
+  }
+  // Fallback: scan substring untuk label yang lebih panjang (multi-word?)
+  for (const [label, cat] of Object.entries(LABEL_MAP)) {
+    if (raw.includes(label)) return cat;
+  }
+  return "general";
+}
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -71,82 +163,44 @@ serve(async (req: Request) => {
   }
 
   let body: { image?: string; mime?: string } = {};
-  try { body = await req.json(); } catch { /* empty body ok */ }
+  try { body = await req.json(); } catch { /* empty ok */ }
 
   const { image, mime = "image/jpeg" } = body;
-  if (!image) {
-    return json({ error: "image (base64) required", category: "general" }, 400, req);
-  }
+  if (!image) return json({ error: "image required", category: "general" }, 400, req);
+  if (image.length > 4_000_000) return json({ error: "image too large", category: "general" }, 413, req);
 
-  // Batasi ukuran payload: 4 MB base64 ≈ 3 MB gambar
-  if (image.length > 4_000_000) {
-    return json({ error: "image too large", category: "general" }, 413, req);
-  }
+  // Coba model satu per satu sampai berhasil
+  for (const model of VISION_MODELS) {
+    try {
+      const result = await callGroq(GROQ_API_KEY, model, image, mime);
 
-  try {
-    const resp = await fetch(GROQ_API_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${GROQ_API_KEY}`,
-        "Content-Type":  "application/json",
-      },
-      body: JSON.stringify({
-        model:       VISION_MODEL,
-        messages: [
-          {
-            role: "system",
-            content: SYSTEM_PROMPT,
-          },
-          {
-            role: "user",
-            content: [
-              { type: "text",      text: PROMPT },
-              { type: "image_url", image_url: { url: `data:${mime};base64,${image}` } },
-            ],
-          },
-        ],
-        max_tokens:  15,
-        temperature: 0,
-      }),
-    });
+      console.log(`[groq-vision] model=${model} status=${result.status} raw="${result.raw}"`);
 
-    if (!resp.ok) {
-      const errText = await resp.text();
-      console.error("[groq-vision] Groq API error:", resp.status, errText);
-      return json({ category: "general", _groqError: resp.status }, 200, req);
-    }
-
-    type GroqResp = { choices?: Array<{ message?: { content?: string } }> };
-    const data = await resp.json() as GroqResp;
-    const raw  = (data?.choices?.[0]?.message?.content || "").trim().toLowerCase();
-
-    // Cari kata valid di mana saja dalam respons (model kadang tulis kalimat pendek)
-    let category = "general";
-    for (const cat of VALID_CATS) {
-      // Pastikan match kata utuh (bukan substring) — cek dengan word boundary sederhana
-      const idx = raw.indexOf(cat);
-      if (idx !== -1) {
-        const before = idx === 0 ? "" : raw[idx - 1];
-        const after  = idx + cat.length >= raw.length ? "" : raw[idx + cat.length];
-        const wordBoundary = /[a-z]/.test(before) === false && /[a-z]/.test(after) === false;
-        if (wordBoundary) { category = cat; break; }
+      if (result.status !== 200 || !result.raw) {
+        console.warn(`[groq-vision] model ${model} failed (${result.status}): ${result.error || "empty"}`);
+        continue; // coba model berikutnya
       }
+
+      const category = parseCategory(result.raw);
+      console.log(`[groq-vision] parsed → ${category}`);
+
+      // Kembalikan juga _raw dan _model untuk debug di frontend
+      return json({ category, _raw: result.raw, _model: model }, 200, req);
+
+    } catch (e) {
+      console.error(`[groq-vision] model ${model} exception:`, String(e));
+      continue;
     }
-
-    return json({ category }, 200, req);
-
-  } catch (e) {
-    console.error("[groq-vision] fetch error:", String(e));
-    return json({ category: "general", _error: String(e) }, 200, req);
   }
+
+  // Semua model gagal
+  console.error("[groq-vision] semua model gagal");
+  return json({ category: "general", _error: "all models failed" }, 200, req);
 });
 
 function json(data: unknown, status = 200, req?: Request) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: {
-      ...(req ? getCors(req) : {}),
-      "Content-Type": "application/json",
-    },
+    headers: { ...(req ? getCors(req) : {}), "Content-Type": "application/json" },
   });
 }
