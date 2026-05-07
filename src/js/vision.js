@@ -100,7 +100,7 @@ function _visionCategoryToPersonaKey(category, bizCategory) {
    ───────────────────────────────────────── */
 async function analyzeImageCategory(dataURL, bizCategory) {
   try {
-    var base64 = await _compressForVision(dataURL, 512);
+    var base64 = await _compressForVision(dataURL, 768);
     if (!base64) {
       console.warn('[vision] _compressForVision gagal, skip');
       return { key: null, label: 'Umum', category: 'general' };

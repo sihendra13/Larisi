@@ -36,11 +36,19 @@ const VALID_CATS = [
 ];
 
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const VISION_MODEL = "llama-3.2-11b-vision-preview";
+const VISION_MODEL = "llama-3.2-90b-vision-preview";
 
-const PROMPT = `Lihat gambar ini. Jawab hanya SATU kata (huruf kecil) dari daftar berikut yang paling menggambarkan objek utama dalam gambar:
-makanan, minuman, pakaian, kendaraan, elektronik, properti, kosmetik, bayi, tanaman, hewan, manusia, dokumen, furniture, olahraga, seni, general.
-Jangan tulis penjelasan apapun. Hanya satu kata.`;
+const SYSTEM_PROMPT = `Kamu adalah sistem klasifikasi gambar. Tugasmu hanya menjawab dengan SATU KATA dari daftar yang diberikan. Dilarang keras menulis kalimat, penjelasan, atau kata lain di luar daftar.`;
+
+const PROMPT = `Lihat foto ini dan tentukan objek utamanya.
+Jawab HANYA dengan satu kata dari daftar berikut (pilih yang paling tepat):
+makanan, minuman, pakaian, kendaraan, elektronik, properti, kosmetik, bayi, tanaman, hewan, manusia, dokumen, furniture, olahraga, seni, general
+
+Contoh jawaban yang benar: makanan
+Contoh jawaban yang SALAH: "Gambar ini menunjukkan makanan"
+
+Jawab sekarang (satu kata):`;
+
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -76,6 +84,10 @@ serve(async (req: Request) => {
         model:       VISION_MODEL,
         messages: [
           {
+            role: "system",
+            content: SYSTEM_PROMPT,
+          },
+          {
             role: "user",
             content: [
               { type: "text",      text: PROMPT },
@@ -83,7 +95,7 @@ serve(async (req: Request) => {
             ],
           },
         ],
-        max_tokens:  10,
+        max_tokens:  15,
         temperature: 0,
       }),
     });
@@ -91,7 +103,6 @@ serve(async (req: Request) => {
     if (!resp.ok) {
       const errText = await resp.text();
       console.error("[groq-vision] Groq API error:", resp.status, errText);
-      // Kembalikan general agar front-end bisa fallback — jangan 500
       return json({ category: "general", _groqError: resp.status }, 200, req);
     }
 
@@ -99,9 +110,18 @@ serve(async (req: Request) => {
     const data = await resp.json() as GroqResp;
     const raw  = (data?.choices?.[0]?.message?.content || "").trim().toLowerCase();
 
-    // Bersihkan: ambil hanya huruf dari kata pertama (Groq kadang tambah titik/koma)
-    const firstWord = raw.replace(/[^a-z]/g, "");
-    const category  = VALID_CATS.includes(firstWord) ? firstWord : "general";
+    // Cari kata valid di mana saja dalam respons (model kadang tulis kalimat pendek)
+    let category = "general";
+    for (const cat of VALID_CATS) {
+      // Pastikan match kata utuh (bukan substring) — cek dengan word boundary sederhana
+      const idx = raw.indexOf(cat);
+      if (idx !== -1) {
+        const before = idx === 0 ? "" : raw[idx - 1];
+        const after  = idx + cat.length >= raw.length ? "" : raw[idx + cat.length];
+        const wordBoundary = /[a-z]/.test(before) === false && /[a-z]/.test(after) === false;
+        if (wordBoundary) { category = cat; break; }
+      }
+    }
 
     return json({ category }, 200, req);
 
