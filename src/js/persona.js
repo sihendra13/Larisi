@@ -270,6 +270,18 @@ async function startScanWithFile(filename, fileCount) {
       }
     }
 
+    if (!detected) {
+      /* Groq tidak konklusif (manusia, tanaman, dll) DAN filename generik
+         → gunakan profil bisnis secara otomatis bila tersedia */
+      var _bizCatFb = window.userBizProfile && window.userBizProfile.category;
+      var _bizKeyFb = _bizCatFb && (typeof _BIZ_CAT_TO_TILE !== 'undefined')
+                        ? (_BIZ_CAT_TO_TILE[_bizCatFb] || null) : null;
+      if (_bizKeyFb) {
+        _applyVisionPersona(_bizKeyFb);
+        return;
+      }
+    }
+
     showPersonaDirect(p, detected);
     masterPersonaLocked = true;
   }

@@ -87,6 +87,26 @@ function isBufferConnected() {
 }
 window.isBufferConnected = isBufferConnected;
 
+/**
+ * isPlatformAccountConnected(channel)
+ * Cek apakah akun untuk platform SPESIFIK sudah terhubung.
+ * channel: 'instagram' | 'meta' | 'tiktok' | 'youtube'
+ */
+function isPlatformAccountConnected(channel) {
+  var accounts = _getStoredAccounts();
+  if (!accounts.length) return false;
+  var channelToPlatform = {
+    instagram: 'instagram',
+    meta:      'facebook',
+    tiktok:    'tiktok',
+    youtube:   'youtube',
+  };
+  var targetPlatform = channelToPlatform[channel];
+  if (!targetPlatform) return accounts.length > 0;
+  return accounts.some(function(a) { return a.platform === targetPlatform; });
+}
+window.isPlatformAccountConnected = isPlatformAccountConnected;
+
 /* ─── Header Indicator ─────────────────────────────────────── */
 
 function updateBufferIndicator() {
@@ -1113,8 +1133,15 @@ async function publishViaPostForMe(canvas, campaignData) {
   console.log('[postforme] DEBUG filtered (setelah platform filter):', JSON.stringify(filtered));
 
   if (!filtered.length) {
-    console.warn('[postforme] DEBUG filtered kosong → fallback ke semua accounts');
-    filtered = accounts;
+    var targetPlatformName = selectedPlatforms.map(function(sp) {
+      return { ig: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' }[sp] || sp;
+    }).join(', ');
+    console.error('[postforme] tidak ada akun ' + targetPlatformName + ' terhubung — publish dibatalkan');
+    return {
+      success: false,
+      error: 'platform_not_connected',
+      message: 'Akun ' + targetPlatformName + ' belum terhubung. Silakan hubungkan terlebih dahulu.'
+    };
   }
 
   // ── Validasi accountId: tolak ID palsu sebelum request ke PostForMe ──

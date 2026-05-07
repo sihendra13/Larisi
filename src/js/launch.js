@@ -355,10 +355,15 @@ async function launchRadar() {
   var locShort    = locFull ? locFull.split(',')[0].trim() : '';
   var campName    = personaName + (locShort ? ' · ' + locShort : '');
 
-  // ── Cek akun sosial — kalau belum konek, warning dulu ──
-  var socialConnected = typeof isBufferConnected === 'function' && isBufferConnected();
-  if (!socialConnected) {
-    _showSocialWarning();
+  // ── Cek akun sosial — harus akun platform YANG DIPILIH yang terhubung ──
+  var _platformConnected = typeof isPlatformAccountConnected === 'function'
+    ? isPlatformAccountConnected(activeChannel)
+    : (typeof isBufferConnected === 'function' && isBufferConnected());
+
+  if (!_platformConnected) {
+    var _platformNames = { instagram: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
+    var _selectedPlatformName = _platformNames[activeChannel] || 'Media Sosial';
+    _showSocialWarning(_selectedPlatformName);
     return;
   }
 
@@ -690,9 +695,17 @@ async function _doLaunch(campNameOverride) {
 }
 
 /* ─── Inline Social Warning ──────────────────────────────────── */
-function _showSocialWarning() {
+function _showSocialWarning(platformName) {
   var old = document.getElementById('socialWarning');
   if (old) { old.remove(); }
+
+  var isSpecific = !!platformName;
+  var title   = isSpecific
+    ? 'Akun ' + platformName + ' belum terhubung'
+    : 'Belum ada akun sosial terhubung';
+  var desc    = isSpecific
+    ? 'Kamu memilih publish ke ' + platformName + ', tapi akun ' + platformName + ' belum dihubungkan. Hubungkan dulu sebelum tayangkan.'
+    : 'Hubungkan minimal 1 akun untuk bisa publish otomatis ke Instagram, TikTok, Facebook, atau YouTube.';
 
   var warning = document.createElement('div');
   warning.id = 'socialWarning';
@@ -703,12 +716,12 @@ function _showSocialWarning() {
   warning.innerHTML =
     '<div style="display:flex;align-items:center;gap:8px;">' +
     '<span style="font-size:15px;">⚠</span>' +
-    '<span style="flex:1;color:#92400e;font-weight:600;">Belum ada akun sosial terhubung</span>' +
+    '<span style="flex:1;color:#92400e;font-weight:600;">' + title + '</span>' +
     '<span onclick="this.closest(\'#socialWarning\').remove()" ' +
     'style="cursor:pointer;color:#b45309;font-size:16px;line-height:1;padding:0 2px;">✕</span>' +
     '</div>' +
     '<div style="display:flex;gap:8px;">' +
-    '<span style="flex:1;color:#78350f;font-size:12px;line-height:1.5;">Hubungkan minimal 1 akun untuk bisa publish otomatis ke Instagram, TikTok, Facebook, atau YouTube.</span>' +
+    '<span style="flex:1;color:#78350f;font-size:12px;line-height:1.5;">' + desc + '</span>' +
     '<button onclick="showConnectAccountsFlow()" ' +
     'style="background:#f59e0b;color:white;border:none;padding:8px 16px;' +
     'border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;' +
