@@ -20,12 +20,24 @@ var _PFM_COLORS = {
 /* ─── User Identity ────────────────────────────────────────── */
 
 function getUserExternalId() {
-  // TODO: setelah login page + Supabase Auth selesai, ganti dengan:
-  //   const { data: { user } } = await supabase.auth.getUser()
-  //   return user.id
-  // Saat ini: pakai session ID per-browser dari localStorage
   var key = 'radar_session_id';
-  var id  = localStorage.getItem(key);
+
+  // Fast path: cek cached profile dulu (synchronous, tidak butuh network)
+  // getUserProfile() menyimpan postforme_external_id ke cache setiap login/load.
+  // Ini memastikan external_id selalu konsisten dengan DB meski localStorage dihapus.
+  try {
+    var profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+    if (profile.postforme_external_id) {
+      // Pastikan radar_session_id juga sinkron
+      if (localStorage.getItem(key) !== profile.postforme_external_id) {
+        localStorage.setItem(key, profile.postforme_external_id);
+      }
+      return profile.postforme_external_id;
+    }
+  } catch(e) {}
+
+  // Fallback: pakai radar_session_id dari localStorage atau generate baru
+  var id = localStorage.getItem(key);
   if (!id) {
     id = 'radar_user_' + Math.random().toString(36).slice(2, 10);
     localStorage.setItem(key, id);

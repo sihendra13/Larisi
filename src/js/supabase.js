@@ -114,9 +114,34 @@ async function getUserProfile(userId) {
         .select('*')
         .eq('id', userId)
         .single();
-    
+
     if (data) {
         localStorage.setItem('radar_user_profile', JSON.stringify(data));
+
+        // ── Sync postforme_external_id ──────────────────────────────
+        // Pastikan radar_session_id selalu konsisten dengan yang tersimpan di DB,
+        // sehingga koneksi PostForMe tidak hilang saat localStorage dihapus / ganti device.
+        if (data.postforme_external_id) {
+            // DB sudah punya ID → pakai ini sebagai radar_session_id
+            localStorage.setItem('radar_session_id', data.postforme_external_id);
+        } else {
+            // DB belum punya → ambil dari localStorage (atau generate baru), lalu simpan ke DB
+            var existingId = localStorage.getItem('radar_session_id');
+            if (!existingId) {
+                existingId = 'radar_user_' + Math.random().toString(36).slice(2, 10);
+                localStorage.setItem('radar_session_id', existingId);
+            }
+            client.from('profiles')
+                .update({ postforme_external_id: existingId })
+                .eq('id', userId)
+                .then(function() {
+                    // Update cache lokal setelah DB tersimpan
+                    data.postforme_external_id = existingId;
+                    localStorage.setItem('radar_user_profile', JSON.stringify(data));
+                })
+                .catch(function() {});
+        }
+        // ────────────────────────────────────────────────────────────
     }
     return { data, error };
 }
