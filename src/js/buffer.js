@@ -140,9 +140,14 @@ async function _fetchConnectedAccounts() {
       }
       if (idx === -1) return; // bukan akun user ini, skip
 
+      // Selalu update ID jika API mengembalikan ID real (bukan placeholder)
+      if (apiId && existing[idx].id !== apiId) {
+        existing[idx].id = apiId;
+        changed = true;
+      }
+
       if (apiUsername && existing[idx].username !== apiUsername) {
         existing[idx].username = apiUsername;
-        existing[idx].id       = apiId || existing[idx].id;
         changed = true;
 
         // Update badge di modal kalau masih terbuka
