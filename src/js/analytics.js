@@ -147,8 +147,9 @@ function _anAggregate(campaigns) {
   var maxHourCount = Math.max.apply(null, hourBuckets);
   var bestHour = maxHourCount > 0 ? hourBuckets.indexOf(maxHourCount) : 19;
   var dayNames  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-  var maxDayCount = Math.max.apply(null, dayBuckets);
-  var bestDayIdx  = maxDayCount > 0 ? dayBuckets.indexOf(maxDayCount) : 2;
+  var maxDayCount  = Math.max.apply(null, dayBuckets);
+  var bestDayIdx   = maxDayCount > 0 ? dayBuckets.indexOf(maxDayCount) : 2;
+  var distinctDays = dayBuckets.filter(function(v) { return v > 0; }).length;
 
   stitchCandidates.sort(function(a, b) { return b.er - a.er; });
 
@@ -182,6 +183,7 @@ function _anAggregate(campaigns) {
     hasMoodData: totalReact > 0,
     bestHour: bestHour,
     bestDay: dayNames[bestDayIdx],
+    distinctDays: distinctDays,
     topFormat: fmtLabels[topFmt] || topFmt,
     stitchCandidates: stitchCandidates.slice(0, 3),
     // Month-over-month
@@ -802,14 +804,32 @@ function _buildStitchPreviews(agg) {
 }
 
 /* ─── Section: Local Pulse ─── */
+/*
+ * DATA SOURCE — INTERNAL ONLY, JANGAN TAMPILKAN DI UI:
+ * Klaim "72% brand engagement dari konten lokal":
+ * - SOCi study: local pages account for 72% of brand engagement
+ * - CSA Research: 72.4% konsumen lebih likely engage dengan bahasa lokal mereka
+ * Gunakan untuk menjawab pertanyaan internal/investor.
+ */
 function _renderLocalPulse(agg) {
   var ctx   = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : null;
   var reg   = (typeof currentRegion !== 'undefined') ? currentRegion : 'default';
   var dial  = (typeof REGION_DIALEK !== 'undefined' && REGION_DIALEK[reg]) ? REGION_DIALEK[reg] : { greeting: 'Halo Sahabat!', cta: 'Cek Sekarang!' };
   var regLabel = ctx ? ctx.regionLabel : 'Indonesia';
+
+  // Kapital setiap kata ("yogyakarta" → "Yogyakarta", "jawa barat" → "Jawa Barat")
+  var regLabelCap = (regLabel || '').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+
   var hStart = String(agg.bestHour).padStart(2,'0');
   var hEnd   = String((agg.bestHour + 2) % 24).padStart(2,'0');
   var bestTimeStr = agg.total > 0 ? hStart + ':00 – ' + hEnd + ':00' : '19:00 – 21:00';
+
+  // Kondisi A: >=10 iklan tersebar di >=2 hari berbeda → data waktu sudah representatif
+  // Kondisi B: data belum cukup → tampilkan disclaimer jujur
+  var hasEnoughTimeData = agg.total >= 10 && (agg.distinctDays || 0) >= 2;
+  var jamSubtext = hasEnoughTimeData
+    ? 'Berdasarkan performa engagement iklan aktif kamu'
+    : 'Berdasarkan jam posting iklan kamu, akan lebih akurat setelah lebih banyak iklan berjalan di hari berbeda';
 
   var pulseHTML =
     '<div class="an-pulse-list">' +
@@ -817,7 +837,7 @@ function _renderLocalPulse(agg) {
       '<div class="an-pulse-icon-wrap"><span>⏰</span></div>' +
       '<div><div class="an-pulse-key">Jam Terbaik Posting</div>' +
         '<div class="an-pulse-val">' + bestTimeStr + '</div>' +
-        '<div class="an-pulse-note">Waktu dengan frekuensi publish tertinggi</div>' +
+        '<div class="an-pulse-note">' + jamSubtext + '</div>' +
       '</div>' +
     '</div>' +
     '<div class="an-pulse-item">' +
@@ -831,8 +851,8 @@ function _renderLocalPulse(agg) {
       '<div class="an-pulse-icon-wrap"><span>📍</span></div>' +
       '<div><div class="an-pulse-key">Sapaan Lokal Terbaik</div>' +
         '<div class="an-pulse-val">"' + dial.greeting + '"</div>' +
-        '<div class="an-pulse-note">Sapaan khas <span class="an-pulse-highlight">' + regLabel + '</span>, terbukti meningkatkan engagement lokal</div>' +
-        '<div class="an-pulse-note" style="margin-top:4px;font-style:italic;opacity:0.8;">💡 Tambahkan sapaan ini ke caption iklanmu, konten dengan sentuhan lokal lebih mudah menarik perhatian audiens di sekitar ' + regLabel + '.</div>' +
+        '<div class="an-pulse-note">Sapaan khas <span class="an-pulse-highlight">' + regLabelCap + '</span>, terbukti meningkatkan engagement lokal</div>' +
+        '<div class="an-pulse-note" style="margin-top:5px;font-size:12px;font-style:italic;opacity:0.75;">💡 72% brand engagement datang dari konten yang berbicara bahasa lokal audiens, tambahkan ke caption iklanmu</div>' +
       '</div>' +
     '</div>' +
     '<div class="an-pulse-item">' +
