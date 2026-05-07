@@ -303,17 +303,17 @@ function _buildAnalyticsSystemPrompt(agg) {
 
   // ── Opening line universal per region ──
   var _openingMap = {
-    surabaya: 'Hei Rek! Yuk lihat hasil campaign kamu bulan ini.',
-    malang:   'Hei Rek! Yuk lihat hasil campaign kamu bulan ini.',
-    medan:    'Hoi Bos! Yuk lihat hasil campaign kamu bulan ini.',
-    medan_area: 'Hoi Bos! Yuk lihat hasil campaign kamu bulan ini.',
-    jakarta:  'Hei Guys! Yuk lihat hasil campaign kamu bulan ini.'
+    surabaya: 'Hei Rek! Yuk lihat hasil iklan kamu bulan ini.',
+    malang:   'Hei Rek! Yuk lihat hasil iklan kamu bulan ini.',
+    medan:    'Hoi Bos! Yuk lihat hasil iklan kamu bulan ini.',
+    medan_area: 'Hoi Bos! Yuk lihat hasil iklan kamu bulan ini.',
+    jakarta:  'Hei Guys! Yuk lihat hasil iklan kamu bulan ini.'
   };
-  var openingLine = _openingMap[ctx.region] || 'Hei! Yuk lihat hasil campaign kamu bulan ini.';
+  var openingLine = _openingMap[ctx.region] || 'Hei! Yuk lihat hasil iklan kamu bulan ini.';
 
   var platSummary = agg.platList.map(function(p) {
     var pn = (_AN_PLAT[p.key] || {}).name || p.key;
-    return pn + ': ' + p.count + ' campaign' + (p.avgER > 0 ? ', avg ER ' + p.avgER.toFixed(1) + '%' : '');
+    return pn + ': ' + p.count + ' iklan' + (p.avgER > 0 ? ', avg ER ' + p.avgER.toFixed(1) + '%' : '');
   }).join('; ') || 'belum ada';
 
   var paidReachNote = agg.totalPaidReach > 0
@@ -350,6 +350,7 @@ function _buildAnalyticsSystemPrompt(agg) {
     'ATURAN KERAS: Deskripsikan hasil berdasarkan data nyata user saja. Jangan bandingkan dengan pihak eksternal.',
     'ATURAN KERAS: DILARANG menyebut angka ER mentah di narasi_p1. Gunakan label kualitatif yang sudah ditetapkan: "' + erLbl.label.replace(/\s*[🔥⭐👍🌱]/u, '') + '".',
     'ATURAN KERAS: DILARANG gunakan tanda em-dash (—) dalam semua output. Ganti dengan tanda titik atau koma.',
+    'ATURAN KERAS: DILARANG gunakan kata "campaign" dalam semua output. Gunakan kata "iklan" sebagai gantinya.',
     '',
     'KALIMAT PEMBUKA YANG WAJIB DIGUNAKAN (sudah ditetapkan, jangan diubah):',
     '"' + openingLine + '"',
@@ -371,7 +372,7 @@ function _buildAnalyticsSystemPrompt(agg) {
     '',
     'INSTRUKSI narasi_p1 (ISI FIELD INI — maks 2 kalimat):',
     '  Mulai PERSIS dengan kalimat pembuka di atas.',
-    '  Lanjutkan kalimat 2: sebutkan ' + agg.total + ' campaign, ' + _anFmtK(agg.totalReach) + ' orang tahu bisnis ini, performa konten dinilai "' + erLbl.label + '".',
+    '  Lanjutkan kalimat 2: sebutkan ' + agg.total + ' iklan, ' + _anFmtK(agg.totalReach) + ' orang tahu bisnis ini, performa konten dinilai "' + erLbl.label + '".',
     '  Jelaskan apa arti performa "' + erLbl.label + '" ini bagi pemilik bisnis — dalam bahasa yang mudah dimengerti.',
     '  Tutup dengan: "' + p1Closing + '"',
     '',
@@ -383,7 +384,7 @@ function _buildAnalyticsSystemPrompt(agg) {
     '  "narasi_p1": "kalimat pembuka + angka spesifik + interpretasi ER + kalimat penutup dinamis. Maks 2 kalimat.",',
     '  "narasi_p2": "gap terbesar sebagai peluang + 1 aksi konkret spesifik. Maks 2 kalimat.",',
     '  "clue_potensi": "WAJIB sebut angka ' + _anFmtK(agg.totalReach) + ' orang. Bahasa UMKM, 1 kalimat max. Contoh: Sekarang ' + _anFmtK(agg.totalReach) + ' orang sudah tahu bisnis kamu ada, makin banyak orang tahu makin besar peluang mereka jadi pelanggan.",',
-    '  "clue_todo": "' + (agg.totalPaidReach === 0 ? 'WAJIB sebut nama campaign \\"' + (agg.bestCamp ? agg.bestCamp.name : 'terbaik') + '\\". Bahasa UMKM, 1 kalimat max. Contoh: Boost campaign \\"' + (agg.bestCamp ? agg.bestCamp.name : 'terbaik') + '\\" dengan Rp 20-50rb selama 3 hari, cara paling mudah menjangkau lebih banyak calon pelanggan minggu ini.' : 'Tulis 1 langkah konkret berdasarkan platform ' + (agg.platList.length ? ((_AN_PLAT[agg.platList[0].key] || {}).name || agg.platList[0].key) : 'terbaik') + ' dengan ER tertinggi. Bahasa UMKM, langsung ke poin.') + '",',
+    '  "clue_todo": "' + (agg.totalPaidReach === 0 ? 'WAJIB sebut nama iklan \\"' + (agg.bestCamp ? agg.bestCamp.name : 'terbaik') + '\\". Bahasa UMKM, 1 kalimat max. Contoh: Boost iklan \\"' + (agg.bestCamp ? agg.bestCamp.name : 'terbaik') + '\\" dengan Rp 20-50rb selama 3 hari, cara paling mudah menjangkau lebih banyak calon pelanggan minggu ini.' : 'Tulis 1 langkah konkret berdasarkan platform ' + (agg.platList.length ? ((_AN_PLAT[agg.platList[0].key] || {}).name || agg.platList[0].key) : 'terbaik') + ' dengan ER tertinggi. Bahasa UMKM, langsung ke poin.') + '",',
     '  "mood_insight": "1 kalimat dari pola reaksi audiens.",',
     '  "platform_insight": "1 kalimat, sebut nama platform.",',
     '  "stitch_insight": "1 kalimat pola caption terkuat.",',
@@ -392,7 +393,7 @@ function _buildAnalyticsSystemPrompt(agg) {
     '    {"platform": "meta", "hari": "Rabu", "jam": "12:00", "aksi": "aksi spesifik fb", "alasan": "alasan konkret"},',
     '    {"platform": "tiktok", "hari": "Jumat", "jam": "20:00", "aksi": "aksi spesifik tiktok", "alasan": "alasan konkret"}',
     '  ],',
-    '  "rekom_cta": "Buat campaign [format spesifik] sekarang"',
+    '  "rekom_cta": "Buat iklan [format spesifik] sekarang"',
     '}'
   ].join('\n');
 }
@@ -440,14 +441,14 @@ function _buildAnalyticsFallback(agg) {
     : 'Data ini kasih tahu persis apa yang perlu diperbaiki — yuk benahi satu per satu.';
   return {
     narasi_p1: 'Hei! Kamu sudah kerja keras bulan ini, dan datanya membuktikannya. ' +
-      agg.total + ' campaign berjalan, ' + _anFmtK(agg.totalReach) + ' orang sudah tahu bisnis kamu ada, performa kontenmu dinilai "' + erLbl.label.replace(/\s*[🔥⭐👍🌱]/u, '') + '"' +
+      agg.total + ' iklan berjalan, ' + _anFmtK(agg.totalReach) + ' orang sudah tahu bisnis kamu ada, performa kontenmu dinilai "' + erLbl.label.replace(/\s*[🔥⭐👍🌱]/u, '') + '"' +
       (erTier === 'high' ? '. Artinya hampir semua yang lihat kontenmu langsung bereaksi, bukan sekadar scroll lewat.' : '.') +
       ' ' + p1Closing,
     narasi_p2: noPaid
-      ? 'Satu peluang besar yang belum disentuh: iklan berbayar kamu masih nol. Coba boost campaign ' + (agg.bestCamp ? '"' + agg.bestCamp.name + '"' : 'terbaik') + ' dengan Rp 20-50rb selama 3 hari. Ini cara paling efisien untuk lipatgandakan jangkauanmu sekarang.'
+      ? 'Satu peluang besar yang belum disentuh: iklan berbayar kamu masih nol. Coba boost iklan ' + (agg.bestCamp ? '"' + agg.bestCamp.name + '"' : 'terbaik') + ' dengan Rp 20-50rb selama 3 hari. Ini cara paling efisien untuk lipatgandakan jangkauanmu sekarang.'
       : 'Semua metrik sudah bagus. Tantangan berikutnya adalah mempertahankan konsistensi ini sambil mencoba format baru.',
     clue_potensi: 'Makin banyak orang yang tahu bisnis kamu, makin besar peluang mereka jadi pelanggan.',
-    clue_todo: 'Boost campaign terbaik kamu dengan Rp 20-50rb selama 3 hari. Cara paling mudah menjangkau lebih banyak calon pelanggan minggu ini.',
+    clue_todo: 'Boost iklan terbaik kamu dengan Rp 20-50rb selama 3 hari. Cara paling mudah menjangkau lebih banyak calon pelanggan minggu ini.',
     mood_insight: 'Audiens kamu merespons dengan baik. Pertahankan tone dan format yang sudah terbukti bekerja.',
     platform_insight: 'Coba eksplorasi platform yang belum dipakai untuk menjangkau segmen audiens baru.',
     stitch_insight: 'Sapaan lokal dan teks overlay personal terbukti meningkatkan stop-the-scroll rate.',
@@ -456,7 +457,7 @@ function _buildAnalyticsFallback(agg) {
       { platform: 'meta', hari: 'Rabu', jam: '12:00', aksi: noPaid ? 'Boost post terbaik dengan budget Rp 30rb selama 3 hari' : 'Post konten edukatif singkat di Facebook', alasan: 'Tengah hari Rabu adalah waktu tertinggi scrolling Facebook untuk audiens dewasa' },
       { platform: 'tiktok', hari: 'Jumat', jam: '20:00', aksi: 'Upload video 15-30 detik dengan musik trending lokal', alasan: 'Jumat malam adalah puncak engagement TikTok sebelum weekend' }
     ],
-    rekom_cta: 'Buat campaign baru sekarang'
+    rekom_cta: 'Buat iklan baru sekarang'
   };
 }
 
@@ -494,7 +495,7 @@ function _renderSilarisNarasi() {
       '</div>' +
     '</div>' +
     '<div id="an-narasi-ts" class="an-narasi-ts"></div>' +
-    '<button class="an-si-cta" onclick="switchMenu(\'command\')">Buat campaign baru sekarang</button>' +
+    '<button class="an-si-cta" onclick="switchMenu(\'command\')">Buat iklan baru sekarang</button>' +
   '</div>';
 }
 
@@ -550,14 +551,14 @@ function _renderStatCards(agg) {
     paidVal = '0';
     paidMid = 'Belum ada iklan berbayar';
     paidSub = 'Semua reach dari konten organik';
-    paidTip = 'Belum ada campaign berbayar atau boost aktif';
+    paidTip = 'Belum ada iklan berbayar atau boost aktif';
   }
 
   return '<div class="kpi-row" id="an-sc-wrap">' +
     card('purple', 'Total Reach',
          reachVal,
          'Orang tahu bisnis kamu',
-         'dari ' + agg.total + ' campaign bulan ini',
+         'dari ' + agg.total + ' iklan bulan ini',
          'Estimasi total orang yang terpapar konten kamu',
          reachDelta) +
     card('green', 'Campaign berjalan',
@@ -722,7 +723,7 @@ function _renderMoodAudiens(agg) {
 function _buildStitchPreviews(agg) {
   if (!agg.stitchCandidates || !agg.stitchCandidates.length) {
     return '<div style="font-size:11px;color:var(--secondary);padding:6px 0;line-height:1.5;">' +
-      'Data akan muncul setelah campaign dengan caption berjalan.' +
+      'Data akan muncul setelah iklan dengan caption berjalan.' +
     '</div>';
   }
   return agg.stitchCandidates.map(function(s) {
@@ -768,7 +769,7 @@ function _renderLocalPulse(agg) {
       '<div class="an-pulse-icon-wrap"><span>📅</span></div>' +
       '<div><div class="an-pulse-key">Hari Terkuat</div>' +
         '<div class="an-pulse-val">' + agg.bestDay + '</div>' +
-        '<div class="an-pulse-note">Hari dengan aktivitas campaign tertinggi</div>' +
+        '<div class="an-pulse-note">Hari dengan aktivitas iklan tertinggi</div>' +
       '</div>' +
     '</div>' +
     '<div class="an-pulse-item">' +
@@ -782,7 +783,7 @@ function _renderLocalPulse(agg) {
       '<div class="an-pulse-icon-wrap"><span>🎬</span></div>' +
       '<div><div class="an-pulse-key">Format Terbaik</div>' +
         '<div class="an-pulse-val" id="an-best-format">' + agg.topFormat + '</div>' +
-        '<div class="an-pulse-note">Format dominan dari campaign aktif</div>' +
+        '<div class="an-pulse-note">Format dominan dari iklan aktif</div>' +
       '</div>' +
     '</div>' +
     '</div>' +
@@ -814,7 +815,7 @@ function _renderPlatformTerkuat(agg) {
         '<div class="an-plat-row">' +
           '<div class="an-plat-icon ' + p.key + '" title="' + cfg.name + '">' + _anPlatSvg(p.key) + '</div>' +
           (p.avgER > 0 ? '<span class="an-plat-badge er">ER ' + p.avgER.toFixed(1) + '%</span>' : '') +
-          '<span class="an-plat-badge count">' + p.count + ' campaign</span>' +
+          '<span class="an-plat-badge count">' + p.count + ' iklan</span>' +
         '</div>';
     });
     ['ig','meta','tiktok'].forEach(function(p) {
@@ -864,7 +865,7 @@ function _renderRekomendasiWeek() {
       }).join('') +
     '</div>' +
     '<div class="an-rekom-week-cta">' +
-      '<button class="an-rekom-week-cta-btn" id="an-rekom-cta-btn" onclick="switchMenu(\'command\')">Buat campaign baru sekarang →</button>' +
+      '<button class="an-rekom-week-cta-btn" id="an-rekom-cta-btn" onclick="switchMenu(\'command\')">Buat iklan baru sekarang →</button>' +
     '</div>' +
   '</div>';
 }
@@ -981,7 +982,7 @@ function _anPopulateAI(ai, narasiTs, agg) {
 
   // Best camp note
   var bn = document.getElementById('an-best-note');
-  if (bn) bn.textContent = 'Campaign ini punya engagement rate tertinggi di antara semua campaign kamu. Jadikan sebagai template untuk campaign berikutnya.';
+  if (bn) bn.textContent = 'Iklan ini punya engagement rate tertinggi di antara semua iklan kamu. Jadikan sebagai template untuk iklan berikutnya.';
 
   // Rekomendasi steps
   var weekBody = document.getElementById('an-rekom-week-body');
@@ -991,8 +992,8 @@ function _anPopulateAI(ai, narasiTs, agg) {
     weekBody.innerHTML =
       '<div style="padding:16px 4px;text-align:center;color:var(--secondary);font-size:13px;line-height:1.6;">' +
         '<div style="font-size:20px;margin-bottom:8px;">📊</div>' +
-        'Butuh minimal 5 campaign untuk rekomendasi akurat.<br>' +
-        '<span style="font-size:12px;opacity:0.8;">Tambah campaign dan data akan dianalisis otomatis.</span>' +
+        'Butuh minimal 5 iklan untuk rekomendasi akurat.<br>' +
+        '<span style="font-size:12px;opacity:0.8;">Tambah iklan dan data akan dianalisis otomatis.</span>' +
       '</div>';
   } else if (ai.rekomendasi && ai.rekomendasi.length) {
     if (weekBody) {
@@ -1404,8 +1405,8 @@ function _renderAnalyticsEmpty(container) {
         '<path d="M28 40 Q45 25 60 35 Q75 45 88 28" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" fill="none" stroke-dasharray="4 3"/>' +
       '</svg>' +
       '<h3 style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0;font-family:var(--font,sans-serif);">Belum ada data untuk dianalisis</h3>' +
-      '<p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0;font-family:var(--font,sans-serif);">Mulai dengan launch campaign pertamamu. SiLaris akan langsung analisis pola dan kasih rekomendasi terbaik!</p>' +
-      '<button onclick="switchMenu(\'command\')" class="an-empty-cta">🚀 Buat Campaign Pertama</button>' +
+      '<p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0;font-family:var(--font,sans-serif);">Mulai dengan buat iklan pertamamu. SiLaris akan langsung analisis pola dan kasih rekomendasi terbaik!</p>' +
+      '<button onclick="switchMenu(\'command\')" class="an-empty-cta">🚀 Buat Iklan Pertama</button>' +
     '</div>' +
     '</div>';
 }
