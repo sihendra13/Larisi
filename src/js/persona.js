@@ -4,7 +4,7 @@
 function showScanningOnly(fileCount) {
   var scanText = document.getElementById('scanText');
   if (scanText) {
-    scanText.textContent = 'Scanning all ' + fileCount + ' assets for optimal targeting...';
+    scanText.textContent = 'SiLaris sedang menganalisis kontenmu...';
   }
   document.getElementById('scanning').classList.add('visible');
   setTimeout(function() {
@@ -132,7 +132,7 @@ async function startScanWithFile(filename, fileCount) {
   /* ── VIDEO: tidak bisa dianalisis Groq — cek filename dulu, fallback ke profil bisnis ── */
   var isVideo = (typeof uploadMode !== 'undefined' && uploadMode === 'video');
   if (isVideo) {
-    if (scanText) scanText.textContent = 'Menyiapkan kontenmu...';
+    if (scanText) scanText.textContent = 'SiLaris sedang menyiapkan kontenmu...';
     await new Promise(function(r) { setTimeout(r, 1000); });
     document.getElementById('scanning').classList.remove('visible');
 
@@ -175,7 +175,7 @@ async function startScanWithFile(filename, fileCount) {
     return;
   }
 
-  if (scanText) scanText.textContent = 'AI sedang menganalisis kontenmu...';
+  if (scanText) scanText.textContent = 'SiLaris sedang menganalisis kontenmu...';
 
   /* ── Tunggu base64 dari FileReader (async, max 3 detik) ── */
   var base64 = null;
