@@ -60,6 +60,18 @@ function _anSkBlock(w, h) {
   return '<div class="an-sk" style="width:' + w + ';height:' + h + 'px;"></div>';
 }
 
+/* ─── Stitch Similarity (Jaccard word-based) ─── */
+// Returns 0–1. 1 = identical, 0 = no overlap.
+function _stitchSimilarity(a, b) {
+  var wa = a.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(Boolean);
+  var wb = b.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(Boolean);
+  if (!wa.length || !wb.length) return 0;
+  var inter = 0;
+  wa.forEach(function(w) { if (wb.indexOf(w) !== -1) inter++; });
+  var union = wa.length + wb.length - inter;
+  return union > 0 ? inter / union : 0;
+}
+
 /* ─── Aggregate Campaign Data ─── */
 function _anAggregate(campaigns) {
   var real = (campaigns || []).filter(function(c) { return !c.isDemo; });
@@ -156,7 +168,18 @@ function _anAggregate(campaigns) {
   var bestDayIdx   = maxDayCount > 0 ? dayBuckets.indexOf(maxDayCount) : 2;
   var distinctDays = dayBuckets.filter(function(v) { return v > 0; }).length;
 
+  // Stitch: sort ER desc → filter threshold → dedup similar captions → top 3
+  var STITCH_MIN_ER  = 50;   // Rule 2: hanya caption dengan ER >= 50%
+  var STITCH_SIM_THR = 0.8;  // Rule 1: anggap duplikat jika similarity >= 80%
   stitchCandidates.sort(function(a, b) { return b.er - a.er; });
+  var stitchFiltered = stitchCandidates.filter(function(s) { return s.er >= STITCH_MIN_ER; });
+  var stitchDeduped  = [];
+  stitchFiltered.forEach(function(s) {
+    var isDup = stitchDeduped.some(function(d) {
+      return _stitchSimilarity(s.text, d.text) >= STITCH_SIM_THR;
+    });
+    if (!isDup) stitchDeduped.push(s);
+  });
 
   var platList = Object.keys(platStats).map(function(p) {
     var s = platStats[p];
@@ -191,7 +214,7 @@ function _anAggregate(campaigns) {
     bestDay: dayNames[bestDayIdx],
     distinctDays: distinctDays,
     topFormat: fmtLabels[topFmt] || topFmt,
-    stitchCandidates: stitchCandidates.slice(0, 3),
+    stitchCandidates: stitchDeduped.slice(0, 3),
     // Month-over-month
     reachThisMonth:  reachThisMonth,
     reachLastMonth:  reachLastMonth,
@@ -782,17 +805,43 @@ function _renderMoodAudiens(agg) {
 
 /* ─── Stitch Previews ─── */
 function _buildStitchPreviews(agg) {
+  // Rule 5: empty state kalau tidak ada caption yang lolos threshold
   if (!agg.stitchCandidates || !agg.stitchCandidates.length) {
-    return '<div style="font-size:11px;color:var(--secondary);padding:6px 0;line-height:1.5;">' +
-      'Data akan muncul setelah iklan dengan caption berjalan.' +
+    return '<div style="font-size:12px;color:var(--secondary);padding:8px 0;line-height:1.6;">' +
+      'Belum ada caption dengan performa tinggi, terus buat iklan untuk menemukan caption terbaikmu.' +
     '</div>';
   }
+
+  // Platform → API key map untuk cari username dari stored accounts
+  var _platApiMap = {
+    ig:'instagram', 'ig-reel':'instagram', 'ig-story':'instagram',
+    'ig-feed':'instagram', 'ig-post':'instagram',
+    meta:'facebook', 'meta-reel':'facebook', 'meta-story':'facebook',
+    tiktok:'tiktok', youtube:'youtube'
+  };
+  var _storedAccs = typeof _getStoredAccounts === 'function' ? _getStoredAccounts() : [];
+
   return agg.stitchCandidates.map(function(s) {
-    var shortText = s.text.length > 32 ? s.text.slice(0, 32) + '…' : s.text;
-    var platLabel = (s.campaign.platforms || []).map(function(p) { return (_AN_PLAT[p] || {}).name || p; }).join(', ');
-    var thumb = s.campaign.thumbUrl && !s.campaign.thumbUrl.startsWith('blob:') ? s.campaign.thumbUrl : null;
+    var shortText  = s.text.length > 32 ? s.text.slice(0, 32) + '…' : s.text;
+    var firstPlat  = (s.campaign.platforms || [])[0] || '';
+    var platLabel  = (s.campaign.platforms || []).map(function(p) {
+      return (_AN_PLAT[p] || {}).name || p;
+    }).join(', ');
+    var thumb      = s.campaign.thumbUrl && !s.campaign.thumbUrl.startsWith('blob:') ? s.campaign.thumbUrl : null;
     var thumbColor = s.campaign.thumbColor || '#791ADB';
-    var campName = s.campaign.name || s.campaign.nama_campaign || 'iklan ini';
+
+    // Cari username akun sumber (Rule 4)
+    var _apiKey    = _platApiMap[firstPlat] || firstPlat;
+    var _acc       = null;
+    for (var _i = 0; _i < _storedAccs.length; _i++) {
+      if (_storedAccs[_i].platform === _apiKey) { _acc = _storedAccs[_i]; break; }
+    }
+    var username   = _acc && _acc.username ? '@' + _acc.username : '';
+    // Format label: "ER X% · Platform · @namaakun"
+    var erLabel    = 'ER ' + s.er.toFixed(1) + '%' +
+                     (platLabel ? ' · ' + platLabel : '') +
+                     (username  ? ' · ' + username  : '');
+
     return '<div class="an-stitch-item">' +
       '<div class="an-stitch-thumb">' +
         (thumb
@@ -802,8 +851,7 @@ function _buildStitchPreviews(agg) {
       '</div>' +
       '<div class="an-stitch-detail">' +
         '<div class="an-stitch-text">' + shortText + '</div>' +
-        '<div class="an-stitch-er">ER ' + s.er.toFixed(1) + '% · ' + platLabel + '</div>' +
-        '<div class="an-stitch-source">Caption ini digunakan di iklan <strong>"' + campName + '"</strong> dan menghasilkan ER tertinggi</div>' +
+        '<div class="an-stitch-er">' + erLabel + '</div>' +
       '</div>' +
     '</div>';
   }).join('');
