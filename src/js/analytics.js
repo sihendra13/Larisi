@@ -976,6 +976,134 @@ function _renderPlatformTerkuat(agg) {
   '</div>';
 }
 
+/* ─── Build Data-Driven Rekomendasi ─── */
+function _buildRekomendasiData(agg) {
+  if (!agg || agg.total < 5) return [];
+
+  var ctx        = typeof buildSilarisContext === 'function' ? buildSilarisContext() : {};
+  var bizName    = ctx.businessName || 'bisnismu';
+  var regionCap  = (ctx.regionLabel || '').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+
+  var bestDay      = agg.bestDay || 'Kamis';
+  var bestHour     = agg.bestHourER || agg.bestHour || 17;
+  var bestHourStr  = String(bestHour).padStart(2, '0') + ':00';
+  var bestCampName = agg.bestCamp ? (agg.bestCamp.name || agg.bestCamp.nama_campaign || null) : null;
+  var bestCampER   = agg.bestER > 0 ? Math.round(agg.bestER) : null;
+  var topCaption   = agg.stitchCandidates && agg.stitchCandidates.length
+    ? agg.stitchCandidates[0].text.slice(0, 28) : null;
+
+  var rekoList = [];
+
+  // ── REKO 1: Platform ER tertinggi ──
+  if (agg.platList && agg.platList.length) {
+    var p1     = agg.platList[0];
+    var p1Name = (_AN_PLAT[p1.key] || {}).name || p1.key;
+    var aksi1  = bestCampName
+      ? 'Buat iklan seperti "' + bestCampName + '"' +
+        (topCaption ? ', caption "' + topCaption + '..." terbukti disukai audiens' : '') +
+        (bestCampER ? '. ER ' + bestCampER + '% adalah engagement rate tertinggi di semua iklan ' + bizName : '.')
+      : 'Buat iklan baru di ' + p1Name + ' dengan format yang sama seperti iklan terbaikmu.';
+    rekoList.push({
+      platform: p1.key,
+      hari:     bestDay,
+      jam:      bestHourStr,
+      aksi:     aksi1,
+      alasan:   p1.avgER > 0
+        ? 'ER rata-rata ' + p1Name + ' kamu ' + p1.avgER.toFixed(1) + '%, platform terkuat'
+        : 'Platform dengan engagement tertinggi di semua iklanmu'
+    });
+  }
+
+  // ── REKO 2: Platform campaign terbanyak (beda dari Reko 1) atau boost best camp ──
+  if (agg.platList && agg.platList.length) {
+    var byCount = agg.platList.slice().sort(function(a, b) { return b.count - a.count; });
+    var p2 = null;
+    for (var ci = 0; ci < byCount.length; ci++) {
+      if (byCount[ci].key !== (rekoList[0] ? rekoList[0].platform : '')) {
+        p2 = byCount[ci]; break;
+      }
+    }
+    // 1 platform saja: boost existing (bukan buat baru) sebagai REKO 2
+    if (!p2 && agg.bestCamp && agg.totalPaidReach === 0) p2 = agg.platList[0];
+
+    if (p2) {
+      var p2Name   = (_AN_PLAT[p2.key] || {}).name || p2.key;
+      var onSamePlat = rekoList[0] && p2.key === rekoList[0].platform;
+      var bestOnP2 = agg.bestCamp && (agg.bestCamp.platforms || []).indexOf(p2.key) !== -1
+        ? agg.bestCamp : null;
+
+      var aksi2, alasan2;
+      if (bestOnP2) {
+        var _eng    = bestOnP2._engagement || {};
+        var engTot  = ((_eng.likes || 0) + (_eng.comments || 0) + (_eng.shares || 0));
+        var engReach = _eng.reach || 0;
+        var cRef    = bestOnP2.name || bestOnP2.nama_campaign || 'iklan terbaikmu';
+        aksi2   = onSamePlat
+          ? 'Boost "' + cRef + '" dengan Rp 20-50rb selama 3 hari' +
+            (regionCap ? ', jangkau lebih banyak warga ' + regionCap : '') +
+            '. Engagement rate-nya sudah terbukti, paid reach tinggal diperkuat.'
+          : '"' + cRef + '" sudah dapat ' + engTot + ' engagement dari ' + engReach + ' orang' +
+            (regionCap ? ', boost untuk jangkau lebih banyak warga ' + regionCap : '') + '.';
+        alasan2 = p2.count + ' iklan di ' + p2Name + ', platform yang paling banyak kamu gunakan';
+      } else {
+        aksi2   = 'Kamu punya ' + p2.count + ' iklan di ' + p2Name + '. Konsisten posting di platform ini untuk membangun audiens yang lebih luas' +
+          (regionCap ? ' di ' + regionCap : '') + '.';
+        alasan2 = p2.count + ' iklan di ' + p2Name + ', platform terbanyak iklanmu';
+      }
+
+      var reko2Hour = String(Math.max(0, bestHour - 1)).padStart(2, '0') + ':00';
+      rekoList.push({
+        platform: p2.key,
+        hari:     bestDay,
+        jam:      reko2Hour,
+        aksi:     aksi2,
+        alasan:   alasan2
+      });
+    }
+  }
+
+  // ── REKO 3: Coba hari lain (hanya jika semua iklan di 1 hari) ──
+  if ((agg.distinctDays || 0) <= 1) {
+    var allDays = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    var altDays = allDays.filter(function(d) { return d !== bestDay; }).slice(0, 2).join(' atau ');
+    rekoList.push({
+      platform: 'all',
+      hari:     'Coba ' + altDays,
+      jam:      '',
+      aksi:     'Seluruh ' + agg.total + ' iklanmu dibuat hari ' + bestDay +
+                ', audiens yang aktif di hari lain belum pernah kamu jangkau. ' +
+                'Coba posting hari ' + altDays + ' untuk temukan peluang engagement baru.',
+      alasan:   'Variasi hari posting bisa membuka segmen audiens baru dengan pola aktif berbeda'
+    });
+  }
+
+  return rekoList;
+}
+
+/* ─── Render Satu Item Rekomendasi (dengan logo platform) ─── */
+function _renderRekoItem(r, idx) {
+  var platKey  = r.platform || 'ig';
+  var isAll    = platKey === 'all';
+  var platName = isAll ? 'Semua Platform' : ((_AN_PLAT[platKey] || {}).name || platKey);
+  var pillCls  = isAll ? '' : platKey;
+  var svgEl    = isAll
+    ? '<span style="font-size:10px;margin-right:3px;">&#9889;</span>'
+    : '<span class="an-plat-pill-svg">' + _anPlatSvg(platKey) + '</span>';
+  var timeStr  = (r.hari || '') + (r.jam ? ', ' + r.jam : '');
+
+  return '<div class="an-rekom-step">' +
+    '<div class="an-step-num">' + (idx + 1) + '</div>' +
+    '<div class="an-step-content">' +
+      '<div class="an-step-top">' +
+        '<span class="an-plat-pill ' + pillCls + '">' + svgEl + platName + '</span>' +
+        (timeStr ? '<span class="an-step-action">' + timeStr + '</span>' : '') +
+      '</div>' +
+      '<div class="an-step-desc">' + (r.aksi || '') + '</div>' +
+      (r.alasan ? '<div class="an-step-reason">' + r.alasan + '</div>' : '') +
+    '</div>' +
+  '</div>';
+}
+
 /* ─── Section: Rekomendasi Minggu Ini ─── */
 function _renderRekomendasiWeek() {
   return '<div class="an-rekom-week-card" id="an-rekom-week-section">' +
@@ -995,7 +1123,10 @@ function _renderRekomendasiWeek() {
       }).join('') +
     '</div>' +
     '<div class="an-rekom-week-cta">' +
-      '<button class="an-rekom-week-cta-btn" id="an-rekom-cta-btn" onclick="switchMenu(\'command\')">Buat Iklan Baru Sekarang →</button>' +
+      '<div class="an-rekom-cta-row">' +
+        '<button class="an-rekom-week-cta-btn" onclick="switchMenu(\'command\')">🚀 Buat Iklan Sekarang →</button>' +
+        '<button class="an-rekom-week-cta-btn an-rekom-week-cta-btn-outline" onclick="switchMenu(\'monitor\')">Lihat Iklan Aktif →</button>' +
+      '</div>' +
     '</div>' +
   '</div>';
 }
@@ -1142,39 +1273,22 @@ function _anPopulateAI(ai, narasiTs, agg) {
     }
   }
 
-  // Rekomendasi steps
+  // Rekomendasi steps — data-driven dari agg (bukan dari AI)
   var weekBody = document.getElementById('an-rekom-week-body');
-  var _totalCamps = agg && agg.total != null ? agg.total : (ai.rekomendasi ? 999 : 0);
-  var MIN_CAMPS_FOR_REKOM = 5;
-  if (weekBody && _totalCamps < MIN_CAMPS_FOR_REKOM) {
-    weekBody.innerHTML =
-      '<div style="padding:16px 4px;text-align:center;color:var(--secondary);font-size:13px;line-height:1.6;">' +
-        '<div style="font-size:20px;margin-bottom:8px;">📊</div>' +
-        'Butuh minimal 5 iklan untuk rekomendasi akurat.<br>' +
-        '<span style="font-size:12px;opacity:0.8;">Tambah iklan dan data akan dianalisis otomatis.</span>' +
-      '</div>';
-  } else if (ai.rekomendasi && ai.rekomendasi.length) {
-    if (weekBody) {
-      weekBody.innerHTML = ai.rekomendasi.slice(0, 3).map(function(r, i) {
-        var pillCls  = r.platform || 'ig';
-        var platName = (_AN_PLAT[r.platform] || {}).name || r.platform;
-        return '<div class="an-rekom-step">' +
-          '<div class="an-step-num">' + (i + 1) + '</div>' +
-          '<div class="an-step-content">' +
-            '<div class="an-step-top">' +
-              '<span class="an-plat-pill ' + pillCls + '">' + platName + '</span>' +
-              '<span class="an-step-action">' + (r.hari || '') + (r.jam ? ', ' + r.jam : '') + '</span>' +
-            '</div>' +
-            '<div class="an-step-desc">' + (r.aksi || '') + '</div>' +
-            (r.alasan ? '<div class="an-step-reason">' + r.alasan + '</div>' : '') +
-          '</div>' +
+  if (weekBody) {
+    if (!agg || (agg.total || 0) < 5) {
+      weekBody.innerHTML =
+        '<div style="padding:16px 4px;text-align:center;color:var(--secondary);font-size:13px;line-height:1.6;">' +
+          '<div style="font-size:20px;margin-bottom:8px;">📊</div>' +
+          'Butuh minimal 5 iklan untuk rekomendasi akurat.<br>' +
+          '<span style="font-size:12px;opacity:0.8;">Tambah iklan dan data akan dianalisis otomatis.</span>' +
         '</div>';
-      }).join('');
+    } else {
+      var rekoData = _buildRekomendasiData(agg);
+      weekBody.innerHTML = rekoData.length
+        ? rekoData.map(function(r, i) { return _renderRekoItem(r, i); }).join('')
+        : '<div style="padding:12px 4px;color:var(--secondary);font-size:12px;">Belum cukup variasi data untuk rekomendasi spesifik.</div>';
     }
-
-    // CTA button text
-    var ctaBtn = document.getElementById('an-rekom-cta-btn');
-    if (ctaBtn && ai.rekom_cta) ctaBtn.textContent = ai.rekom_cta;
   }
 }
 

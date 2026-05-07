@@ -1446,6 +1446,12 @@
   font-size: 9px; font-weight: 700; letter-spacing: 0.2px;
   white-space: nowrap; flex-shrink: 0;
 }
+.an-plat-pill-svg {
+  width: 10px; height: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-right: 4px; flex-shrink: 0;
+}
+.an-plat-pill-svg svg { width: 100%; height: 100%; fill: currentColor; }
 .an-plat-pill.ig      { background: rgba(225,48,108,0.12); color: #C13584; }
 .an-plat-pill.meta    { background: rgba(24,119,242,0.12); color: #1877F2; }
 .an-plat-pill.tiktok  { background: rgba(0,0,0,0.07);      color: #222; }
@@ -1463,6 +1469,13 @@
   font-family: var(--font); cursor: pointer; transition: background .15s;
 }
 .an-rekom-week-cta-btn:hover { background: var(--rausch); }
+.an-rekom-cta-row { display: flex; flex-direction: column; gap: 8px; }
+.an-rekom-week-cta-btn-outline {
+  background: transparent;
+  color: var(--near-black);
+  border: 1.5px solid var(--near-black);
+}
+.an-rekom-week-cta-btn-outline:hover { background: var(--surface); }
 
 /* ─── Competitor Analysis ─── */
 .an-comp-card {
