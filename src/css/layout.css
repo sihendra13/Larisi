@@ -229,11 +229,11 @@ body {
 
 .lm-cta {
   width: 100%; padding: 11px; border-radius: 12px;
-  background: #791ADB; border: none; color: #fff;
+  background: #111827; border: none; color: #fff;
   font-size: 13px; font-weight: 700; font-family: var(--font);
   cursor: pointer; transition: background .15s;
 }
-.lm-cta:hover { background: #6315b8; }
+.lm-cta:hover { background: #7C3AED; }
 
 /* ─── Launch Sequence Modal (Loading → Success) ─── */
 .ll-card {

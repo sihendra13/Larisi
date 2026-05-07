@@ -696,45 +696,21 @@ async function _doLaunch(campNameOverride) {
 
 /* ─── Inline Social Warning ──────────────────────────────────── */
 function _showSocialWarning(platformName) {
-  var old = document.getElementById('socialWarning');
-  if (old) { old.remove(); }
-
   var isSpecific = !!platformName;
-  var title   = isSpecific
+  var title = isSpecific
     ? 'Akun ' + platformName + ' belum terhubung'
     : 'Belum ada akun sosial terhubung';
-  var desc    = isSpecific
+  var desc = isSpecific
     ? 'Kamu memilih publish ke ' + platformName + ', tapi akun ' + platformName + ' belum dihubungkan. Hubungkan dulu sebelum tayangkan.'
     : 'Hubungkan minimal 1 akun untuk bisa publish otomatis ke Instagram, TikTok, Facebook, atau YouTube.';
 
-  var warning = document.createElement('div');
-  warning.id = 'socialWarning';
-  warning.style.cssText =
-    'background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;' +
-    'padding:12px 16px;margin:8px 0 0;display:flex;flex-direction:column;gap:10px;' +
-    'font-size:13px;font-family:var(--font,sans-serif);';
-  warning.innerHTML =
-    '<div style="display:flex;align-items:center;gap:8px;">' +
-    '<span style="font-size:15px;">⚠</span>' +
-    '<span style="flex:1;color:#92400e;font-weight:600;">' + title + '</span>' +
-    '<span onclick="this.closest(\'#socialWarning\').remove()" ' +
-    'style="cursor:pointer;color:#b45309;font-size:16px;line-height:1;padding:0 2px;">✕</span>' +
-    '</div>' +
-    '<div style="display:flex;gap:8px;">' +
-    '<span style="flex:1;color:#78350f;font-size:12px;line-height:1.5;">' + desc + '</span>' +
-    '<button onclick="showConnectAccountsFlow()" ' +
-    'style="background:#f59e0b;color:white;border:none;padding:8px 16px;' +
-    'border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;' +
-    'align-self:flex-end;font-family:var(--font,sans-serif);">Hubungkan →</button>' +
-    '</div>';
-
-  var launchBtn = document.querySelector('.launch-btn') ||
-                  document.querySelector('[onclick*="launchRadar"]') ||
-                  document.getElementById('view-command');
-  if (launchBtn) {
-    launchBtn.insertAdjacentElement('beforebegin', warning);
-  } else {
-    document.body.appendChild(warning);
+  var modal = document.getElementById('socialWarningModal');
+  if (modal) {
+    var titleEl = document.getElementById('swmTitle');
+    var descEl  = document.getElementById('swmDesc');
+    if (titleEl) titleEl.textContent = title;
+    if (descEl)  descEl.textContent  = desc;
+    modal.style.display = 'flex';
   }
 }
 
