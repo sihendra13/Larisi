@@ -17,7 +17,7 @@ var _VISION_TO_PERSONA = {
   tanaman:    null,
   hewan:      'Pet',
   manusia:    null,             // selfie/orang → tidak konklusif
-  dokumen:    null,
+  dokumen:    'Pendidikan',  // dokumen/buku/materi → konteks pendidikan
   furniture:  null,
   olahraga:   null,
   seni:       'Seni',
