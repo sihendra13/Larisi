@@ -131,11 +131,10 @@ function showBoostModal(campaign) {
     '">' +
 
     // ── Header ──
-    '<div style="background:linear-gradient(135deg,#791ADB,#a855f7);padding:20px 24px 18px;">' +
+    '<div style="background:#791ADB;padding:20px 24px 18px;">' +
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">' +
-        '<span style="font-size:22px;">🚀</span>' +
         '<div>' +
-          '<div style="font-size:16px;font-weight:700;color:#fff;">Boost Campaign</div>' +
+          '<div style="font-size:16px;font-weight:700;color:#fff;">Boost Iklan</div>' +
           '<div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:1px;">' + rec.campName + '</div>' +
         '</div>' +
         '<button onclick="document.getElementById(\'boostModalOverlay\').remove()" ' +
@@ -179,19 +178,19 @@ function showBoostModal(campaign) {
       // Tombol
       '<div style="display:flex;gap:10px;">' +
         '<button onclick="_onBoostCopy()" ' +
-          'style="flex:1;padding:11px;border-radius:12px;border:1.5px solid #791ADB;' +
-          'background:#fff;color:#791ADB;font-size:13px;font-weight:700;cursor:pointer;' +
+          'style="flex:1;padding:11px;border-radius:12px;border:1.5px solid #111827;' +
+          'background:#fff;color:#111827;font-size:13px;font-weight:700;cursor:pointer;' +
           'font-family:var(--font,sans-serif);transition:background 0.15s;" ' +
-          'onmouseover="this.style.background=\'#f3ebff\'" onmouseout="this.style.background=\'#fff\'">' +
-          '📋 Salin Rekomendasi' +
+          'onmouseover="this.style.background=\'#f3f4f6\'" onmouseout="this.style.background=\'#fff\'">' +
+          'Salin Rekomendasi' +
         '</button>' +
         '<button onclick="_onBoostOpen()" ' +
           'style="flex:1;padding:11px;border-radius:12px;border:none;' +
-          'background:linear-gradient(135deg,#791ADB,#a855f7);' +
+          'background:#111827;' +
           'color:#fff;font-size:13px;font-weight:700;cursor:pointer;' +
-          'font-family:var(--font,sans-serif);transition:opacity 0.15s;" ' +
-          'onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'">' +
-          '🏹 Buka Meta Ads →' +
+          'font-family:var(--font,sans-serif);transition:background 0.15s;" ' +
+          'onmouseover="this.style.background=\'#374151\'" onmouseout="this.style.background=\'#111827\'">' +
+          'Buka Meta Ads' +
         '</button>' +
       '</div>' +
 

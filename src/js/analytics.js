@@ -321,7 +321,8 @@ function _buildAnalyticsSystemPrompt(agg) {
   }).join('; ') || 'belum ada';
 
   var p2Instruction = erTier === 'high' || erTier === 'mid'
-    ? 'Jelaskan KENAPA ER setinggi ini: konten relevan, orang yang lihat langsung bereaksi, bukan scroll lewat. Tanda sudah bicara ke audiens yang tepat dengan pesan yang tepat.'
+    ? 'Jelaskan KENAPA ER setinggi ini: konten relevan, orang yang lihat langsung bereaksi, bukan scroll lewat.' +
+      (bestIklan ? ' Sebutkan iklan "' + bestIklan + '" sebagai contoh konkret, engagement rate-nya jadi bukti nyata.' : ' Tanda sudah bicara ke audiens yang tepat dengan pesan yang tepat.')
     : erTier === 'low'
     ? 'Jelaskan: ER masih bisa ditingkatkan dengan konten lebih relevan ke audiens lokal, coba variasi format atau sapaan lokal khas daerah.'
     : 'Jelaskan: belum cukup data untuk menilai ER karena reach masih sangat sedikit. Ajak tambah lebih banyak iklan.';
@@ -465,7 +466,8 @@ function _buildAnalyticsFallback(agg) {
 
   // narasi_p2
   var p2 = erTier === 'high' || erTier === 'mid'
-    ? 'Kenapa ER kamu setinggi ini? Karena konten kamu relevan, orang yang lihat langsung bereaksi, bukan scroll lewat. Ini tanda kamu sudah bicara ke audiens yang tepat dengan pesan yang tepat.'
+    ? 'Kenapa ER kamu setinggi ini? Karena konten kamu relevan, orang yang lihat langsung bereaksi, bukan scroll lewat.' +
+      (bestIklan ? ' Iklan "' + bestIklan + '" jadi buktinya, engagement rate-nya jauh melampaui rata-rata ' + topPlatName + '.' : ' Ini tanda kamu sudah bicara ke audiens yang tepat dengan pesan yang tepat.')
     : erTier === 'low'
     ? 'ER masih bisa ditingkatkan dengan konten yang lebih relevan ke audiens lokal. Coba variasi format atau tambahkan sapaan lokal untuk meningkatkan engagement.'
     : 'Belum cukup data untuk menilai performa konten karena reach masih sangat sedikit. Tambah lebih banyak iklan agar analisis semakin akurat.';
@@ -1048,12 +1050,13 @@ function _anPopulateAI(ai, narasiTs, agg) {
   var ctaWrap = document.getElementById('an-si-cta-wrap');
   if (ctaWrap) {
     var _bestC     = agg && agg.bestCamp;
-    var _bestCId   = _bestC ? (_bestC.id || _bestC.supabase_id || '') : '';
     var _bestCName = _bestC ? (_bestC.name || _bestC.nama_campaign || '') : '';
-    if (_bestCName && _bestCId) {
+    if (_bestCName && _bestC) {
+      // Simpan objek bestCamp ke window agar bisa diakses dari onclick inline
+      window._analyticsBestCamp = _bestC;
       ctaWrap.innerHTML =
         '<div class="an-si-cta-row">' +
-          '<button class="an-si-cta" onclick="switchMenu(\'monitor\');setTimeout(function(){if(typeof selectCampaign===\'function\')selectCampaign(\'' + _bestCId + '\');},400);">' +
+          '<button class="an-si-cta" onclick="if(typeof showBoostModal===\'function\')showBoostModal(window._analyticsBestCamp);">' +
             '🚀 Boost ' + _bestCName +
           '</button>' +
           '<button class="an-si-cta an-si-cta-outline" onclick="switchMenu(\'command\')">' +
