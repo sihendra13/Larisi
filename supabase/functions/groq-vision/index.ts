@@ -38,16 +38,26 @@ const VALID_CATS = [
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const VISION_MODEL = "llama-3.2-90b-vision-preview";
 
-const SYSTEM_PROMPT = `Kamu adalah sistem klasifikasi gambar. Tugasmu hanya menjawab dengan SATU KATA dari daftar yang diberikan. Dilarang keras menulis kalimat, penjelasan, atau kata lain di luar daftar.`;
+const SYSTEM_PROMPT = `You are an image classification system. Respond with exactly ONE Indonesian word from the provided list. No explanations, no sentences, no other words.`;
 
-const PROMPT = `Lihat foto ini dan tentukan objek utamanya.
-Jawab HANYA dengan satu kata dari daftar berikut (pilih yang paling tepat):
-makanan, minuman, pakaian, kendaraan, elektronik, properti, kosmetik, bayi, tanaman, hewan, manusia, dokumen, furniture, olahraga, seni, general
+const PROMPT = `What is the main object in this photo? Choose exactly ONE word:
 
-Contoh jawaban yang benar: makanan
-Contoh jawaban yang SALAH: "Gambar ini menunjukkan makanan"
+makanan — food, burger, rice, noodles, cake, snack, any food
+minuman — drink, coffee, tea, juice, beverage
+pakaian — clothing, shirt, dress, hijab, pants, fashion
+kendaraan — vehicle, car, motorcycle, bicycle
+elektronik — phone, laptop, gadget, camera, electronics
+properti — house, building, apartment, real estate
+kosmetik — makeup, lipstick, skincare, beauty product
+bayi — baby product, diaper, stroller, toy
+tanaman — plant, flower, tree, leaf
+hewan — animal, cat, dog, bird, pet
+manusia — person, selfie, human face, people
+furniture — chair, table, sofa, cabinet
+olahraga — sport, shoes, gym equipment, exercise
+seni — art, painting, craft, artwork
 
-Jawab sekarang (satu kata):`;
+Reply with ONE WORD only (e.g.: makanan):`;
 
 
 serve(async (req: Request) => {
