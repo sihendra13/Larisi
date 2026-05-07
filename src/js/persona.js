@@ -39,10 +39,11 @@ function showPersonaDirect(p, detected) {
 var _visionConflictData = null;
 
 /**
- * _showVisionConflict(visionKey, visionLabel, bizKey)
- * Tampilkan UI pilihan ketika AI mendeteksi kategori berbeda dari profil bisnis.
+ * _showVisionConflict(visionKey, visionLabel, bizKey, bizLabel)
+ * Tampilkan nudge pilihan ketika AI mendeteksi kategori berbeda dari profil bisnis.
+ * Format teks: "Foto terdeteksi: [X], profil bisnismu: [Y]. Promosi apa hari ini?"
  */
-function _showVisionConflict(visionKey, visionLabel, bizKey) {
+function _showVisionConflict(visionKey, visionLabel, bizKey, bizLabel) {
   _visionConflictData = { visionKey: visionKey, bizKey: bizKey };
 
   var vc = document.getElementById('visionConflict');
@@ -52,11 +53,19 @@ function _showVisionConflict(visionKey, visionLabel, bizKey) {
     return;
   }
 
-  var bizP = (typeof personaDB !== 'undefined' && personaDB[bizKey]) || { name: bizKey };
-  var vlEl = document.getElementById('conflictVisionLabel');
-  var blEl = document.getElementById('conflictBizLabel');
-  if (vlEl) vlEl.textContent = visionLabel;
-  if (blEl) blEl.textContent = bizP.name;
+  /* Label profil bisnis: nama persona dari DB, atau label kategori, atau fallback */
+  var bizPersonaName = (typeof personaDB !== 'undefined' && bizKey && personaDB[bizKey])
+    ? personaDB[bizKey].name
+    : (bizLabel || 'Konten Umum');
+
+  /* Render teks sesuai spec */
+  var qEl = document.getElementById('conflictQuestion');
+  if (qEl) {
+    qEl.innerHTML =
+      'Foto terdeteksi: <strong>' + visionLabel + '</strong>, ' +
+      'profil bisnismu: <strong>' + bizPersonaName + '</strong>. ' +
+      'Promosi apa hari ini?';
+  }
 
   vc.classList.add('visible');
 }
@@ -91,7 +100,9 @@ function _resolveConflict(useVision) {
 
   if (!_visionConflictData) return;
 
-  var key = useVision ? _visionConflictData.visionKey : _visionConflictData.bizKey;
+  var key = useVision
+    ? _visionConflictData.visionKey
+    : (_visionConflictData.bizKey || 'General'); /* null bizKey = General */
   _visionConflictData = null;
   _applyVisionPersona(key);
 }
@@ -155,15 +166,32 @@ async function startScanWithFile(filename, fileCount) {
   document.getElementById('scanning').classList.remove('visible');
 
   if (visionKey) {
-    /* Cek konflik dengan profil bisnis */
+    /* ── Cek konflik dengan profil bisnis ── */
     var bizCategory = window.userBizProfile && window.userBizProfile.category;
-    var bizTileKey  = bizCategory && (typeof _BIZ_CAT_TO_TILE !== 'undefined') && _BIZ_CAT_TO_TILE[bizCategory];
-    var hasConflict = bizTileKey && bizTileKey !== visionKey;
 
-    if (hasConflict) {
-      _showVisionConflict(visionKey, visionLabel, bizTileKey);
-    } else {
+    if (!bizCategory) {
+      /* Tidak ada profil bisnis → langsung pakai hasil AI */
       _applyVisionPersona(visionKey);
+    } else {
+      /* Petakan kategori biz ke persona key.
+         Jika kategori biz tidak ada di mapping → null (General) */
+      var bizTileKey = (typeof _BIZ_CAT_TO_TILE !== 'undefined')
+        ? (_BIZ_CAT_TO_TILE[bizCategory] || null)
+        : null;
+
+      /* Label untuk biz: nama persona DB, atau nama kategori biz itu sendiri */
+      var bizLabelForUI = bizTileKey && personaDB && personaDB[bizTileKey]
+        ? personaDB[bizTileKey].name
+        : (bizCategory || 'Konten Umum');
+
+      /* Ada konflik jika biz key berbeda dengan vision key (termasuk null vs non-null) */
+      var hasConflict = bizTileKey !== visionKey;
+
+      if (hasConflict) {
+        _showVisionConflict(visionKey, visionLabel, bizTileKey, bizLabelForUI);
+      } else {
+        _applyVisionPersona(visionKey);
+      }
     }
   } else {
     /* Fallback ke deteksi berbasis nama file */
