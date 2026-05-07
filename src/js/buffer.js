@@ -579,25 +579,29 @@ function renderConnectChannels() {
 
   var addBtn = document.getElementById('addChannelBtn');
   if (addBtn) {
+    var isFull = accounts.length >= 4;
     addBtn.style.cssText =
       'width:56px;height:56px;border-radius:14px;' +
-      'border:2px dashed #d1d5db;background:white;' +
+      'border:2px dashed ' + (isFull ? '#e5e7eb' : '#d1d5db') + ';' +
+      'background:' + (isFull ? '#f9fafb' : 'white') + ';' +
       'display:flex;align-items:center;justify-content:center;' +
-      'cursor:pointer;flex-shrink:0;transition:border-color .2s,background .2s;' +
-      'padding:0;';
+      'cursor:' + (isFull ? 'not-allowed' : 'pointer') + ';' +
+      'flex-shrink:0;transition:border-color .2s,background .2s;' +
+      'padding:0;opacity:' + (isFull ? '0.4' : '1') + ';';
     addBtn.innerHTML =
       '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" ' +
       'stroke="#9ca3af" stroke-width="2" stroke-linecap="round">' +
       '<line x1="12" y1="5" x2="12" y2="19"/>' +
       '<line x1="5" y1="12" x2="19" y2="12"/></svg>';
-    addBtn.onmouseenter = function() {
+    addBtn.onclick     = isFull ? null : function() { showConnectAccountsFlow(); };
+    addBtn.onmouseenter = isFull ? null : function() {
       addBtn.style.borderColor = '#791ADB';
-      addBtn.style.background = 'rgba(121,26,219,0.04)';
+      addBtn.style.background  = 'rgba(121,26,219,0.04)';
       addBtn.querySelector('svg').setAttribute('stroke', '#791ADB');
     };
-    addBtn.onmouseleave = function() {
+    addBtn.onmouseleave = isFull ? null : function() {
       addBtn.style.borderColor = '#d1d5db';
-      addBtn.style.background = 'white';
+      addBtn.style.background  = 'white';
       addBtn.querySelector('svg').setAttribute('stroke', '#9ca3af');
     };
   }
