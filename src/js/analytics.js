@@ -329,7 +329,7 @@ function _buildAnalyticsSystemPrompt(agg) {
     ? 'Ini pencapaian yang serius dan layak dirayakan.'
     : erTier === 'mid'
     ? 'Fondasi sudah kuat, ini saat yang tepat untuk ekspansi.'
-    : 'Data ini kasih tahu persis apa yang perlu diperbaiki. Yuk benahi satu per satu.';
+    : 'Data ini kasih tahu persis apa yang perlu diperbaiki, yuk benahi satu per satu.';
 
   // Gap + aksi P2
   var hasGap = agg.totalPaidReach === 0 || agg.platList.length < 2;
@@ -337,7 +337,7 @@ function _buildAnalyticsSystemPrompt(agg) {
     ? 'Gap: paid reach masih 0%. Aksi konkret: rekomendasikan boost iklan "' + (agg.bestCamp ? agg.bestCamp.name : 'terbaik') + '" dengan Rp 20-50rb selama 3 hari. Contoh: "Satu peluang besar yang belum disentuh: paid reach kamu masih 0%. Coba boost iklan terbaikmu minggu ini dengan Rp 20-50rb selama 3 hari, ini kombinasi paling efisien untuk lipatgandakan jangkauanmu sekarang."'
     : agg.platList.length < 2
     ? 'Gap: baru aktif di ' + agg.platList.length + ' platform. Aksi: rekomendasikan expand ke platform baru yang relevan dengan bisnis ini. Contoh: "Satu peluang yang belum disentuh: kamu masih hanya aktif di ' + agg.platList.length + ' platform, audiens potensialmu di platform lain belum terjangkau sama sekali."'
-    : 'Semua metrik sudah baik. Tulis tantangan naik level: konsistensi + ekspansi ke format atau platform baru. Contoh: "Semua metrik sudah hijau. Tantangan berikutnya adalah mempertahankan konsistensi ini sambil mencoba format baru untuk menjangkau segmen audiens yang lebih luas."';
+    : 'Semua metrik sudah baik. Tulis tantangan naik level: konsistensi + ekspansi ke format atau platform baru. Contoh: "Semua metrik sudah hijau, tantangan berikutnya adalah mempertahankan konsistensi ini sambil mencoba format baru untuk menjangkau segmen audiens yang lebih luas."';
 
   return [
     'Kamu adalah SiLaris, Campaign Coach AI untuk UMKM Indonesia.',
@@ -438,7 +438,7 @@ function _buildAnalyticsFallback(agg) {
     ? 'Ini pencapaian yang serius dan layak dirayakan.'
     : erTier === 'mid'
     ? 'Fondasi sudah kuat, ini saat yang tepat untuk ekspansi.'
-    : 'Data ini kasih tahu persis apa yang perlu diperbaiki. Yuk benahi satu per satu.';
+    : 'Data ini kasih tahu persis apa yang perlu diperbaiki, yuk benahi satu per satu.';
   return {
     narasi_p1: 'Hei! Kamu sudah kerja keras bulan ini, dan datanya membuktikannya. ' +
       agg.total + ' iklan berjalan, ' + _anFmtK(agg.totalReach) + ' orang sudah tahu bisnis kamu ada, performa kontenmu dinilai "' + erLbl.label.replace(/\s*[🔥⭐👍🌱]/u, '') + '"' +
@@ -779,7 +779,7 @@ function _renderLocalPulse(agg) {
       '<div><div class="an-pulse-key">Sapaan Lokal Terbaik</div>' +
         '<div class="an-pulse-val">"' + dial.greeting + '"</div>' +
         '<div class="an-pulse-note">Sapaan khas <span class="an-pulse-highlight">' + regLabel + '</span>, terbukti meningkatkan engagement lokal</div>' +
-        '<div class="an-pulse-note" style="margin-top:4px;font-style:italic;opacity:0.8;">💡 Tambahkan sapaan ini ke caption iklanmu. Konten dengan sentuhan lokal lebih mudah menarik perhatian audiens di sekitar ' + regLabel + '.</div>' +
+        '<div class="an-pulse-note" style="margin-top:4px;font-style:italic;opacity:0.8;">💡 Tambahkan sapaan ini ke caption iklanmu, konten dengan sentuhan lokal lebih mudah menarik perhatian audiens di sekitar ' + regLabel + '.</div>' +
       '</div>' +
     '</div>' +
     '<div class="an-pulse-item">' +
