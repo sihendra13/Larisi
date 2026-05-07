@@ -36,7 +36,7 @@ const VALID_CATS = [
 ];
 
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const VISION_MODEL = "llama-3.2-90b-vision-preview";
+const VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
 
 const SYSTEM_PROMPT = `You are an image classification system. Respond with exactly ONE Indonesian word from the provided list. No explanations, no sentences, no other words.`;
 

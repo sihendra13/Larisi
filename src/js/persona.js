@@ -197,6 +197,32 @@ async function startScanWithFile(filename, fileCount) {
     /* Fallback ke deteksi berbasis nama file */
     var p        = detectPersona(filename);
     var detected = p.name !== 'General Content';
+
+    if (detected) {
+      /* Cari personaDB key yang cocok dengan nama yang terdeteksi */
+      var filenameKey = null;
+      if (typeof personaDB !== 'undefined') {
+        var _keys = Object.keys(personaDB);
+        for (var _k = 0; _k < _keys.length; _k++) {
+          if (personaDB[_keys[_k]].name === p.name) { filenameKey = _keys[_k]; break; }
+        }
+      }
+
+      /* Jika ada key yang cocok, cek konflik dengan profil bisnis */
+      if (filenameKey) {
+        var _bizCat2   = window.userBizProfile && window.userBizProfile.category;
+        if (_bizCat2) {
+          var _bizKey2   = (typeof _BIZ_CAT_TO_TILE !== 'undefined') ? (_BIZ_CAT_TO_TILE[_bizCat2] || null) : null;
+          var _bizLbl2   = _bizKey2 && personaDB && personaDB[_bizKey2] ? personaDB[_bizKey2].name : (_bizCat2 || 'Konten Umum');
+          var _conflict2 = _bizKey2 !== filenameKey;
+          if (_conflict2) {
+            _showVisionConflict(filenameKey, p.name, _bizKey2, _bizLbl2);
+            return; /* Tunggu pilihan user — jangan langsung apply */
+          }
+        }
+      }
+    }
+
     showPersonaDirect(p, detected);
     masterPersonaLocked = true;
   }
