@@ -229,7 +229,7 @@ async function _syncAndAddAccount(platform) {
 
     console.log('[postforme] _syncAndAddAccount: found', platform, accountId, username);
     _saveAndUpdateUI(platform, accountId, username, avatarUrl);
-    if (typeof showAnToast === 'function') showAnToast('✓ Akun ' + platform + ' berhasil disinkronkan!', 'success');
+    if (typeof showAnToast === 'function') showAnToast('Akun ' + platform + ' berhasil disinkronkan!', 'success');
     return true;
   } catch(e) {
     console.warn('[postforme] _syncAndAddAccount error:', e.message);
@@ -271,7 +271,7 @@ function _saveAndUpdateUI(platform, accountId, username, avatarUrl) {
   // Tutup modal otomatis setelah 1.8 detik
   setTimeout(function() { _closePfmModal(); }, 1800);
 
-  if (typeof showAnToast === 'function') showAnToast('✓ Akun ' + platform + ' berhasil terhubung!', 'success');
+  if (typeof showAnToast === 'function') showAnToast('Akun ' + platform + ' berhasil terhubung!', 'success');
 }
 
 /* ─── Connect via OAuth ────────────────────────────────────── */
@@ -790,6 +790,7 @@ function _disconnectAccount(platform) {
           'localStorage.setItem(\'radar_social_accounts\',JSON.stringify(accs));' +
           'updateBufferIndicator();updateChannelChipsWithUsername();' +
           'document.getElementById(\'disconnectModal\').remove();' +
+          '_closePfmModal();' +
           'if(typeof showAnToast===\'function\')showAnToast(\'Akun ' + platform + ' dilepas\');" ' +
           'style="padding:10px 24px;border-radius:8px;border:none;' +
           'background:#d1d5db;color:#9ca3af;font-size:14px;font-weight:600;' +
@@ -1478,7 +1479,7 @@ async function publishViaPostForMe(canvas, campaignData) {
     }
 
     if (typeof showAnToast === 'function') {
-      showAnToast('✓ Postingan berhasil dikirim ke ' + platNames + '!', 'success');
+      showAnToast('Postingan berhasil dikirim ke ' + platNames + '!', 'success');
     }
     return { success: true, postId: postId, postUrl: postUrl };
 
