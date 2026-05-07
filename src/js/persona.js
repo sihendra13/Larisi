@@ -62,9 +62,9 @@ function _showVisionConflict(visionKey, visionLabel, bizKey, bizLabel) {
   var qEl = document.getElementById('conflictQuestion');
   if (qEl) {
     qEl.innerHTML =
-      'Foto terdeteksi: <strong>' + visionLabel + '</strong>, ' +
-      'profil bisnismu: <strong>' + bizPersonaName + '</strong>. ' +
-      'Promosi apa hari ini?';
+      'SiLaris mendeteksi <strong>' + visionLabel + '</strong> ' +
+      'sementara bisnismu bergerak di <strong>' + bizPersonaName + '</strong>. ' +
+      'Mau promosi yang mana?';
   }
 
   vc.classList.add('visible');
