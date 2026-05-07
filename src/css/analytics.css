@@ -1054,6 +1054,16 @@
   color: var(--near-black);
   min-height: 44px;
 }
+.an-si-narasi-footer {
+  font-size: 11px;
+  color: var(--secondary);
+  font-style: italic;
+  opacity: 0.75;
+  line-height: 1.5;
+  min-height: 0;
+  margin-top: 2px;
+}
+.an-si-narasi-footer:empty { display: none; }
 .an-si-clue-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

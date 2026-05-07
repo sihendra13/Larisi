@@ -92,8 +92,11 @@ function _anAggregate(campaigns) {
     totalReach += reach;
     totalPaidReach += (eng.paidReach || 0);
 
-    var er = parseFloat(eng.engagementRate) || 0;
-    if (er > 0) erValues.push(er);
+    var er = 0;
+    if (reach > 0) {
+      er = ((eng.likes || 0) + (eng.comments || 0) + (eng.shares || 0)) / reach * 100;
+      if (er > 0) erValues.push(er);
+    }
 
     // bestCamp: absolute engagements (reactions + comments + shares)
     // Primary: reach >= threshold. Fallback: tanpa threshold (semua campaign)
@@ -197,7 +200,11 @@ function _anAggregate(campaigns) {
     reachThisMonth:  reachThisMonth,
     reachLastMonth:  reachLastMonth,
     countThisMonth:  countThisMonth,
-    countLastMonth:  countLastMonth
+    countLastMonth:  countLastMonth,
+    hasPrevPeriod:   reachLastMonth > 0,
+    reachTrend:      reachLastMonth > 0
+      ? Math.round(((reachThisMonth - reachLastMonth) / reachLastMonth) * 100)
+      : null
   };
 }
 
@@ -295,109 +302,124 @@ async function refreshAnalyticsData() {
 
 /* ─── Build Analytics System Prompt ─── */
 function _buildAnalyticsSystemPrompt(agg) {
-  var ctx = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : { region: 'default', regionLabel: 'Indonesia' };
-
-  // ── Business profile context (from onboarding via localStorage) ──
-  var bizName     = ctx.businessName     || null;
+  var ctx         = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : {};
+  var bizName     = ctx.businessName     || 'Kamu';
   var bizCategory = ctx.businessCategory || null;
 
-  // ── Opening line universal per region ──
-  var _openingMap = {
-    surabaya: 'Hei Rek! Yuk lihat hasil iklan kamu bulan ini.',
-    malang:   'Hei Rek! Yuk lihat hasil iklan kamu bulan ini.',
-    medan:    'Hoi Bos! Yuk lihat hasil iklan kamu bulan ini.',
-    medan_area: 'Hoi Bos! Yuk lihat hasil iklan kamu bulan ini.',
-    jakarta:  'Hei Guys! Yuk lihat hasil iklan kamu bulan ini.'
-  };
-  var openingLine = _openingMap[ctx.region] || 'Hei! Yuk lihat hasil iklan kamu bulan ini.';
+  var iklanCount  = agg.countThisMonth > 0 ? agg.countThisMonth : agg.total;
+  var erVal       = agg.avgER != null ? agg.avgER : null;
+  var erTier      = erVal == null ? 'unknown' : erVal >= 10 ? 'high' : erVal >= 3 ? 'mid' : 'low';
+  var erDisplay   = erVal != null ? erVal.toFixed(1) + '%' : 'belum tersedia';
+
+  var topPlatKey  = agg.platList.length ? agg.platList[0].key : 'ig';
+  var topPlatName = (_AN_PLAT[topPlatKey] || {}).name || 'Instagram';
+  var _bm         = { ig: '0.48%', meta: '0.15%', tiktok: '3.70%' };
+  var benchmark   = _bm[topPlatKey] || '0.48%';
+
+  var trendLine   = agg.hasPrevPeriod
+    ? 'Reach ' + (agg.reachTrend >= 0 ? '\u2191' : '\u2193') + ' ' + Math.abs(agg.reachTrend) + '% dari bulan lalu.'
+    : '\ud83d\udcca Tren mulai terhitung periode depan.';
+
+  var bestIklan   = agg.bestCamp
+    ? (agg.bestCamp.name || agg.bestCamp.nama_campaign || 'iklan terbaik')
+    : null;
+
+  var reachDisplay = agg.totalReach > 0 ? _anFmtK(agg.totalReach) : '0';
+  var bestHourStr  = String(agg.bestHour).padStart(2, '0');
 
   var platSummary = agg.platList.map(function(p) {
     var pn = (_AN_PLAT[p.key] || {}).name || p.key;
     return pn + ': ' + p.count + ' iklan' + (p.avgER > 0 ? ', avg ER ' + p.avgER.toFixed(1) + '%' : '');
   }).join('; ') || 'belum ada';
 
-  var paidReachNote = agg.totalPaidReach > 0
-    ? 'Paid reach: ' + _anFmtK(agg.totalPaidReach)
-    : 'Paid reach: 0 (belum pernah boost)';
+  var p2Instruction = erTier === 'high' || erTier === 'mid'
+    ? 'Jelaskan KENAPA ER setinggi ini: konten relevan, orang yang lihat langsung bereaksi, bukan scroll lewat. Tanda sudah bicara ke audiens yang tepat dengan pesan yang tepat.'
+    : erTier === 'low'
+    ? 'Jelaskan: ER masih bisa ditingkatkan dengan konten lebih relevan ke audiens lokal, coba variasi format atau sapaan lokal khas daerah.'
+    : 'Jelaskan: belum cukup data untuk menilai ER karena reach masih sangat sedikit. Ajak tambah lebih banyak iklan.';
 
-  var erVal  = agg.avgER != null ? agg.avgER : null;
-  var erTier = erVal == null ? 'unknown' : erVal >= 10 ? 'high' : erVal >= 3 ? 'mid' : 'low';
-  var erLbl  = _anErLabel(erVal);
-
-  // Closing P1 sesuai erTier — tanpa sebutan "bisnis lokal"
-  var p1Closing = erTier === 'high'
-    ? 'Ini pencapaian yang serius dan layak dirayakan.'
-    : erTier === 'mid'
-    ? 'Fondasi sudah kuat, ini saat yang tepat untuk ekspansi.'
-    : 'Data ini kasih tahu persis apa yang perlu diperbaiki, yuk benahi satu per satu.';
-
-  // Gap + aksi P2
-  var hasGap = agg.totalPaidReach === 0 || agg.platList.length < 2;
-  var p2Guide = agg.totalPaidReach === 0
-    ? 'Gap: paid reach masih 0%. Aksi konkret: rekomendasikan boost iklan "' + (agg.bestCamp ? agg.bestCamp.name : 'terbaik') + '" dengan Rp 20-50rb selama 3 hari. Contoh: "Satu peluang besar yang belum disentuh: paid reach kamu masih 0%. Coba boost iklan terbaikmu minggu ini dengan Rp 20-50rb selama 3 hari, ini kombinasi paling efisien untuk lipatgandakan jangkauanmu sekarang."'
-    : agg.platList.length < 2
-    ? 'Gap: baru aktif di ' + agg.platList.length + ' platform. Aksi: rekomendasikan expand ke platform baru yang relevan dengan bisnis ini. Contoh: "Satu peluang yang belum disentuh: kamu masih hanya aktif di ' + agg.platList.length + ' platform, audiens potensialmu di platform lain belum terjangkau sama sekali."'
-    : 'Semua metrik sudah baik. Tulis tantangan naik level: konsistensi + ekspansi ke format atau platform baru. Contoh: "Semua metrik sudah hijau, tantangan berikutnya adalah mempertahankan konsistensi ini sambil mencoba format baru untuk menjangkau segmen audiens yang lebih luas."';
+  var clueTodoInstruction = bestIklan && agg.totalPaidReach === 0
+    ? 'Rekomendasikan boost "' + bestIklan + '" dengan Rp 20-50rb selama 3 hari sebagai PILIHAN bukan keharusan. Ini iklan dengan engagement tertinggi.'
+    : 'Berikan 1 aksi konkret berdasarkan platform ' + topPlatName + ' dengan ER tertinggi.';
 
   return [
-    'Kamu adalah SiLaris, Campaign Coach AI untuk UMKM Indonesia.',
-    'MODE: ANALYTICS DASHBOARD. Bicara seperti coach yang jujur, hangat, dan langsung ke poin.',
+    'Kamu adalah SiLaris, AI Coach untuk UMKM Indonesia.',
+    'MODE: ANALYTICS DASHBOARD narasi. Tulis seperti teman yang jujur, optimistik, dan langsung ke poin.',
+    'ATURAN KERAS: DILARANG gunakan kata "campaign". Gunakan "iklan".',
+    'ATURAN KERAS: DILARANG gunakan tanda em-dash (—). Ganti dengan koma.',
     'ATURAN KERAS: DILARANG gunakan bullet point, header, atau angka daftar.',
-    'ATURAN KERAS: Setiap kalimat diakhiri tanda titik. Angka % selalu pakai simbol %.',
-    'ATURAN KERAS: Setiap kalimat maksimal 20 kata. Hapus kata pengisi seperti "ini menunjukkan bahwa", "hal ini berarti bahwa". Langsung ke poin.',
-    'ATURAN KERAS: DILARANG menyebut kata "bisnis lokal" dalam semua output.',
-    'ATURAN KERAS: DILARANG menyebut benchmark industri yang tidak bisa diverifikasi (contoh: "rata-rata industri X%", "standar UMKM Y%").',
-    'ATURAN KERAS: Deskripsikan hasil berdasarkan data nyata user saja. Jangan bandingkan dengan pihak eksternal.',
-    'ATURAN KERAS: DILARANG menyebut angka ER mentah di narasi_p1. Gunakan label kualitatif yang sudah ditetapkan: "' + erLbl.label.replace(/\s*[🔥⭐👍🌱]/u, '') + '".',
-    'ATURAN KERAS: DILARANG gunakan tanda em-dash (—) dalam semua output. Ganti dengan tanda titik atau koma.',
-    'ATURAN KERAS: DILARANG gunakan kata "campaign" dalam semua output. Gunakan kata "iklan" sebagai gantinya.',
-    '',
-    'KALIMAT PEMBUKA YANG WAJIB DIGUNAKAN (sudah ditetapkan, jangan diubah):',
-    '"' + openingLine + '"',
+    'ATURAN KERAS: DILARANG menyebut kata "bisnis lokal".',
+    'ATURAN KERAS: DILARANG hardcode angka yang tidak ada di DATA NYATA USER di bawah.',
+    'ATURAN KERAS: JANGAN push paid/boost secara agresif. Framing sebagai pilihan, bukan keharusan.',
+    'ATURAN KERAS: JANGAN generate insight yang tidak bisa dibuktikan dari data di bawah.',
     '',
     'DATA NYATA USER:',
-    '- Nama bisnis: ' + (bizName || '(belum diisi)'),
-    '- Kategori bisnis: ' + (bizCategory || 'Umum'),
-    '- Total campaign: ' + agg.total,
-    '- Campaign aktif: ' + agg.active,
-    '- Total reach: ' + _anFmtK(agg.totalReach),
-    '- Avg ER: ' + (erVal != null ? erVal.toFixed(1) + '%' : 'belum tersedia'),
-    '- ' + paidReachNote,
-    '- Campaign terbaik: ' + (agg.bestCamp ? '"' + agg.bestCamp.name + '" dengan ER ' + agg.bestER.toFixed(1) + '%' : 'belum ada data'),
+    '- Nama bisnis: ' + bizName,
+    '- Kategori: ' + (bizCategory || 'Umum'),
+    '- Total iklan: ' + agg.total,
+    '- Iklan bulan ini: ' + iklanCount,
+    '- Total reach REAL (N/A tidak dihitung): ' + reachDisplay,
+    '- Avg ER (formula: reactions+comments+shares / reach × 100): ' + erDisplay + ' (tier: ' + erTier + ')',
+    '- Benchmark avg ER ' + topPlatName + ': ' + benchmark + ' (Socialinsider 2025)',
+    '- Paid reach: ' + (agg.totalPaidReach > 0 ? _anFmtK(agg.totalPaidReach) : '0'),
+    '- Iklan terbaik: ' + (bestIklan ? '"' + bestIklan + '"' : 'belum ada'),
     '- Platform aktif: ' + platSummary,
-    '- Jam posting paling sering: ' + String(agg.bestHour).padStart(2,'0') + ':00',
-    '- Hari posting paling sering: ' + agg.bestDay,
-    '- Format dominan: ' + agg.topFormat,
-    bizCategory ? '- PENTING: Semua saran, hashtag, dan rekomendasi konten WAJIB relevan dengan industri "' + bizCategory + '".' : '',
+    '- Tren: ' + trendLine,
+    '- Periode pertama: ' + (agg.hasPrevPeriod ? 'tidak' : 'ya, belum ada data pembanding'),
+    bizCategory ? '- PENTING: Saran dan hashtag WAJIB relevan dengan industri "' + bizCategory + '".' : '',
     '',
-    'INSTRUKSI narasi_p1 (ISI FIELD INI — maks 2 kalimat):',
-    '  Mulai PERSIS dengan kalimat pembuka di atas.',
-    '  Lanjutkan kalimat 2: sebutkan ' + agg.total + ' iklan, ' + _anFmtK(agg.totalReach) + ' orang tahu bisnis ini, performa konten dinilai "' + erLbl.label + '".',
-    '  Jelaskan apa arti performa "' + erLbl.label + '" ini bagi pemilik bisnis, dalam bahasa yang mudah dimengerti.',
-    '  Tutup dengan: "' + p1Closing + '"',
+    'BENCHMARK INTERNAL (gunakan sebagai konteks dalam narasi, jangan tampilkan sebagai widget tersendiri):',
+    '- Instagram avg ER global: 0.48% (Socialinsider, 35 juta post, 2025)',
+    '- TikTok avg ER global: 3.70% (Socialinsider 2025)',
+    '- Facebook avg ER global: 0.15% (Socialinsider 2025)',
+    '- Instagram organic reach: 3-4% dari followers per post (Sprout Social 2025)',
     '',
-    'INSTRUKSI narasi_p2 (ISI FIELD INI — maks 2 kalimat):',
-    '  ' + p2Guide,
+    'STRUKTUR NARASI YANG HARUS DIIKUTI PERSIS:',
+    '',
+    'narasi_p1 (maks 2 kalimat):',
+    '  Buka PERSIS dengan: "' + bizName + ', kamu di jalur yang tepat! 🎯"',
+    '  Kalimat 2: sebutkan ' + iklanCount + ' iklan, ' + reachDisplay + ' orang reach organik,' +
+      (erVal != null
+        ? ' ER ' + erDisplay + ' jauh di atas rata-rata ' + topPlatName + ' ' + benchmark + '.'
+        : ' ER belum bisa dihitung karena data reach masih terlalu sedikit.'),
+    '',
+    'narasi_p2 (maks 2 kalimat):',
+    '  ' + p2Instruction,
+    '',
+    'narasi_p3 (maks 2 kalimat, konteks jujur + empati):',
+    '  Normalize angka kecil: reach organik ' + topPlatName + ' memang terbatas, rata-rata hanya 3-4% dari followers per post.',
+    '  ' + reachDisplay + ' reach di bulan pertama itu normal dan sehat. Fondasi sudah kuat.',
+    '  WAJIB akhiri narasi_p3 dengan kalimat: "' + trendLine + '"',
+    '',
+    'clue_potensi (box kiri "Artinya untuk bisnismu", 1 kalimat):',
+    '  Kualitas konten sudah terbukti. Tantangan berikutnya bukan buat konten lebih bagus, tapi lebih banyak orang yang melihatnya.',
+    '',
+    'clue_todo (box kanan "Yang bisa dilakukan sekarang", 1 kalimat):',
+    '  ' + clueTodoInstruction,
+    '',
+    'narasi_footer (teks kecil di bawah kotak, 1 kalimat):',
+    '  "Data akan semakin akurat setelah lebih banyak iklan berjalan."',
     '',
     'TUGAS: Buat response JSON persis berikut (tanpa markdown, tanpa teks di luar JSON):',
     '{',
-    '  "narasi_p1": "kalimat pembuka + angka spesifik + interpretasi ER + kalimat penutup dinamis. Maks 2 kalimat.",',
-    '  "narasi_p2": "gap terbesar sebagai peluang + 1 aksi konkret spesifik. Maks 2 kalimat.",',
-    '  "clue_potensi": "WAJIB sebut angka ' + _anFmtK(agg.totalReach) + ' orang. Bahasa UMKM, 1 kalimat max. Contoh: Sekarang ' + _anFmtK(agg.totalReach) + ' orang sudah tahu bisnis kamu ada, makin banyak orang tahu makin besar peluang mereka jadi pelanggan.",',
-    '  "clue_todo": "' + (agg.totalPaidReach === 0 ? 'WAJIB sebut nama iklan \\"' + (agg.bestCamp ? agg.bestCamp.name : 'terbaik') + '\\". Bahasa UMKM, 1 kalimat max. Contoh: Boost iklan \\"' + (agg.bestCamp ? agg.bestCamp.name : 'terbaik') + '\\" dengan Rp 20-50rb selama 3 hari, cara paling mudah menjangkau lebih banyak calon pelanggan minggu ini.' : 'Tulis 1 langkah konkret berdasarkan platform ' + (agg.platList.length ? ((_AN_PLAT[agg.platList[0].key] || {}).name || agg.platList[0].key) : 'terbaik') + ' dengan ER tertinggi. Bahasa UMKM, langsung ke poin.') + '",',
+    '  "narasi_p1": "' + bizName + ', kamu di jalur yang tepat + data real. Maks 2 kalimat.",',
+    '  "narasi_p2": "penjelasan kenapa performa seperti ini. Maks 2 kalimat.",',
+    '  "narasi_p3": "konteks jujur + empati + tutup dengan tren. Maks 2 kalimat.",',
+    '  "clue_potensi": "kualitas sudah terbukti, tantangan berikutnya distribusi. 1 kalimat.",',
+    '  "clue_todo": "' + (bestIklan ? 'aksi spesifik sebut \\"' + bestIklan + '\\"' : 'aksi berbasis platform') + '. 1 kalimat.",',
+    '  "narasi_footer": "Data akan semakin akurat setelah lebih banyak iklan berjalan.",',
     '  "mood_insight": "1 kalimat dari pola reaksi audiens.",',
     '  "platform_insight": "1 kalimat, sebut nama platform.",',
     '  "stitch_insight": "1 kalimat pola caption terkuat.",',
     '  "rekomendasi": [',
-    '    {"platform": "ig", "hari": "' + agg.bestDay + '", "jam": "' + String(agg.bestHour).padStart(2,'0') + ':00", "aksi": "aksi spesifik ig", "alasan": "alasan konkret"},',
-    '    {"platform": "meta", "hari": "Rabu", "jam": "12:00", "aksi": "aksi spesifik fb", "alasan": "alasan konkret"},',
-    '    {"platform": "tiktok", "hari": "Jumat", "jam": "20:00", "aksi": "aksi spesifik tiktok", "alasan": "alasan konkret"}',
+    '    {"platform": "' + topPlatKey + '", "hari": "' + agg.bestDay + '", "jam": "' + bestHourStr + ':00", "aksi": "aksi spesifik ' + topPlatName + '", "alasan": "alasan dari data real"},',
+    '    {"platform": "meta", "hari": "Rabu", "jam": "12:00", "aksi": "aksi spesifik Facebook", "alasan": "alasan konkret"},',
+    '    {"platform": "tiktok", "hari": "Jumat", "jam": "20:00", "aksi": "aksi spesifik TikTok", "alasan": "alasan konkret"}',
     '  ],',
-    '  "rekom_cta": "Buat Iklan [Format Spesifik] Sekarang"',
+    '  "rekom_cta": "Buat Iklan Baru Sekarang"',
     '}'
   ].join('\n');
 }
-
 /* ─── Call SiLaris for Analytics ─── */
 async function _callSilarisAnalytics(agg) {
   var supabaseUrl = (typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.SUPABASE_URL) || '';
@@ -430,37 +452,70 @@ async function _callSilarisAnalytics(agg) {
 
 /* ─── Analytics Fallback ─── */
 function _buildAnalyticsFallback(agg) {
-  var erLbl   = _anErLabel(agg.avgER);
-  var bestPlat = agg.platList.length ? ((_AN_PLAT[agg.platList[0].key] || {}).name || agg.platList[0].key) : 'Instagram';
-  var noPaid  = agg.totalPaidReach === 0;
-  var erTier  = agg.avgER == null ? 'unknown' : agg.avgER >= 10 ? 'high' : agg.avgER >= 3 ? 'mid' : 'low';
-  var p1Closing = erTier === 'high'
-    ? 'Ini pencapaian yang serius dan layak dirayakan.'
-    : erTier === 'mid'
-    ? 'Fondasi sudah kuat, ini saat yang tepat untuk ekspansi.'
-    : 'Data ini kasih tahu persis apa yang perlu diperbaiki, yuk benahi satu per satu.';
+  var ctx         = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : {};
+  var bizName     = ctx.businessName || 'Kamu';
+  var erTier      = agg.avgER == null ? 'unknown' : agg.avgER >= 10 ? 'high' : agg.avgER >= 3 ? 'mid' : 'low';
+  var erDisplay   = agg.avgER != null ? agg.avgER.toFixed(1) + '%' : null;
+  var iklanCount  = agg.countThisMonth > 0 ? agg.countThisMonth : agg.total;
+  var topPlatKey  = agg.platList.length ? agg.platList[0].key : 'ig';
+  var topPlatName = (_AN_PLAT[topPlatKey] || {}).name || 'Instagram';
+  var _bm         = { ig: '0.48%', meta: '0.15%', tiktok: '3.70%' };
+  var benchmark   = _bm[topPlatKey] || '0.48%';
+  var reachDisplay = agg.totalReach > 0 ? _anFmtK(agg.totalReach) : '0';
+  var bestIklan   = agg.bestCamp
+    ? (agg.bestCamp.name || agg.bestCamp.nama_campaign || 'iklan terbaik')
+    : null;
+
+  var trendLine = agg.hasPrevPeriod
+    ? 'Reach ' + (agg.reachTrend >= 0 ? '\u2191' : '\u2193') + ' ' + Math.abs(agg.reachTrend) + '% dari bulan lalu.'
+    : '\ud83d\udcca Tren mulai terhitung periode depan.';
+
+  // narasi_p1
+  var p1 = bizName + ', kamu di jalur yang tepat! \ud83c\udfaf ' +
+    iklanCount + ' iklan berjalan bulan ini, ' + reachDisplay + ' orang sudah tahu bisnis kamu secara organik' +
+    (erDisplay ? ', dan ER kamu ' + erDisplay + ', jauh di atas rata-rata ' + topPlatName + ' ' + benchmark + '.' : '.');
+
+  // narasi_p2
+  var p2 = erTier === 'high' || erTier === 'mid'
+    ? 'Kenapa ER kamu setinggi ini? Karena konten kamu relevan, orang yang lihat langsung bereaksi, bukan scroll lewat. Ini tanda kamu sudah bicara ke audiens yang tepat dengan pesan yang tepat.'
+    : erTier === 'low'
+    ? 'ER masih bisa ditingkatkan dengan konten yang lebih relevan ke audiens lokal. Coba variasi format atau tambahkan sapaan lokal untuk meningkatkan engagement.'
+    : 'Belum cukup data untuk menilai performa konten karena reach masih sangat sedikit. Tambah lebih banyak iklan agar analisis semakin akurat.';
+
+  // narasi_p3
+  var p3 = 'Yang perlu diketahui: reach organik ' + topPlatName + ' memang terbatas, rata-rata hanya 3-4% dari followers per post. ' +
+    reachDisplay + ' reach itu normal dan sehat untuk bisnis yang baru aktif di media sosial, fondasi kamu sudah kuat. ' + trendLine;
+
+  // clue_todo
+  var clueTodo = bestIklan && agg.totalPaidReach === 0
+    ? 'Kalau mau memperluas jangkauan, coba boost "' + bestIklan + '" dengan Rp 20-50rb selama 3 hari. Ini iklan dengan engagement tertinggi, paling efisien untuk diperkuat minggu ini.'
+    : 'Konsistensi adalah kunci. Terus posting dengan frekuensi yang sama dan pantau konten mana yang paling banyak di-engage.';
+
   return {
-    narasi_p1: 'Hei! Kamu sudah kerja keras bulan ini, dan datanya membuktikannya. ' +
-      agg.total + ' iklan berjalan, ' + _anFmtK(agg.totalReach) + ' orang sudah tahu bisnis kamu ada, performa kontenmu dinilai "' + erLbl.label.replace(/\s*[🔥⭐👍🌱]/u, '') + '"' +
-      (erTier === 'high' ? '. Artinya hampir semua yang lihat kontenmu langsung bereaksi, bukan sekadar scroll lewat.' : '.') +
-      ' ' + p1Closing,
-    narasi_p2: noPaid
-      ? 'Satu peluang besar yang belum disentuh: iklan berbayar kamu masih nol. Coba boost iklan ' + (agg.bestCamp ? '"' + agg.bestCamp.name + '"' : 'terbaik') + ' dengan Rp 20-50rb selama 3 hari. Ini cara paling efisien untuk lipatgandakan jangkauanmu sekarang.'
-      : 'Semua metrik sudah bagus. Tantangan berikutnya adalah mempertahankan konsistensi ini sambil mencoba format baru.',
-    clue_potensi: 'Makin banyak orang yang tahu bisnis kamu, makin besar peluang mereka jadi pelanggan.',
-    clue_todo: 'Boost iklan terbaik kamu dengan Rp 20-50rb selama 3 hari. Cara paling mudah menjangkau lebih banyak calon pelanggan minggu ini.',
-    mood_insight: 'Audiens kamu merespons dengan baik. Pertahankan tone dan format yang sudah terbukti bekerja.',
-    platform_insight: 'Coba eksplorasi platform yang belum dipakai untuk menjangkau segmen audiens baru.',
-    stitch_insight: 'Sapaan lokal dan teks overlay personal terbukti meningkatkan stop-the-scroll rate.',
+    narasi_p1:      p1,
+    narasi_p2:      p2,
+    narasi_p3:      p3,
+    clue_potensi:   'Kualitas konten sudah terbukti. Tantangan berikutnya bukan buat konten lebih bagus, tapi lebih banyak orang yang melihatnya.',
+    clue_todo:      clueTodo,
+    narasi_footer:  'Data akan semakin akurat setelah lebih banyak iklan berjalan.',
+    mood_insight:   'Audiens kamu merespons dengan baik. Pertahankan tone dan format yang sudah terbukti bekerja.',
+    platform_insight: 'Kamu paling aktif di ' + topPlatName + '. Pertahankan konsistensi di platform ini.',
+    stitch_insight: 'Caption dengan sapaan lokal dan teks overlay personal terbukti meningkatkan engagement.',
     rekomendasi: [
-      { platform: 'ig', hari: agg.bestDay || 'Selasa', jam: String(agg.bestHour || 19).padStart(2,'0') + ':00', aksi: 'Post Reel dengan hook 3 detik pertama yang kuat', alasan: 'Jam ' + String(agg.bestHour || 19).padStart(2,'0') + ':00 adalah prime time engagement Instagram kamu' },
-      { platform: 'meta', hari: 'Rabu', jam: '12:00', aksi: noPaid ? 'Boost post terbaik dengan budget Rp 30rb selama 3 hari' : 'Post konten edukatif singkat di Facebook', alasan: 'Tengah hari Rabu adalah waktu tertinggi scrolling Facebook untuk audiens dewasa' },
-      { platform: 'tiktok', hari: 'Jumat', jam: '20:00', aksi: 'Upload video 15-30 detik dengan musik trending lokal', alasan: 'Jumat malam adalah puncak engagement TikTok sebelum weekend' }
+      { platform: topPlatKey, hari: agg.bestDay || 'Selasa',
+        jam: String(agg.bestHour || 19).padStart(2,'0') + ':00',
+        aksi: 'Post konten dengan sapaan lokal di caption',
+        alasan: 'Jam ' + String(agg.bestHour || 19).padStart(2,'0') + ':00 adalah waktu dengan aktivitas iklan tertinggi kamu' },
+      { platform: 'meta', hari: 'Rabu', jam: '12:00',
+        aksi: agg.totalPaidReach === 0 ? 'Boost post terbaik dengan budget Rp 30rb selama 3 hari' : 'Post konten edukatif singkat di Facebook',
+        alasan: 'Tengah hari adalah waktu scrolling Facebook yang optimal' },
+      { platform: 'tiktok', hari: 'Jumat', jam: '20:00',
+        aksi: 'Upload video 15-30 detik dengan musik trending lokal',
+        alasan: 'Jumat malam adalah waktu engagement TikTok tertinggi sebelum weekend' }
     ],
     rekom_cta: 'Buat Iklan Baru Sekarang'
   };
 }
-
 /* ─── Section: SiLaris Narasi ─── */
 function _renderSilarisNarasi() {
   return '<div class="an-si-card" id="an-si-section">' +
@@ -476,8 +531,10 @@ function _renderSilarisNarasi() {
     '<div id="an-si-narasi-wrap" class="an-si-narasi">' +
       '<div style="display:flex;flex-direction:column;gap:6px;">' +
         _anSkBlock('75%', 14) + _anSkBlock('60%', 14) + _anSkBlock('45%', 14) +
+        _anSkBlock('80%', 14) + _anSkBlock('55%', 14) +
       '</div>' +
     '</div>' +
+    '<div id="an-si-narasi-footer" class="an-si-narasi-footer"></div>' +
     '<div class="an-si-clue-row">' +
       '<div class="an-si-clue">' +
         '<div class="an-si-clue-label">💡 Artinya untuk bisnismu</div>' +
@@ -946,17 +1003,23 @@ function _anPopulateAI(ai, narasiTs, agg) {
     var _pStyle = 'margin:0;font-size:14px;line-height:1.7;color:var(--near-black);';
     var _p1 = (ai.narasi_p1 || '').trim();
     var _p2 = (ai.narasi_p2 || '').trim();
-    if (_p1 && _p2) {
-      narasiWrap.innerHTML =
-        '<p style="' + _pStyle + '">' + _p1 + '</p>' +
-        '<div style="height:10px;"></div>' +
-        '<p style="' + _pStyle + '">' + _p2 + '</p>';
-    } else if (_p1) {
-      narasiWrap.innerHTML = '<p style="' + _pStyle + '">' + _p1 + '</p>';
+    var _p3 = (ai.narasi_p3 || '').trim();
+    var parts = [];
+    if (_p1) parts.push('<p style="' + _pStyle + '">' + _p1 + '</p>');
+    if (_p2) parts.push('<p style="' + _pStyle + '">' + _p2 + '</p>');
+    if (_p3) parts.push('<p style="' + _pStyle + 'opacity:0.85;">' + _p3 + '</p>');
+    if (parts.length) {
+      narasiWrap.innerHTML = parts.join('<div style="height:10px;"></div>');
     } else if (ai.narasi) {
       // fallback: old single-field format
       narasiWrap.innerHTML = '<p style="' + _pStyle + '">' + ai.narasi + '</p>';
     }
+  }
+
+  // Narasi footer
+  var nfEl = document.getElementById('an-si-narasi-footer');
+  if (nfEl && ai.narasi_footer) {
+    nfEl.textContent = ai.narasi_footer;
   }
 
   // Narasi timestamp
