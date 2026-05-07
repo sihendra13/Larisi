@@ -570,7 +570,7 @@ async function _doLaunch(campNameOverride) {
     thumbColor:   '#791ADB',
     thumbUrl:     thumbUrl,
     launchTime:   'Baru saja',
-    aiOpening:    'Campaign <strong>' + campName + '</strong> sudah live!\n\nAudiens tersedia: <strong>' + reachText + '</strong> di area kamu — jangkauan mulai dihitung begitu iklan ditayangkan.\n\nSaya pantau tren di <strong>' + (locShort || 'area target') + '</strong> via <strong>' + platLabel + '</strong> dan akan notify kamu kalau ada yang perlu dioptimalkan.',
+    aiOpening:    'Campaign <strong>' + campName + '</strong> sudah live!\n\nAudiens tersedia: <strong>' + reachText + '</strong> di area kamu, jangkauan mulai dihitung begitu iklan ditayangkan.\n\nSaya pantau tren di <strong>' + (locShort || 'area target') + '</strong> via <strong>' + platLabel + '</strong> dan akan notify kamu kalau ada yang perlu dioptimalkan.',
     aiChips:      ['Lihat proyeksi', 'Optimalkan targeting', 'Bagikan ke tim'],
     aiChipResponses: {
       'Lihat proyeksi': 'Berdasarkan setting campaign kamu:\n\nTarget reach: <strong>' + reachText + '</strong>\nEstimasi waktu: 24–48 jam dengan burn rate optimal\nPlatform: <strong>' + platLabel + '</strong>\n\nRekomendasi: pantau 2 jam pertama untuk validasi performa awal. Saya akan highlight anomali kalau ada.',
