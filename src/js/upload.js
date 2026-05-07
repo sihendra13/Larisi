@@ -38,6 +38,9 @@ function addThumb(f, thumbs, uz, isMaster) {
       uploadedDataURLs = [];
       document.getElementById('personaCard').classList.remove('visible');
       document.getElementById('catNudge').classList.remove('visible');
+      var _vcEl = document.getElementById('visionConflict');
+      if (_vcEl) _vcEl.classList.remove('visible');
+      if (typeof _visionConflictData !== 'undefined') _visionConflictData = null;
       document.getElementById('stitchCard').style.display = 'none';
       document.getElementById('scanning').classList.remove('visible');
       document.getElementById('genBtn').style.display = 'none';
