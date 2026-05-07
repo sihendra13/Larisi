@@ -52,6 +52,18 @@
   <script>
     (function() {
       var params   = new URLSearchParams(window.location.search);
+      // ── Jika popup landing di domain lama (larisi.vercel.app), redirect ke domain utama ──
+      // PostForMe mungkin masih pakai redirect URL lama. Dengan redirect ini,
+      // callback selalu berjalan di origin yang sama dengan opener (app.larisi.id)
+      // sehingga postMessage tidak perlu cross-origin.
+      if (window.location.hostname === 'larisi.vercel.app') {
+        var targetUrl = 'https://app.larisi.id/postforme-callback'
+                      + window.location.search
+                      + window.location.hash;
+        window.location.replace(targetUrl);
+        return; // stop — halaman akan redirect
+      }
+
       var success  = params.get('isSuccess') === 'true';
       var ids      = params.get('accountIds') || params.get('accountId') || '';
       var provider = params.get('provider') || '';
@@ -74,7 +86,7 @@
               type:       'postforme_oauth_success',
               accountIds: ids.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
               provider:   provider
-            }, '*');
+            }, window.location.origin);
           } catch(e) { /* cross-origin guard */ }
         }
 
@@ -95,7 +107,7 @@
             window.opener.postMessage({
               type:     'postforme_oauth_resync',
               provider: provider
-            }, '*');
+            }, window.location.origin);
           } catch(e) {}
         }
 
