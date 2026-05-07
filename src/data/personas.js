@@ -7,6 +7,8 @@ var personaDB = {
   Kafe:              {name:'Kafe / Coffee Shop',       target:'Young Urban Coffee Lovers',         tags:['Usia 18–35','Ngopi','Urban'],         age:'18–35', gender:'Mixed',    conf:89, stitch:'{greeting} — Ngopi santai di {loc}? Cuma {dist}km dari kamu! {cta}'},
   Properti:{name:'Real Estate',        target:'Young Families & Investors',    tags:['Usia 28–45','Investor','Keluarga'], age:'28–50', gender:'Mixed', conf:82, stitch:'{greeting} — Hunian impian di {loc}, investasi masa depan keluarga. {cta}'},
   Beauty:  {name:'Beauty / Self-care', target:'Skincare & Makeup Lovers',      tags:['Usia 18–32','Beauty','Skincare'],   age:'17–35', gender:'Perempuan', conf:90, stitch:'{greeting} — Rahasia glowing warga {loc}! Hanya {dist}km. {cta}'},
+  Salon:   {name:'Salon & Perawatan',  target:'Beauty Service & Facial Lovers', tags:['Usia 17–40','Perawatan','Glowing'],  age:'17–40', gender:'Mixed',     conf:87, stitch:'{greeting} — Perawatan wajah & tubuh terbaik di {loc}! {dist}km dari kamu. {cta}'},
+  Barber:  {name:'Barber Shop',        target:'Young Men & Grooming Enthusiasts', tags:['Usia 17–35','Pria','Grooming'],    age:'17–35', gender:'Laki-laki', conf:88, stitch:'{greeting} — Cukur rapi & stylish di {loc}! Cuma {dist}km dari kamu. {cta}'},
   Bayi:    {name:'Parenting',          target:'New Parents & Young Families',  tags:['Usia 25–40','Orang tua','Keluarga'],age:'25–40', gender:'Mixed', conf:86, stitch:'{greeting} — Produk bayi terpercaya di {loc}, {dist}km dari kamu. {cta}'},
   Gadget:  {name:'Tech / Electronics', target:'Tech Enthusiasts & Professionals', tags:['Usia 18–40','Tech','Digital'],    age:'18–40', gender:'Mixed',      conf:84, stitch:'{greeting} — Setup impian tersedia di {loc}! Gas upgrade sekarang. {cta}'},
   Wisata:  {name:'Tourism',            target:'Solo Travelers & Vacationers',  tags:['Usia 22–40','Traveler','Petualang'],conf:87, stitch:'{greeting} — Destinasi terbaik {dist}km dari {loc} menunggu kamu. {cta}'},
@@ -18,7 +20,7 @@ var personaDB = {
   General:    {name:'General Content',    target:'Broad Local Awareness',         tags:['Semua usia','Lokal','Umum'],           conf:62,  stitch:'{greeting} — Ada yang baru di {loc}, {dist}km dari kamu! {cta}'}
 };
 
-var personaKeys = ['Kuliner','Kafe','FashionWanita','FashionPria','FashionMuslim','FashionMuslimPria','Properti','Beauty','Bayi','Gadget','Wisata','Pet','Seni','Otomotif','Pendidikan','Kerajinan'];
+var personaKeys = ['Kuliner','Kafe','FashionWanita','FashionPria','FashionMuslim','FashionMuslimPria','Properti','Beauty','Salon','Barber','Bayi','Gadget','Wisata','Pet','Seni','Otomotif','Pendidikan','Kerajinan'];
 
 /* ── Filename-based persona detection ── */
 var filenamePersonaMap = [
@@ -32,7 +34,9 @@ var filenamePersonaMap = [
   {keys:['vespa','motor','mobil','otomotif','auto','kendaraan','sparepart','bengkel','modif'], p:{name:'Otomotif', target:'Car & Motorcycle Enthusiasts', age:'Usia 20–45', gender:'Mixed'}},
   {keys:['makanan','burger','cafe','food','kuliner'],           p:{name:'Culinary/Cafe',              target:'Foodies & Urban Professionals',              age:'Usia 22–40', gender:'Mixed'}},
   {keys:['properti','rumah','griya'],                           p:{name:'Real Estate',                target:'Young Families & Investors',                 age:'Usia 28–50', gender:'Mixed'}},
-  {keys:['skincare','kosmetik','beauty'],                       p:{name:'Beauty/Self-care',           target:'Skincare & Makeup Lovers',                   age:'Usia 17–35', gender:'Perempuan'}},
+  {keys:['skincare','kosmetik','beauty','lipstik','makeup','serum','moisturizer'], p:{name:'Beauty / Self-care', target:'Skincare & Makeup Lovers', age:'Usia 17–35', gender:'Perempuan'}},
+  {keys:['salon','facial','perawatan wajah','spa','waxing','treatment','klinik kecantikan'], p:{name:'Salon & Perawatan', target:'Beauty Service & Facial Lovers', age:'Usia 17–40', gender:'Mixed'}},
+  {keys:['barber','barbershop','cukur','pangkas','pomade','gunting rambut','hairstyle'], p:{name:'Barber Shop', target:'Young Men & Grooming Enthusiasts', age:'Usia 17–35', gender:'Laki-laki'}},
   {keys:['anak','bayi','baby'],                                 p:{name:'Parenting',                  target:'New Parents & Young Families',               age:'Usia 25–40', gender:'Mixed'}},
   {keys:['gadget','hp','laptop','elektronik','tech'],           p:{name:'Tech/Electronics',           target:'Tech Enthusiasts & Professionals',            age:'Usia 18–40', gender:'Mixed'}},
   {keys:['wisata','travel','hotel','tourism'],                  p:{name:'Tourism',                    target:'Solo Travelers & Vacationers',               age:'Usia 22–40', gender:'Mixed'}},

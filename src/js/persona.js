@@ -346,6 +346,8 @@ var _BIZ_CAT_TO_TILE = {
   fashion_muslim:   'FashionMuslim',
   fashion_muslim_pria: 'FashionMuslimPria',
   kesehatan:        'Beauty',
+  salon:            'Salon',
+  barber:           'Barber',
   elektronik:       'Gadget',
   properti:         'Properti',
   wisata:           'Wisata',

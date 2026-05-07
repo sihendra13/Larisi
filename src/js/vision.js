@@ -12,7 +12,7 @@ var _VISION_TO_PERSONA = {
   kendaraan:  'Otomotif',
   elektronik: 'Gadget',
   properti:   'Properti',
-  kosmetik:   'Beauty',
+  kosmetik:   'Beauty',    // produk kosmetik/skincare → Beauty
   bayi:       'Bayi',
   tanaman:    null,
   hewan:      'Pet',
