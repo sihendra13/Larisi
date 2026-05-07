@@ -2,7 +2,9 @@ var personaDB = {
   Kuliner: {name:'Culinary / Cafe',    target:'Foodies & Urban Professionals', tags:['Usia 22–35','Urban','Foodie'],      age:'20–40', gender:'Mixed', conf:88, stitch:'{greeting} — Cita rasa terbaik di {loc}! Cuma {dist}km dari sini. {cta}'},
   FashionWanita: {name:'Fashion Wanita',  target:'Modern Women & Style Enthusiasts',  tags:['Usia 18–35','Trendy','Stylish'],  age:'18–35', gender:'Perempuan', conf:85, stitch:'{greeting} — Koleksi terbaru hadir di {loc}! {dist}km dari kamu. {cta}'},
   FashionPria:   {name:'Fashion Pria',    target:'Style-Conscious Men',               tags:['Usia 18–40','Stylish','Urban'],   age:'18–40', gender:'Laki-laki', conf:83, stitch:'{greeting} — Outfit keren untuk pria ada di {loc}! {dist}km dari kamu. {cta}'},
-  FashionMuslim: {name:'Fashion Muslim',       target:'Muslimah & Hijab Enthusiasts',    tags:['Usia 18–40','Muslimah','Hijab'],  age:'18–40', gender:'Perempuan',  conf:87, stitch:'{greeting} — Koleksi busana muslim terlengkap di {loc}! {dist}km dari kamu. {cta}'},
+  FashionMuslim:     {name:'Fashion Muslim',          target:'Muslimah & Hijab Enthusiasts',      tags:['Usia 18–40','Muslimah','Hijab'],      age:'18–40', gender:'Perempuan', conf:87, stitch:'{greeting} — Koleksi busana muslimah terlengkap di {loc}! {dist}km dari kamu. {cta}'},
+  FashionMuslimPria: {name:'Busana Muslim Pria',      target:'Muslim Men & Modest Fashion',       tags:['Usia 18–45','Pria Muslim','Koko'],    age:'18–45', gender:'Laki-laki', conf:84, stitch:'{greeting} — Koleksi koko & gamis pria terbaik di {loc}! {dist}km dari kamu. {cta}'},
+  Kafe:              {name:'Kafe / Coffee Shop',       target:'Young Urban Coffee Lovers',         tags:['Usia 18–35','Ngopi','Urban'],         age:'18–35', gender:'Mixed',    conf:89, stitch:'{greeting} — Ngopi santai di {loc}? Cuma {dist}km dari kamu! {cta}'},
   Properti:{name:'Real Estate',        target:'Young Families & Investors',    tags:['Usia 28–45','Investor','Keluarga'], age:'28–50', gender:'Mixed', conf:82, stitch:'{greeting} — Hunian impian di {loc}, investasi masa depan keluarga. {cta}'},
   Beauty:  {name:'Beauty / Self-care', target:'Skincare & Makeup Lovers',      tags:['Usia 18–32','Beauty','Skincare'],   age:'17–35', gender:'Perempuan', conf:90, stitch:'{greeting} — Rahasia glowing warga {loc}! Hanya {dist}km. {cta}'},
   Bayi:    {name:'Parenting',          target:'New Parents & Young Families',  tags:['Usia 25–40','Orang tua','Keluarga'],age:'25–40', gender:'Mixed', conf:86, stitch:'{greeting} — Produk bayi terpercaya di {loc}, {dist}km dari kamu. {cta}'},
@@ -16,14 +18,16 @@ var personaDB = {
   General:    {name:'General Content',    target:'Broad Local Awareness',         tags:['Semua usia','Lokal','Umum'],           conf:62,  stitch:'{greeting} — Ada yang baru di {loc}, {dist}km dari kamu! {cta}'}
 };
 
-var personaKeys = ['Kuliner','FashionWanita','FashionPria','FashionMuslim','Properti','Beauty','Bayi','Gadget','Wisata','Pet','Seni','Otomotif','Pendidikan','Kerajinan'];
+var personaKeys = ['Kuliner','Kafe','FashionWanita','FashionPria','FashionMuslim','FashionMuslimPria','Properti','Beauty','Bayi','Gadget','Wisata','Pet','Seni','Otomotif','Pendidikan','Kerajinan'];
 
 /* ── Filename-based persona detection ── */
 var filenamePersonaMap = [
   {keys:['craft','kerajinan','handmade','anyaman','batik tulis','tenun','ukir','rajut','bordir','souvenir'], p:{name:'Kerajinan / Craft', target:'Craft Lovers & Handmade Fans', age:'Usia 20–45', gender:'Mixed'}},
   {keys:['batik','kain batik','batik tulis'],                   p:{name:'Heritage & Cultural Fashion',target:'Batik Enthusiasts & Professionals',         age:'Usia 20–45', gender:'Mixed'}},
-  {keys:['gamis','hijab','muslim','syari','kerudung'],           p:{name:'Fashion Muslim',             target:'Muslimah & Hijab Enthusiasts',               age:'Usia 18–40', gender:'Perempuan'}},
-  {keys:['baju','dress','fashion','style','pakaian'],           p:{name:'Fashion Wanita Modern',      target:'Modern Women & Style Enthusiasts',            age:'Usia 18–35', gender:'Mixed'}},
+  {keys:['gamis','hijab','muslimah','syari','kerudung','abaya','jilbab'], p:{name:'Fashion Muslim',       target:'Muslimah & Hijab Enthusiasts',  age:'Usia 18–40', gender:'Perempuan'}},
+  {keys:['koko','baju koko','sarung','gamis pria','muslim pria'],        p:{name:'Busana Muslim Pria',   target:'Muslim Men & Modest Fashion',   age:'Usia 18–45', gender:'Laki-laki'}},
+  {keys:['kopi','cafe','coffee','latte','espresso','cappuccino','ngopi','barista'], p:{name:'Kafe / Coffee Shop', target:'Young Urban Coffee Lovers', age:'Usia 18–35', gender:'Mixed'}},
+  {keys:['baju','dress','fashion','style','pakaian'],           p:{name:'Fashion Wanita',             target:'Modern Women & Style Enthusiasts',            age:'Usia 18–35', gender:'Perempuan'}},
   {keys:['buku','novel','bacaan','kursus','les','belajar','pendidikan','sekolah','kampus','tutor'], p:{name:'Pendidikan', target:'Students, Parents & Learners', age:'Usia 15–45', gender:'Mixed'}},
   {keys:['vespa','motor','mobil','otomotif','auto','kendaraan','sparepart','bengkel','modif'], p:{name:'Otomotif', target:'Car & Motorcycle Enthusiasts', age:'Usia 20–45', gender:'Mixed'}},
   {keys:['makanan','burger','cafe','food','kuliner'],           p:{name:'Culinary/Cafe',              target:'Foodies & Urban Professionals',              age:'Usia 22–40', gender:'Mixed'}},

@@ -7,7 +7,7 @@
    ───────────────────────────────────────── */
 var _VISION_TO_PERSONA = {
   makanan:    'Kuliner',
-  minuman:    'Kuliner',
+  minuman:    'Kafe',      // foto minuman → konteks cafe lebih umum dari warung makan
   pakaian:    'FashionWanita',  // default; bisa di-override oleh biz profile
   kendaraan:  'Otomotif',
   elektronik: 'Gadget',

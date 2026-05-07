@@ -338,15 +338,20 @@ function openEditPersona() {
 
 /* ── Mapping: onboarding category → cat-tile cat value ── */
 var _BIZ_CAT_TO_TILE = {
-  fnb:        'Kuliner',
-  fashion:    'FashionWanita',
-  kesehatan:  'Beauty',
-  elektronik: 'Gadget',
-  properti:   'Properti',
-  wisata:     'Wisata',
-  otomotif:   'Otomotif',
-  pendidikan: 'Pendidikan',
-  kerajinan:  'Kerajinan'
+  fnb:              'Kuliner',
+  kafe:             'Kafe',
+  fashion:          'FashionWanita',   // legacy fallback
+  fashion_wanita:   'FashionWanita',
+  fashion_pria:     'FashionPria',
+  fashion_muslim:   'FashionMuslim',
+  fashion_muslim_pria: 'FashionMuslimPria',
+  kesehatan:        'Beauty',
+  elektronik:       'Gadget',
+  properti:         'Properti',
+  wisata:           'Wisata',
+  otomotif:         'Otomotif',
+  pendidikan:       'Pendidikan',
+  kerajinan:        'Kerajinan'
   // jasa, retail, lainnya → terlalu luas → catNudge manual
 };
 
