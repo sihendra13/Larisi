@@ -66,13 +66,15 @@
 
       if (treatAsSuccess && hasAccountId) {
         // Kirim data ke window induk (tab utama Larisi)
+        // Pakai '*' sebagai targetOrigin agar bekerja lintas domain
+        // (app.larisi.id ↔ larisi.vercel.app)
         if (window.opener && !window.opener.closed) {
           try {
             window.opener.postMessage({
               type:       'postforme_oauth_success',
               accountIds: ids.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
               provider:   provider
-            }, window.location.origin);
+            }, '*');
           } catch(e) { /* cross-origin guard */ }
         }
 
@@ -93,7 +95,7 @@
             window.opener.postMessage({
               type:     'postforme_oauth_resync',
               provider: provider
-            }, window.location.origin);
+            }, '*');
           } catch(e) {}
         }
 

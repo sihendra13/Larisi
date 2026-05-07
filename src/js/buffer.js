@@ -335,8 +335,10 @@ async function connectPostForMe(platform) {
     }
 
     // Listen postMessage dari callback page
+    // Terima dari semua domain Larisi yang diketahui (app.larisi.id & larisi.vercel.app)
+    var _ALLOWED_ORIGINS = ['https://app.larisi.id', 'https://larisi.vercel.app', window.location.origin];
     var msgHandler = function(event) {
-      if (event.origin !== window.location.origin) return;
+      if (!_ALLOWED_ORIGINS.includes(event.origin)) return;
       if (!event.data) return;
 
       // ── Resync: isSuccess=false → akun mungkin sudah terhubung di PostForMe ──
