@@ -179,6 +179,47 @@ async function _fetchConnectedAccounts() {
   }
 }
 
+/* ─── Sync & tambah akun dari PostForMe (untuk kasus already-connected) ── */
+// Dipanggil saat PostForMe mengembalikan isSuccess=false.
+// Ambil semua connected accounts dari API, cari yang platformnya cocok,
+// lalu simpan ke localStorage dan update UI.
+// Returns: true jika akun ditemukan & ditambahkan, false jika tidak ada.
+async function _syncAndAddAccount(platform) {
+  try {
+    var externalId = getUserExternalId();
+    var data = await _pfmProxy('/v1/social-accounts?external_id=' + encodeURIComponent(externalId), 'GET', null);
+    var list = data.data || data.accounts || (Array.isArray(data) ? data : []);
+
+    // Cari akun yang platform-nya cocok
+    var match = null;
+    for (var i = 0; i < list.length; i++) {
+      var apiPlatform = (list[i].platform || list[i].provider || '').toLowerCase();
+      if (apiPlatform === platform || apiPlatform.startsWith(platform)) {
+        // Ambil yang statusnya connected, atau yang pertama kalau tidak ada info status
+        if (!match || list[i].status === 'connected') { match = list[i]; }
+      }
+    }
+
+    if (!match) {
+      console.log('[postforme] _syncAndAddAccount: tidak ada akun', platform, 'di PostForMe');
+      return false;
+    }
+
+    var accountId  = match.id || match.account_id || '';
+    var username   = match.username || match.handle || match.name || '';
+    var avatarUrl  = match.profile_photo_url || match.profile_picture_url
+                   || match.picture || match.avatar || match.image_url || '';
+
+    console.log('[postforme] _syncAndAddAccount: found', platform, accountId, username);
+    _saveAndUpdateUI(platform, accountId, username, avatarUrl);
+    if (typeof showAnToast === 'function') showAnToast('✓ Akun ' + platform + ' berhasil disinkronkan!');
+    return true;
+  } catch(e) {
+    console.warn('[postforme] _syncAndAddAccount error:', e.message);
+    return false;
+  }
+}
+
 /* ─── Simpan akun & update UI seketika ────────────────────── */
 
 function _saveAndUpdateUI(platform, accountId, username, avatarUrl) {
@@ -296,7 +337,28 @@ async function connectPostForMe(platform) {
     // Listen postMessage dari callback page
     var msgHandler = function(event) {
       if (event.origin !== window.location.origin) return;
-      if (!event.data || event.data.type !== 'postforme_oauth_success') return;
+      if (!event.data) return;
+
+      // ── Resync: isSuccess=false → akun mungkin sudah terhubung di PostForMe ──
+      if (event.data.type === 'postforme_oauth_resync') {
+        window.removeEventListener('message', msgHandler);
+        clearInterval(poll);
+        console.log('[postforme] resync triggered for platform:', platform);
+        _syncAndAddAccount(platform).then(function(synced) {
+          if (!synced) {
+            // Tidak ditemukan di PostForMe → akun memang belum terhubung, restore UI
+            if (btn) {
+              btn.querySelector('span:last-child').textContent = 'Hubungkan';
+              btn.disabled = false;
+              btn.onclick  = function() { connectPostForMe(platform); };
+            }
+            if (typeof showAnToast === 'function') showAnToast('Koneksi dibatalkan.');
+          }
+        });
+        return;
+      }
+
+      if (event.data.type !== 'postforme_oauth_success') return;
       window.removeEventListener('message', msgHandler);
       clearInterval(poll);
 

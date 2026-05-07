@@ -86,13 +86,24 @@
         setTimeout(function() { window.close(); }, 2000);
 
       } else {
-        // Benar-benar gagal / dibatalkan user (tidak ada accountId sama sekali)
+        // isSuccess=false tanpa accountId → mungkin akun sudah terhubung sebelumnya
+        // atau user membatalkan. Kirim pesan ke opener untuk sync ulang dari PostForMe API.
+        if (window.opener && !window.opener.closed) {
+          try {
+            window.opener.postMessage({
+              type:     'postforme_oauth_resync',
+              provider: provider
+            }, window.location.origin);
+          } catch(e) {}
+        }
+
         document.getElementById('spinner').style.display = 'none';
         document.getElementById('card').innerHTML =
-          '<div class="icon">❌</div>' +
-          '<div class="title">Koneksi dibatalkan</div>' +
-          '<div class="subtitle">Silakan coba lagi dari Larisi.</div>' +
-          '<a class="close-link" onclick="window.close()">Tutup jendela ini</a>';
+          '<div class="icon">🔄</div>' +
+          '<div class="title">Menyinkronkan akun…</div>' +
+          '<div class="subtitle">Jendela ini akan menutup otomatis.</div>';
+
+        setTimeout(function() { window.close(); }, 2500);
       }
     })();
   </script>
