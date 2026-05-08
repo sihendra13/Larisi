@@ -82,15 +82,69 @@ function getPersonaKey() {
   return 'General';
 }
 
+function getUsp() {
+  var profile = {};
+  try { profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}'); } catch(e) {}
+  if (profile.usp && profile.usp.trim()) return profile.usp.trim();
+  var category = profile.category || 'lainnya';
+  var fallbacks = {
+    fnb:                 'Cita rasa yang bikin balik lagi',
+    kafe:                'Tempat ngopi paling nyaman',
+    fashion_wanita:      'Koleksi fashion wanita terlengkap',
+    fashion_pria:        'Outfit pria yang selalu on point',
+    fashion_muslim:      'Koleksi muslimah syari dan stylish',
+    fashion_muslim_pria: 'Koleksi koko dan gamis terbaik',
+    kesehatan:           'Perawatan kulit yang terbukti',
+    salon:               'Perawatan profesional terpercaya',
+    barber:              'Cukur rapi dan stylish',
+    elektronik:          'Gadget lengkap bergaransi resmi',
+    otomotif:            'Servis terpercaya bersertifikat',
+    properti:            'Hunian impian keluarga',
+    pendidikan:          'Belajar lebih mudah dan menyenangkan',
+    wisata:              'Pengalaman wisata tak terlupakan',
+    kerajinan:           'Kerajinan tangan otentik lokal',
+    retail:              'Kebutuhan sehari-hari lengkap',
+    lainnya:             'Pilihan terbaik untuk kamu'
+  };
+  return fallbacks[category] || 'Pilihan terbaik untuk kamu';
+}
+
+function getDistText(format) {
+  var profile = {};
+  try { profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}'); } catch(e) {}
+  var hasDelivery = profile.delivery_service || false;
+  var category    = profile.category || '';
+  var loc = document.querySelector('.popup-loc')
+    ? document.querySelector('.popup-loc').textContent.split(',')[0].trim()
+    : 'lokasi kami';
+  var jasaCategories = ['jasa', 'salon', 'barber', 'pendidikan'];
+  var isJasa = jasaCategories.indexOf(category) !== -1;
+  if (format === 'short') {
+    if (category === 'fnb' || category === 'kafe')      return hasDelivery ? 'Antar ke rumahmu 🛵' : 'Makan di sini 🍽';
+    if (category.indexOf('fashion') !== -1)              return hasDelivery ? 'Antar ke rumahmu 🛵' : 'Koleksi baru hadir 🛍';
+    if (category === 'otomotif')                         return 'Servis di ' + loc + ' 🔧';
+    if (category === 'properti')                         return 'Lokasi strategis 📍';
+    if (category === 'wisata')                           return 'Destinasi menunggu kamu 🗺';
+    if (isJasa)                                          return 'Booking sekarang 📱';
+    if (hasDelivery)                                     return 'Antar ke rumahmu 🛵';
+    return 'Di ' + loc + ' 📍';
+  }
+  if (isJasa)      return 'area ' + loc;
+  if (hasDelivery) return loc + ' — melayani pengiriman';
+  return loc;
+}
+
 function fillCaptionVars(text) {
-  var loc = document.querySelector('.popup-loc') ? document.querySelector('.popup-loc').textContent.split(',')[0] : 'lokasi kamu';
-  var dist = currentRadius.toFixed(1);
-  var d = getDialek();
+  var loc  = document.querySelector('.popup-loc') ? document.querySelector('.popup-loc').textContent.split(',')[0] : 'lokasi kamu';
+  var dist = getDistText('long');
+  var usp  = getUsp();
+  var d    = getDialek();
   return text
-    .replace(/\{loc\}/g, loc)
-    .replace(/\{dist\}/g, dist)
+    .replace(/\{loc\}/g,      loc)
+    .replace(/\{dist\}/g,     dist)
+    .replace(/\{usp\}/g,      usp)
     .replace(/\{greeting\}/g, d.greeting)
-    .replace(/\{cta\}/g, d.cta);
+    .replace(/\{cta\}/g,      d.cta);
 }
 
 function generateCaption(cycle) {
