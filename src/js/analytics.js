@@ -2434,10 +2434,11 @@ async function _callSilarisCompetitor(handle, platform, agg) {
       })
     });
     var data = await resp.json();
+    console.log('[RADAR] silaris-chat raw response status:', resp.status, '| reply preview:', data && data.reply ? data.reply.slice(0, 120) : '(no reply)');
     if (data && data.reply) {
+      // Strip markdown code fences only — jangan strip // karena bisa break URL di insights
       var text = data.reply
-        .replace(/```json\n?/g, '').replace(/```\n?/g, '') // strip markdown
-        .replace(/\/\/[^\n]*/g, '')                         // strip // comments jika AI ikutkan
+        .replace(/```json\n?/g, '').replace(/```\n?/g, '')
         .trim();
       var start = text.indexOf('{'), end = text.lastIndexOf('}');
       if (start !== -1 && end !== -1) text = text.slice(start, end + 1);
@@ -2445,8 +2446,9 @@ async function _callSilarisCompetitor(handle, platform, agg) {
       console.log('[RADAR] _callSilarisCompetitor result:', parsed);
       return parsed;
     }
+    console.warn('[RADAR] no reply from silaris-chat. data:', data);
   } catch(e) {
-    console.warn('[analytics] _callSilarisCompetitor error:', e);
+    console.error('[RADAR] _callSilarisCompetitor error:', e.message || e);
   }
   return null;
 }
