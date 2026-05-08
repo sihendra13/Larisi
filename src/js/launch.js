@@ -596,6 +596,25 @@ async function _doLaunch(campNameOverride) {
   CAMPAIGNS.unshift(newCamp);
   localStorage.setItem('radar_last_launch', Date.now().toString());
 
+  // FIX 2: jika iklan berasal dari strategi kompetitor → update status ke 'selesai'
+  if (window._strategyContext) {
+    var _sHandle = (window._strategyContext.handle || '').replace(/^@/, '').toLowerCase();
+    var _sId     = window._strategyContext.strategyId || null;
+    if (_sHandle && typeof _anGetSavedStrategies === 'function') {
+      var _saves = _anGetSavedStrategies();
+      var _match = _saves.find(function(x) {
+        if (_sId) return x.id === _sId;
+        return (x.handle || '').replace(/^@/, '').toLowerCase() === _sHandle;
+      });
+      if (_match) {
+        _match.status = 'selesai';
+        if (typeof _anPersistStrategies === 'function')       _anPersistStrategies(_saves);
+        if (typeof _anRenderSavedStrategies === 'function')   _anRenderSavedStrategies();
+      }
+    }
+    window._strategyContext = null; // clear context setelah publish
+  }
+
   // ── P2: Toast spesifik platform SEBELUM modal launching ──
   var toastCopy = _buildPublishToastCopy(activeChannel, activeFormat);
   showTopToast(toastCopy, 'success');

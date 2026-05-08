@@ -2347,3 +2347,67 @@
   transition: background .12s;
 }
 .an-strat-banner-close:hover { background: rgba(0,0,0,0.12); }
+
+/* ─── Strategy Context Modal (FIX 3 — menggantikan banner kuning) ─── */
+.an-strat-ctx-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.5);
+  animation: stratFadeIn 0.22s ease;
+}
+.an-strat-ctx-sheet {
+  width: 480px; max-width: 90vw;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.22);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.an-strat-ctx-header {
+  padding: 20px 22px 14px;
+  border-bottom: 1px solid #f1f1f1;
+}
+.an-strat-ctx-title {
+  font-size: 16px; font-weight: 700; color: #111;
+  margin-bottom: 3px;
+}
+.an-strat-ctx-sub {
+  font-size: 11.5px; color: var(--secondary);
+}
+.an-strat-ctx-body {
+  padding: 16px 22px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.an-strat-ctx-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px; border-radius: 10px;
+  font-size: 13px; line-height: 1.45; color: #333;
+}
+.an-strat-ctx-row.green  { background: #f0fdf4; }
+.an-strat-ctx-row.purple { background: #faf5ff; }
+.an-strat-ctx-dot  { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+.an-strat-ctx-text { flex: 1; }
+.an-strat-ctx-footer {
+  padding: 14px 22px 20px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.an-strat-ctx-btn-primary {
+  width: 100%; padding: 12px 0;
+  background: #111; color: #fff;
+  border: none; border-radius: 10px;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: opacity .15s;
+}
+.an-strat-ctx-btn-primary:hover { opacity: .85; }
+.an-strat-ctx-btn-secondary {
+  width: 100%; padding: 10px 0;
+  background: transparent; color: var(--secondary);
+  border: 1.5px solid #e5e7eb; border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: border-color .15s, color .15s;
+}
+.an-strat-ctx-btn-secondary:hover { border-color: #aaa; color: #555; }
+@media (max-width: 520px) {
+  .an-strat-ctx-sheet { border-radius: 14px 14px 0 0; }
+  .an-strat-ctx-overlay { align-items: flex-end; }
+}

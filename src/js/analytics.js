@@ -1779,10 +1779,13 @@ function _anDoSaveStrategy(baseList) {
   var _sFormat   = (_anCurrentStrategyData.strategy && _anCurrentStrategyData.strategy.format_rekomendasi) || 'reel';
   _anSetDapurChannel(_sPlatform, _sFormat);
   window._strategyContext = {
-    handle:   _anCurrentStrategyData.handle,
-    platform: _sPlatform,
-    format:   _sFormat,
-    bizCat:   _sSCtx.businessCategory || ''
+    handle:      _anCurrentStrategyData.handle,
+    platform:    _sPlatform,
+    format:      _sFormat,
+    bizCat:      _sSCtx.businessCategory || '',
+    strategy:    _anCurrentStrategyData.strategy || null,
+    dateStr:     entry.dateStr,
+    strategyId:  entry.id
   };
 
   // FIX 1: tutup modal segera → switch ke Dapur Konten setelah animasi selesai
@@ -1889,7 +1892,22 @@ function anLaunchFromStrat(id) {
 
   _anSetDapurChannel(platform, format);
 
-  window._strategyContext = { handle: handle, platform: platform, format: format, bizCat: bizCat };
+  // FIX 2: ubah status ke 'sedang' saat user klik "Buat Iklan Sekarang" dari daftar tersimpan
+  if (s && s.status === 'baru') {
+    s.status = 'sedang';
+    _anPersistStrategies(strategies);
+    _anRenderSavedStrategies();
+  }
+
+  window._strategyContext = {
+    handle:     handle,
+    platform:   platform,
+    format:     format,
+    bizCat:     bizCat,
+    strategy:   (s && s.strategy)  || null,
+    dateStr:    (s && s.dateStr)   || null,
+    strategyId: id
+  };
   if (typeof switchMenu === 'function') switchMenu('command');
   requestAnimationFrame(function() { _anApplyStrategyContext(); });
 }
@@ -1900,8 +1918,15 @@ function anLaunchFromStratStep(platform, format, handle) {
   var _sCtx  = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : {};
   var bizCat = _sCtx.businessCategory || '';
   _anSetDapurChannel(platform, format);
-  window._strategyContext = { handle: handle, platform: platform, format: format, bizCat: bizCat };
-  // FIX 1: tutup modal DULU, baru tampilkan Dapur Konten
+  window._strategyContext = {
+    handle:   handle,
+    platform: platform,
+    format:   format,
+    bizCat:   bizCat,
+    strategy: _anCurrentStrategyData && _anCurrentStrategyData.strategy || null,
+    dateStr:  null  // fresh analysis, dateStr akan di-set oleh _anDoSaveStrategy jika disimpan
+  };
+  // tutup modal DULU, baru tampilkan Dapur Konten
   anCloseStrategyModal();
   setTimeout(function() {
     if (typeof switchMenu === 'function') switchMenu('command');
@@ -1940,10 +1965,7 @@ function _anApplyStrategyContext() {
   if (typeof updateCaptionPlatformLabel === 'function') updateCaptionPlatformLabel();
   if (typeof updateReach === 'function') updateReach();
 
-  // Inject banner
-  _anInjectStrategyBanner(ctx);
-
-  // Pre-fill caption
+  // Pre-fill caption (200ms — setelah shell/platform sudah applied)
   setTimeout(function() {
     if (typeof captionAltIndex !== 'undefined') captionAltIndex = 0;
     if (typeof generateCaption === 'function' && typeof currentPersona !== 'undefined' && currentPersona) {
@@ -1959,8 +1981,186 @@ function _anApplyStrategyContext() {
       }
     }
   }, 200);
+
+  // FIX 3: tampilkan strategy context modal 300ms setelah Dapur Konten terbuka
+  setTimeout(function() { _anShowStrategyContextModal(ctx); }, 300);
 }
 window._anApplyStrategyContext = _anApplyStrategyContext;
+
+/* ─── FIX 3: Strategy Context Modal (menggantikan banner kuning) ─── */
+function _anShowStrategyContextModal(ctx) {
+  var existing = document.getElementById('an-strat-ctx-modal');
+  if (existing) existing.remove();
+  if (!ctx || !ctx.handle) return;
+
+  var handle    = ctx.handle.startsWith('@') ? ctx.handle : '@' + ctx.handle;
+  var fmtNames  = { reel: 'Reel', post: 'Foto/Post', story: 'Story' };
+  var platNames = { ig: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
+  var fmtName   = fmtNames[ctx.format]   || ctx.format   || 'Konten';
+  var platName  = platNames[ctx.platform] || ctx.platform || 'Instagram';
+  var bizCat    = ctx.bizCat  || 'usahamu';
+  var dateStr   = ctx.dateStr || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  var d         = typeof getDialek === 'function' ? getDialek() : { greeting: 'Halo' };
+
+  // Keunggulan: dari strategy data jika tersedia, fallback ke ER
+  var agg = window._anLastAgg || {};
+  var keunggulan = (ctx.strategy && ctx.strategy.keunggulan)
+    ? ctx.strategy.keunggulan
+    : (agg.avgER ? 'ER kamu ' + agg.avgER.toFixed(1) + '% — modal yang kuat untuk ungguli pesaing.' : null);
+
+  var modal = document.createElement('div');
+  modal.id = 'an-strat-ctx-modal';
+  modal.className = 'an-strat-ctx-overlay';
+  modal.innerHTML =
+    '<div class="an-strat-ctx-sheet">' +
+      '<div class="an-strat-ctx-header">' +
+        '<div class="an-strat-ctx-title">🎯 Strategi vs ' + handle + '</div>' +
+        '<div class="an-strat-ctx-sub">Dibuat oleh SiLaris · ' + dateStr + '</div>' +
+      '</div>' +
+      '<div class="an-strat-ctx-body">' +
+        (keunggulan
+          ? '<div class="an-strat-ctx-row green">' +
+              '<span class="an-strat-ctx-dot">✅</span>' +
+              '<span class="an-strat-ctx-text"><strong>Keunggulanmu:</strong> ' + keunggulan + '</span>' +
+            '</div>'
+          : '') +
+        '<div class="an-strat-ctx-row purple">' +
+          '<span class="an-strat-ctx-dot">🎯</span>' +
+          '<span class="an-strat-ctx-text"><strong>Langkah hari ini:</strong> Buat <strong>' + fmtName + '</strong> tentang <strong>' + bizCat + '</strong> di <strong>' + platName + '</strong> dengan sapaan &ldquo;<em>' + d.greeting + '</em>&rdquo; &mdash; caption sudah disiapkan untukmu.</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="an-strat-ctx-footer">' +
+        '<button class="an-strat-ctx-btn-primary" onclick="_anStratCtxStart()">Mulai Buat Iklan →</button>' +
+        '<button class="an-strat-ctx-btn-secondary" onclick="_anStratCtxSkip()">Lewati</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+  // TIDAK bisa ditutup klik overlay — intentional (user harus sadar pakai strategi)
+  // ESC = sama dengan Lewati
+  var _escFn = function(e) { if (e.key === 'Escape') _anStratCtxSkip(); };
+  modal._escFn = _escFn;
+  document.addEventListener('keydown', _escFn);
+}
+window._anShowStrategyContextModal = _anShowStrategyContextModal;
+
+/* ─── Mulai Buat Iklan (dari Strategy Context Modal) ─── */
+function _anStratCtxStart() {
+  var modal = document.getElementById('an-strat-ctx-modal');
+  if (modal) {
+    if (modal._escFn) document.removeEventListener('keydown', modal._escFn);
+    modal.style.animation = 'stratFadeOut 0.2s ease forwards';
+    setTimeout(function() { if (modal.parentNode) modal.remove(); }, 220);
+  }
+  // FIX 1: override genBtn → gunakan AI caption generator dalam strategy context
+  var genBtn = document.getElementById('genBtn');
+  if (genBtn) {
+    genBtn.disabled = false;
+    genBtn.onclick  = function() { _anStratGenerateCaption(); };
+  }
+}
+window._anStratCtxStart = _anStratCtxStart;
+
+/* ─── Lewati (dari Strategy Context Modal) ─── */
+function _anStratCtxSkip() {
+  var modal = document.getElementById('an-strat-ctx-modal');
+  if (modal) {
+    if (modal._escFn) document.removeEventListener('keydown', modal._escFn);
+    modal.style.animation = 'stratFadeOut 0.2s ease forwards';
+    setTimeout(function() { if (modal.parentNode) modal.remove(); }, 220);
+  }
+  // Hapus strategy context + clear caption
+  window._strategyContext = null;
+  var area = document.getElementById('captionArea');
+  if (area) area.value = '';
+  // Restore genBtn ke behavior default
+  var genBtn = document.getElementById('genBtn');
+  if (genBtn) {
+    genBtn.disabled = false;
+    genBtn.onclick  = function() { if (typeof generateCaption === 'function') generateCaption(true); };
+  }
+}
+window._anStratCtxSkip = _anStratCtxSkip;
+
+/* ─── FIX 1: Generate caption baru via AI dalam strategy context ─── */
+async function _anStratGenerateCaption() {
+  var area   = document.getElementById('captionArea');
+  var genBtn = document.getElementById('genBtn');
+  if (!area) return;
+
+  var ctx         = window._strategyContext;
+  var currentText = area.value.trim();
+
+  // Jika tidak ada strategy context tapi persona ada: cycle template biasa
+  if (!ctx && typeof currentPersona !== 'undefined' && currentPersona) {
+    if (typeof generateCaption === 'function') generateCaption(true);
+    return;
+  }
+
+  var supabaseUrl = (typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.SUPABASE_URL) || '';
+  var supabaseKey = (typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.SUPABASE_ANON_KEY) || '';
+  if (!supabaseUrl) {
+    // Fallback: cycle template
+    if (typeof generateCaption === 'function') generateCaption(true);
+    return;
+  }
+
+  if (genBtn) { genBtn.disabled = true; genBtn.textContent = '⏳ Generating...'; }
+
+  var fmtNames  = { reel: 'Reel', post: 'Foto/Post', story: 'Story' };
+  var platNames = { ig: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
+  var fmtName   = ctx ? (fmtNames[ctx.format]   || ctx.format   || 'Konten')    : 'Konten';
+  var platName  = ctx ? (platNames[ctx.platform] || ctx.platform || 'Instagram') : 'Instagram';
+  var bizCat    = ctx ? (ctx.bizCat  || 'usaha') : 'usaha';
+  var handle    = ctx ? (ctx.handle  || '') : '';
+  var d = typeof getDialek === 'function' ? getDialek() : { greeting: 'Halo', cta: 'kunjungi' };
+
+  var sysPrompt = [
+    'Kamu adalah SiLaris, Campaign Coach AI untuk UMKM Indonesia.',
+    'Tugas: Tulis 1 caption media sosial yang menarik untuk ' + bizCat + ' di ' + platName + '.',
+    '',
+    'ATURAN KERAS: Kembalikan teks caption saja — tanpa penjelasan, tanpa heading, tanpa markdown.',
+    'ATURAN KERAS: Mulai dengan sapaan lokal “' + d.greeting + '”.',
+    'ATURAN KERAS: Sertakan 3–5 hashtag relevan di akhir.',
+    'ATURAN KERAS: Bahasa Indonesia santai dan langsung.',
+    'ATURAN KERAS: Maksimal 280 karakter (tidak termasuk hashtag).',
+    (currentText ? 'Referensi (gunakan sebagai inspirasi, bukan copy): ' + currentText : ''),
+    (handle ? 'Konteks: caption ini untuk konten yang bersaing dengan ' + handle + ' di ' + platName + '.' : ''),
+    '',
+    'Format: ' + fmtName + ' · Platform: ' + platName
+  ].filter(Boolean).join('\n');
+
+  try {
+    var resp = await fetch(supabaseUrl + '/functions/v1/silaris-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + supabaseKey },
+      body: JSON.stringify({
+        systemPrompt: sysPrompt,
+        campaignData: { format: fmtName, platform: platName },
+        autoInsight: true,
+        messages: []
+      })
+    });
+    var data = await resp.json();
+    if (data && data.reply) {
+      var caption = data.reply.trim().replace(/^["']|["']$/g, '');
+      if (typeof typewriterEffect === 'function') {
+        typewriterEffect(caption);
+      } else {
+        area.value = caption;
+      }
+    } else {
+      // Fallback: cycle template
+      if (typeof generateCaption === 'function') generateCaption(true);
+    }
+  } catch(e) {
+    console.warn('[analytics] _anStratGenerateCaption error:', e);
+    if (typeof generateCaption === 'function') generateCaption(true);
+  }
+
+  if (genBtn) { genBtn.disabled = false; genBtn.textContent = 'Generate ulang'; }
+}
+window._anStratGenerateCaption = _anStratGenerateCaption;
 
 /* ─── Inject strategy context banner di Dapur Konten ─── */
 function _anInjectStrategyBanner(ctx) {
