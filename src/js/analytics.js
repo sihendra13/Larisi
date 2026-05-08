@@ -1308,7 +1308,7 @@ window.anSetCompPlatform = anSetCompPlatform;
 function _anIsCategoryMismatch(userCat, compCat) {
   if (!userCat || !compCat) return false;
   var groups = {
-    food:     ['kuliner','fnb','makanan','minuman','cafe','restoran','food','kopi','catering','bakery'],
+    food:     ['kuliner','fnb','makanan','minuman','cafe','restoran','food','kopi','catering','bakery','warung','resto'],
     fashion:  ['fashion','pakaian','busana','outfit','baju','hijab','batik','clothing','konveksi'],
     beauty:   ['beauty','kecantikan','skincare','makeup','salon','perawatan','kosmetik'],
     retail:   ['retail','toko','jualan','produk','shop','market','belanja'],
@@ -1317,7 +1317,10 @@ function _anIsCategoryMismatch(userCat, compCat) {
     property: ['properti','property','rumah','realestate','kontrakan','kost','ruko'],
     travel:   ['wisata','travel','pariwisata','hotel','resort','penginapan','tur'],
     edu:      ['pendidikan','education','kursus','les','belajar','sekolah','training'],
-    auto:     ['otomotif','motor','mobil','automotive','bengkel','sparepart']
+    auto:     ['otomotif','motor','mobil','automotive','bengkel','sparepart'],
+    // Seni & Budaya — penting untuk deteksi mismatch (museum, gallery, dll)
+    seni:     ['museum','gallery','galeri','art','seni','budaya','film','culture','pertunjukan',
+               'teater','teater','musik','kultura','heritage','kebudayaan','pameran','sinema']
   };
   function getGroup(cat) {
     var c = cat.toLowerCase();
@@ -1333,16 +1336,21 @@ function _anIsCategoryMismatch(userCat, compCat) {
 }
 
 /* ─── Competitor: build category-mismatch warning HTML ─── */
-function _anBuildCatWarning(handle, ctx) {
+// compCat / userCat = raw category string untuk ditampilkan di warning
+function _anBuildCatWarning(handle, ctx, compCat, userCat) {
   var regionLabel = (ctx && ctx.regionLabel) ? ctx.regionLabel : '';
-  var bizCat      = (ctx && ctx.businessCategory) ? ctx.businessCategory : 'serupa';
+  var bizCat      = userCat || (ctx && ctx.businessCategory) || 'bisnismu';
+  var compLabel   = compCat || 'kategori berbeda';
+  // Capitalize first letter untuk display
+  var cap = function(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; };
   return '<div class="an-comp-cat-warning">' +
     '<div class="an-comp-cat-warn-row">' +
       '<div class="an-comp-cat-warn-body">' +
         '<div class="an-comp-cat-warn-title">⚠️ Kategori berbeda</div>' +
-        '<div class="an-comp-cat-warn-text">' + handle + ' sepertinya bergerak di kategori yang berbeda dari bisnismu. ' +
+        '<div class="an-comp-cat-warn-text">' + handle + ' sepertinya bergerak di kategori <strong>' + cap(compLabel) + '</strong>, ' +
+          'berbeda dari bisnismu (<strong>' + cap(bizCat) + '</strong>). ' +
           'Insight tetap ditampilkan — gunakan sebagai inspirasi, bukan patokan langsung.</div>' +
-        (regionLabel ? '<div class="an-comp-cat-suggestion">💡 Untuk perbandingan lebih akurat, coba cari pesaing ' + bizCat + ' di ' + regionLabel + '</div>' : '') +
+        (regionLabel ? '<div class="an-comp-cat-suggestion">💡 Untuk perbandingan lebih akurat, coba cari pesaing ' + cap(bizCat) + ' di ' + regionLabel + '</div>' : '') +
       '</div>' +
     '</div>' +
     '<div class="an-comp-cat-warn-btns">' +
@@ -1486,8 +1494,8 @@ async function anAnalyzeCompetitor() {
   area.innerHTML =
     '<div class="an-comp-result">' +
 
-    // FIX 2: category mismatch warning (informatif, bukan blokir)
-    (categoryMismatch ? _anBuildCatWarning(handle, _userCtxFix2) : '') +
+    // FIX 1: category mismatch warning (informatif, bukan blokir)
+    (categoryMismatch ? _anBuildCatWarning(handle, _userCtxFix2, _compBizCat, _userBizCat) : '') +
 
     // Compare grid
     '<div class="an-comp-compare-grid">' +
@@ -1971,13 +1979,32 @@ function _anApplyStrategyContext() {
     if (typeof generateCaption === 'function' && typeof currentPersona !== 'undefined' && currentPersona) {
       generateCaption(false);  // pakai template dengan platform yang sudah di-set
     } else {
-      // Fallback: isi starter text manual
+      // Fallback: isi starter text yang kaya dari strategy context (FIX 3)
       var area = document.getElementById('captionArea');
       if (area) {
-        var fmtNames = { reel: 'Reel', post: 'Foto/Post', story: 'Story' };
-        var d = typeof getDialek === 'function' ? getDialek() : { greeting: 'Halo' };
-        var fmtLabel = fmtNames[ctx.format] || ctx.format;
-        area.value = 'Generate caption ' + fmtLabel + ' untuk ' + (ctx.bizCat || 'usahamu') + ' dengan sapaan \'' + d.greeting + '\'';
+        var _fmtNames3 = { reel: 'Reel', post: 'Foto/Post', story: 'Story' };
+        var _platNames3 = { ig: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
+        var _d3 = typeof getDialek === 'function' ? getDialek() : { greeting: 'Halo' };
+        var _sCtx3 = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : {};
+        var _fmtLbl3  = _fmtNames3[ctx.format]   || ctx.format   || 'konten';
+        var _platLbl3 = _platNames3[ctx.platform] || ctx.platform || 'Instagram';
+        var _bizName3 = _sCtx3.businessName || '';
+        var _bizCat3  = ctx.bizCat || _sCtx3.businessCategory || 'usahaku';
+        var _locEl3   = document.querySelector('.popup-loc');
+        var _kota3    = _locEl3 ? _locEl3.textContent.trim().split(',')[0] : (_sCtx3.regionLabel || '');
+        var _kotaSlug = _kota3 ? _kota3.toLowerCase().replace(/\s+/g, '') : '';
+
+        var _richPrompt =
+          'Buat caption ' + _platLbl3 + ' ' + _fmtLbl3 + ' untuk ' +
+          (_bizName3 ? _bizName3 + ' yang bergerak di bidang ' : '') + _bizCat3 +
+          (_kota3 ? ' di ' + _kota3 : '') +
+          ' — gunakan sapaan \'' + _d3.greeting + '\' di awal, ' +
+          '3-4 kalimat, tone hangat dan mengundang, ' +
+          'sertakan 5-7 hashtag campuran lokal ' +
+          (_kotaSlug ? '(#' + _kotaSlug + 'food #' + _kotaSlug + 'kuliner) ' : '') +
+          'dan umum (#kuliner #makananenak), akhiri dengan call to action';
+
+        area.value = _richPrompt;
       }
     }
   }, 200);
@@ -2058,6 +2085,34 @@ function _anStratCtxStart() {
     genBtn.disabled = false;
     genBtn.onclick  = function() { _anStratGenerateCaption(); };
   }
+
+  // FIX 4: tampilkan nudge upload foto jika belum ada foto (350ms, setelah modal animasi)
+  setTimeout(function() {
+    if (!window._strategyContext) return;
+    var hasPhoto  = typeof uploadedDataURL  !== 'undefined' && !!uploadedDataURL;
+    var hasPhotos = typeof uploadedDataURLs !== 'undefined' && uploadedDataURLs.length > 0;
+    if (hasPhoto || hasPhotos) return; // sudah ada foto, tidak perlu nudge
+
+    var uz = document.getElementById('uploadZone');
+    if (!uz || document.getElementById('an-strat-upload-nudge')) return;
+
+    var nudge = document.createElement('div');
+    nudge.id        = 'an-strat-upload-nudge';
+    nudge.className = 'an-strat-upload-nudge';
+    nudge.textContent = '📸 Upload foto produkmu untuk caption yang lebih personal dan spesifik — akan di-generate ulang otomatis berdasarkan fotomu';
+    uz.parentNode.insertBefore(nudge, uz.nextSibling);
+
+    // Auto-hilang ketika user upload foto (MutationObserver pada #thumbs)
+    var thumbsEl = document.getElementById('thumbs');
+    if (thumbsEl) {
+      var _nudgeObs = new MutationObserver(function() {
+        var n = document.getElementById('an-strat-upload-nudge');
+        if (n) { n.style.animation = 'stratFadeOut 0.2s ease forwards'; setTimeout(function() { if (n.parentNode) n.remove(); }, 220); }
+        _nudgeObs.disconnect();
+      });
+      _nudgeObs.observe(thumbsEl, { childList: true, attributes: true, attributeFilter: ['style'] });
+    }
+  }, 350);
 }
 window._anStratCtxStart = _anStratCtxStart;
 
@@ -2288,14 +2343,32 @@ async function _callSilarisCompetitor(handle, platform, agg) {
     '- Avg ER: ' + (agg.avgER ? agg.avgER.toFixed(1) + '%' : 'belum tersedia'),
     '- Total reach: ' + _anFmtK(agg.totalReach),
     '',
-    'Buat response JSON seperti berikut (estimasi realistis berdasarkan pola umum ' + platName + ' UMKM lokal Indonesia):',
-    '(Catatan: field comp_er tidak dipakai — nilai ER akan dihitung otomatis dari comp_followers di sisi klien)',
+    'Buat response JSON seperti berikut:',
+    '(Catatan: comp_er tidak dipakai — ER dihitung otomatis dari comp_followers di klien)',
     '{',
     '  "comp_handle": "@handle_atau_nama_singkat",',
-    '  "comp_category": "kategori bisnis pesaing dalam 1-3 kata (contoh: kuliner, fashion, jasa, beauty, otomotif)",',
+    '',
+    '  // comp_category: deteksi dari nama akun, bio, atau deskripsi profil — BUKAN dari isi foto.',
+    '  // Contoh keyword bio yang menunjukkan kategori:',
+    '  //   Seni/Budaya: museum, gallery, galeri, art, seni, budaya, film, culture, pameran',
+    '  //   Kuliner: resto, warung, cafe, makanan, food, fnb, makan, catering, bakery',
+    '  //   Fashion: fashion, baju, outfit, clothing, hijab, busana, konveksi',
+    '  //   Beauty: salon, skincare, beauty, kecantikan, makeup, kosmetik',
+    '  //   Properti: properti, rumah, kost, kontrakan, real estate',
+    '  //   Otomotif: motor, mobil, bengkel, otomotif, sparepart',
+    '  //   Jasa: jasa, service, konsultan, laundry, reparasi',
+    '  //   Pendidikan: kursus, les, sekolah, training, education',
+    '  // Kembalikan kategori dalam 1-3 kata Indonesia sesuai bio — BUKAN tebakan dari foto.',
+    '  "comp_category": "kategori dari bio/nama akun (contoh: kuliner, fashion, seni budaya, otomotif)",',
+    '',
     '  "comp_freq": "Nx/week",',
-    '  "comp_followers": "XXK (estimasi realistis — akun UMKM Indonesia biasanya 1K-50K)",',
-    '  "comp_format": "format konten dominan",',
+    '  "comp_followers": "XXK (estimasi realistis — UMKM Indonesia biasanya 1K-50K)",',
+    '',
+    '  // comp_format: HANYA dari jenis post (image/video/reel/carousel) — BUKAN dari objek/isi foto.',
+    '  // DILARANG mendeteksi format dari konten visual (makanan, orang, produk dalam foto).',
+    '  // Kalau tidak bisa mengakses post publik akun ini: kembalikan "Tidak tersedia".',
+    '  "comp_format": "format post dominan DARI JENIS POST atau \'Tidak tersedia\'",',
+    '',
     '  "insights": [',
     '    {"type": "green", "text": "keunggulan spesifik user vs pola pesaing ini"},',
     '    {"type": "red", "text": "area yang perlu diwaspadai atau ditingkatkan"},',

@@ -2348,6 +2348,20 @@
 }
 .an-strat-banner-close:hover { background: rgba(0,0,0,0.12); }
 
+/* ─── FIX 4: Upload nudge (muncul di Dapur Konten dari strategi, sebelum ada foto) ─── */
+.an-strat-upload-nudge {
+  font-size: 11.5px;
+  color: var(--secondary);
+  line-height: 1.45;
+  padding: 7px 10px;
+  background: #fafaf7;
+  border: 1px dashed #d4c5f9;
+  border-radius: 8px;
+  margin-top: 6px;
+  text-align: center;
+  animation: stratFadeIn 0.25s ease;
+}
+
 /* ─── Strategy Context Modal (FIX 3 — menggantikan banner kuning) ─── */
 .an-strat-ctx-overlay {
   position: fixed; inset: 0; z-index: 9999;
