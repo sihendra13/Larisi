@@ -2099,7 +2099,7 @@ function _anStratCtxStart() {
     var nudge = document.createElement('div');
     nudge.id        = 'an-strat-upload-nudge';
     nudge.className = 'an-strat-upload-nudge';
-    nudge.textContent = '📸 Upload foto produkmu untuk caption yang lebih personal dan spesifik — akan di-generate ulang otomatis berdasarkan fotomu';
+    nudge.textContent = '📸 Upload foto produkmu untuk hasil caption yang lebih personal dan spesifik. SiLaris akan membantumu membuatnya jadi lebih baik.';
     uz.parentNode.insertBefore(nudge, uz.nextSibling);
 
     // Auto-hilang ketika user upload foto (MutationObserver pada #thumbs)
