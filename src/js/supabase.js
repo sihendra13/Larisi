@@ -173,12 +173,13 @@ async function updateUserProfile(profileData) {
  * signInWithSocial(provider)
  * provider: 'google' or 'facebook'
  */
-async function signInWithSocial(provider) {
+async function signInWithSocial(provider, redirectTo) {
     const client = getSupabaseClient();
+    const destination = redirectTo || (window.location.origin + '/onboarding.html');
     const { data, error } = await client.auth.signInWithOAuth({
         provider: provider,
         options: {
-            redirectTo: window.location.origin + '/onboarding.html'
+            redirectTo: destination
         }
     });
     return { data, error };
