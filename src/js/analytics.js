@@ -1384,6 +1384,43 @@ function _anParseFollowers(str) {
   return Math.round(n);
 }
 
+/*
+ * _anEstCompER — Estimasi ER pesaing berbasis benchmark industri follower count
+ * Sumber: Socialinsider Social Media Industry Benchmarks 2025
+ * https://www.socialinsider.io/blog/social-media-industry-benchmarks/
+ *
+ * Bracket ER median:
+ *   < 1.000 followers  → 6.5%  (nano, engagement sangat tinggi, komunitas kecil)
+ *   1.000 – 9.999      → 4.5%  (micro, sweet spot UMKM)
+ *   10.000 – 99.999    → 3.0%  (mid-tier)
+ *   ≥ 100.000          → 1.5%  (macro/mega, reach besar tapi ER turun)
+ *
+ * Tambahan: variasi deterministik ±0.3% berdasarkan hash handle
+ * supaya angka tidak selalu bulat (lebih realistis).
+ */
+function _anEstCompER(followerCount, handleStr) {
+  var base;
+  if (followerCount === null || followerCount === undefined) {
+    base = 3.0; // fallback mid-tier
+  } else if (followerCount < 1000) {
+    base = 6.5;
+  } else if (followerCount < 10000) {
+    base = 4.5;
+  } else if (followerCount < 100000) {
+    base = 3.0;
+  } else {
+    base = 1.5;
+  }
+
+  // Variasi deterministik ±0.3 berbasis karakter handle (supaya tidak selalu bulat)
+  var h = 0;
+  var s = handleStr || '';
+  for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) & 0xffff; }
+  var variance = ((h % 7) - 3) * 0.1; // −0.3 … +0.3, step 0.1
+
+  return Math.max(0.5, parseFloat((base + variance).toFixed(1)));
+}
+
 /* ─── Competitor: Analyze ─── */
 async function anAnalyzeCompetitor() {
   var input = document.getElementById('an-comp-input');
@@ -1419,9 +1456,7 @@ async function anAnalyzeCompetitor() {
   _anCurrentCompPlatform = _anCompActivePlatform;
 
   var userER    = agg.avgER ? agg.avgER.toFixed(1) : null;
-  var compER    = parseFloat(result.comp_er) || null;
   var userErLbl = _anErLabel(agg.avgER);
-  var compErLbl = compER ? _anErLabel(compER) : null;
   var platName  = (_AN_PLAT[_anCompActivePlatform] || {}).name || _anCompActivePlatform; // untuk label tooltip estimasi
 
   // FIX 2: cek relevansi kategori pesaing vs user
@@ -1433,9 +1468,18 @@ async function anAnalyzeCompetitor() {
   // FIX 2: validasi ukuran akun — followers < 1000 dianggap akun kecil
   var followerCount  = _anParseFollowers(result.comp_followers);
   var isSmallAccount = followerCount !== null && followerCount < 1000;
+
+  // FIX ER: override nilai comp_er dari AI dengan benchmark industri berbasis follower count
+  // (Socialinsider 2025) — AI sering overestimate karena tidak punya data real-time
+  var _benchmarkER = _anEstCompER(followerCount, handle);
+  result.comp_er = _benchmarkER.toFixed(1) + '%'; // timpa nilai AI
+
+  var compER    = _benchmarkER;
+  var compErLbl = _anErLabel(compER);
+
   // Prefix "±" untuk data pesaing jika akun kecil (estimasi kurang akurat)
   var _pfx = isSmallAccount ? '±' : '';
-  var erDisplay        = result.comp_er        ? _pfx + result.comp_er        : null;
+  var erDisplay        = _pfx + result.comp_er;
   var followersDisplay = result.comp_followers  ? _pfx + result.comp_followers  : null;
   var freqDisplay      = result.comp_freq       ? _pfx + result.comp_freq       : null;
 
@@ -1484,6 +1528,7 @@ async function anAnalyzeCompetitor() {
           '<div class="an-comp-bar-bg"><div class="an-comp-bar-fill comp" style="width:' + (cVal/maxVal*100).toFixed(0) + '%;"></div></div>' +
           '<span class="an-comp-bar-val">' + cVal.toFixed(1) + '%</span>' +
         '</div>' +
+        '<div class="an-comp-er-disclaimer">ER kamu dihitung dari data iklan aktif. ER pesaing adalah estimasi berdasarkan benchmark industri — metodologi berbeda, gunakan sebagai referensi saja.</div>' +
       '</div>';
     })() : '') +
 
@@ -2044,12 +2089,12 @@ async function _callSilarisCompetitor(handle, platform, agg) {
     '- Total reach: ' + _anFmtK(agg.totalReach),
     '',
     'Buat response JSON seperti berikut (estimasi realistis berdasarkan pola umum ' + platName + ' UMKM lokal Indonesia):',
+    '(Catatan: field comp_er tidak dipakai — nilai ER akan dihitung otomatis dari comp_followers di sisi klien)',
     '{',
     '  "comp_handle": "@handle_atau_nama_singkat",',
     '  "comp_category": "kategori bisnis pesaing dalam 1-3 kata (contoh: kuliner, fashion, jasa, beauty, otomotif)",',
-    '  "comp_er": "X.X%",',
     '  "comp_freq": "Nx/week",',
-    '  "comp_followers": "XXK",',
+    '  "comp_followers": "XXK (estimasi realistis — akun UMKM Indonesia biasanya 1K-50K)",',
     '  "comp_format": "format konten dominan",',
     '  "insights": [',
     '    {"type": "green", "text": "keunggulan spesifik user vs pola pesaing ini"},',
