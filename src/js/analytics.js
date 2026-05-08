@@ -1308,7 +1308,8 @@ window.anSetCompPlatform = anSetCompPlatform;
 function _anIsCategoryMismatch(userCat, compCat) {
   if (!userCat || !compCat) return false;
   var groups = {
-    food:     ['kuliner','fnb','makanan','minuman','cafe','restoran','food','kopi','catering','bakery','warung','resto'],
+    food:     ['kuliner','fnb','makanan','minuman','cafe','kafe','restoran','resto','food','kopi',
+               'catering','bakery','warung','kedai','mie','bakso','nasi','rumah makan','makan'],
     fashion:  ['fashion','pakaian','busana','outfit','baju','hijab','batik','clothing','konveksi'],
     beauty:   ['beauty','kecantikan','skincare','makeup','salon','perawatan','kosmetik'],
     retail:   ['retail','toko','jualan','produk','shop','market','belanja'],
@@ -1319,8 +1320,9 @@ function _anIsCategoryMismatch(userCat, compCat) {
     edu:      ['pendidikan','education','kursus','les','belajar','sekolah','training'],
     auto:     ['otomotif','motor','mobil','automotive','bengkel','sparepart'],
     // Seni & Budaya — penting untuk deteksi mismatch (museum, gallery, dll)
-    seni:     ['museum','gallery','galeri','art','seni','budaya','film','culture','pertunjukan',
-               'teater','teater','musik','kultura','heritage','kebudayaan','pameran','sinema']
+    seni:     ['museum','gallery','galeri','art','seni','budaya','film','culture','creative',
+               'pertunjukan','teater','musik','kultura','heritage','kebudayaan','pameran',
+               'sinema','exhibition','kurasi','arsip','literasi']
   };
   function getGroup(cat) {
     var c = cat.toLowerCase();
@@ -1355,6 +1357,28 @@ function _anBuildCatWarning(handle, ctx, compCat, userCat) {
     '</div>' +
     '<div class="an-comp-cat-warn-btns">' +
       '<button class="an-comp-cat-ok" onclick="this.closest(\'.an-comp-cat-warning\').style.display=\'none\'">Tetap Lanjutkan</button>' +
+      '<button class="an-comp-cat-new" onclick="(function(){var a=document.getElementById(\'an-comp-result-area\');if(a)a.innerHTML=\'\';var i=document.getElementById(\'an-comp-input\');if(i){i.value=\'\';i.focus();}})()">Cari Pesaing Lain</button>' +
+    '</div>' +
+  '</div>';
+}
+
+/* ─── Competitor: unknown category warning (AI tidak bisa deteksi kategori pesaing) ─── */
+function _anBuildCatUnknownWarning(handle, ctx) {
+  var bizCat      = (ctx && ctx.businessCategory) ? ctx.businessCategory : '';
+  var regionLabel = (ctx && ctx.regionLabel) ? ctx.regionLabel : '';
+  return '<div class="an-comp-cat-warning">' +
+    '<div class="an-comp-cat-warn-row">' +
+      '<div class="an-comp-cat-warn-body">' +
+        '<div class="an-comp-cat-warn-title">⚠️ Kategori tidak terdeteksi</div>' +
+        '<div class="an-comp-cat-warn-text">Kategori bisnis ' + handle + ' tidak bisa dideteksi otomatis. ' +
+          'Pastikan ini memang pesaing di bidang yang sama sebelum lanjut menganalisa.</div>' +
+        (bizCat && regionLabel
+          ? '<div class="an-comp-cat-suggestion">💡 Untuk hasil lebih akurat, coba cari pesaing ' + bizCat + ' di ' + regionLabel + '</div>'
+          : '') +
+      '</div>' +
+    '</div>' +
+    '<div class="an-comp-cat-warn-btns">' +
+      '<button class="an-comp-cat-ok" onclick="this.closest(\'.an-comp-cat-warning\').style.display=\'none\'">Lanjut Saja</button>' +
       '<button class="an-comp-cat-new" onclick="(function(){var a=document.getElementById(\'an-comp-result-area\');if(a)a.innerHTML=\'\';var i=document.getElementById(\'an-comp-input\');if(i){i.value=\'\';i.focus();}})()">Cari Pesaing Lain</button>' +
     '</div>' +
   '</div>';
@@ -1467,11 +1491,30 @@ async function anAnalyzeCompetitor() {
   var userErLbl = _anErLabel(agg.avgER);
   var platName  = (_AN_PLAT[_anCompActivePlatform] || {}).name || _anCompActivePlatform; // untuk label tooltip estimasi
 
-  // FIX 2: cek relevansi kategori pesaing vs user
+  // Cek relevansi kategori pesaing vs user
   var _userCtxFix2 = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : {};
   var _userBizCat  = (_userCtxFix2.businessCategory || '').toLowerCase();
   var _compBizCat  = (result.comp_category || '').toLowerCase();
+
+  // DEBUG: log apa yang AI kembalikan (bisa dilihat di browser console)
+  console.log('[RADAR] competitor category debug:', {
+    handle:            handle,
+    userCategory:      _userBizCat      || '(kosong)',
+    compCategoryRaw:   result.comp_category || '(kosong/null)',
+    compCategoryLower: _compBizCat      || '(kosong)',
+    compFollowers:     result.comp_followers,
+    compFormat:        result.comp_format
+  });
+
   var categoryMismatch = _anIsCategoryMismatch(_userBizCat, _compBizCat);
+  // Kategori pesaing tidak terdeteksi sama sekali (AI tidak tahu akun ini)
+  var categoryUnknown  = !!_userBizCat && !_compBizCat;
+
+  console.log('[RADAR] warning decision:', {
+    categoryMismatch: categoryMismatch,
+    categoryUnknown:  categoryUnknown,
+    showWarning:      categoryMismatch || categoryUnknown
+  });
 
   // FIX 2: validasi ukuran akun — followers < 1000 dianggap akun kecil
   var followerCount  = _anParseFollowers(result.comp_followers);
@@ -1494,8 +1537,10 @@ async function anAnalyzeCompetitor() {
   area.innerHTML =
     '<div class="an-comp-result">' +
 
-    // FIX 1: category mismatch warning (informatif, bukan blokir)
-    (categoryMismatch ? _anBuildCatWarning(handle, _userCtxFix2, _compBizCat, _userBizCat) : '') +
+    // Category warning: mismatch (kategori diketahui tapi berbeda) ATAU unknown (tidak terdeteksi)
+    (categoryMismatch
+      ? _anBuildCatWarning(handle, _userCtxFix2, _compBizCat, _userBizCat)
+      : (categoryUnknown ? _anBuildCatUnknownWarning(handle, _userCtxFix2) : '')) +
 
     // Compare grid
     '<div class="an-comp-compare-grid">' +
@@ -2343,32 +2388,32 @@ async function _callSilarisCompetitor(handle, platform, agg) {
     '- Avg ER: ' + (agg.avgER ? agg.avgER.toFixed(1) + '%' : 'belum tersedia'),
     '- Total reach: ' + _anFmtK(agg.totalReach),
     '',
-    'Buat response JSON seperti berikut:',
-    '(Catatan: comp_er tidak dipakai — ER dihitung otomatis dari comp_followers di klien)',
+    'PANDUAN FIELD:',
+    '- comp_category: deteksi dari NAMA AKUN atau BIO profil, bukan dari isi foto.',
+    '  Contoh keyword → kategori:',
+    '  museum/gallery/galeri/art/seni/budaya/film/culture/pameran/exhibition → "seni budaya"',
+    '  resto/warung/cafe/makanan/food/fnb/makan/catering/bakery/kedai → "kuliner"',
+    '  fashion/baju/outfit/clothing/hijab/busana/konveksi → "fashion"',
+    '  salon/skincare/beauty/kecantikan/makeup/kosmetik → "beauty"',
+    '  properti/rumah/kost/kontrakan/real estate/ruko → "properti"',
+    '  motor/mobil/bengkel/otomotif/sparepart → "otomotif"',
+    '  jasa/service/konsultan/laundry/reparasi → "jasa"',
+    '  kursus/les/sekolah/training/education → "pendidikan"',
+    '  Jika tidak bisa mendeteksi: kembalikan string kosong "".',
+    '',
+    '- comp_format: HANYA berdasarkan jenis post (image/video/reel/carousel).',
+    '  DILARANG mendeteksi dari objek/konten dalam foto (makanan, orang, produk).',
+    '  Jika tidak punya akses post publik akun ini: kembalikan "Tidak tersedia".',
+    '',
+    '- comp_er: tidak dipakai — ER dihitung otomatis dari comp_followers di klien.',
+    '',
+    'Kembalikan JSON bersih tanpa komentar, tanpa teks lain:',
     '{',
     '  "comp_handle": "@handle_atau_nama_singkat",',
-    '',
-    '  // comp_category: deteksi dari nama akun, bio, atau deskripsi profil — BUKAN dari isi foto.',
-    '  // Contoh keyword bio yang menunjukkan kategori:',
-    '  //   Seni/Budaya: museum, gallery, galeri, art, seni, budaya, film, culture, pameran',
-    '  //   Kuliner: resto, warung, cafe, makanan, food, fnb, makan, catering, bakery',
-    '  //   Fashion: fashion, baju, outfit, clothing, hijab, busana, konveksi',
-    '  //   Beauty: salon, skincare, beauty, kecantikan, makeup, kosmetik',
-    '  //   Properti: properti, rumah, kost, kontrakan, real estate',
-    '  //   Otomotif: motor, mobil, bengkel, otomotif, sparepart',
-    '  //   Jasa: jasa, service, konsultan, laundry, reparasi',
-    '  //   Pendidikan: kursus, les, sekolah, training, education',
-    '  // Kembalikan kategori dalam 1-3 kata Indonesia sesuai bio — BUKAN tebakan dari foto.',
-    '  "comp_category": "kategori dari bio/nama akun (contoh: kuliner, fashion, seni budaya, otomotif)",',
-    '',
+    '  "comp_category": "kategori dalam 1-3 kata (contoh: kuliner, fashion, seni budaya) atau kosong",',
     '  "comp_freq": "Nx/week",',
-    '  "comp_followers": "XXK (estimasi realistis — UMKM Indonesia biasanya 1K-50K)",',
-    '',
-    '  // comp_format: HANYA dari jenis post (image/video/reel/carousel) — BUKAN dari objek/isi foto.',
-    '  // DILARANG mendeteksi format dari konten visual (makanan, orang, produk dalam foto).',
-    '  // Kalau tidak bisa mengakses post publik akun ini: kembalikan "Tidak tersedia".',
-    '  "comp_format": "format post dominan DARI JENIS POST atau \'Tidak tersedia\'",',
-    '',
+    '  "comp_followers": "XXK",',
+    '  "comp_format": "format post dominan atau Tidak tersedia",',
     '  "insights": [',
     '    {"type": "green", "text": "keunggulan spesifik user vs pola pesaing ini"},',
     '    {"type": "red", "text": "area yang perlu diwaspadai atau ditingkatkan"},',
@@ -2390,10 +2435,15 @@ async function _callSilarisCompetitor(handle, platform, agg) {
     });
     var data = await resp.json();
     if (data && data.reply) {
-      var text = data.reply.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      var text = data.reply
+        .replace(/```json\n?/g, '').replace(/```\n?/g, '') // strip markdown
+        .replace(/\/\/[^\n]*/g, '')                         // strip // comments jika AI ikutkan
+        .trim();
       var start = text.indexOf('{'), end = text.lastIndexOf('}');
       if (start !== -1 && end !== -1) text = text.slice(start, end + 1);
-      return JSON.parse(text);
+      var parsed = JSON.parse(text);
+      console.log('[RADAR] _callSilarisCompetitor result:', parsed);
+      return parsed;
     }
   } catch(e) {
     console.warn('[analytics] _callSilarisCompetitor error:', e);
