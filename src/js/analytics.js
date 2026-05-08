@@ -1304,6 +1304,38 @@ function anSetCompPlatform(btn, platform) {
 }
 window.anSetCompPlatform = anSetCompPlatform;
 
+/* ─── Competitor: extract @username from URL or plain handle ─── */
+function _anExtractHandle(raw) {
+  var s = (raw || '').trim();
+  // Instagram: instagram.com/username or /p/ /reel/ (skip those)
+  var igM = s.match(/instagram\.com\/([^/?&#\s\/]+)/i);
+  if (igM && igM[1] && !/^(p|reel|reels|explore|stories)$/i.test(igM[1])) {
+    return '@' + igM[1];
+  }
+  // TikTok: tiktok.com/@username
+  var ttM = s.match(/tiktok\.com\/@?([^/?&#\s\/]+)/i);
+  if (ttM && ttM[1]) return '@' + ttM[1];
+  // Facebook: facebook.com/username
+  var fbM = s.match(/facebook\.com\/([^/?&#\s\/]+)/i);
+  if (fbM && fbM[1] && !/^(profile\.php|pages|groups)$/i.test(fbM[1])) {
+    return '@' + fbM[1];
+  }
+  // Already @handle or just a plain handle
+  if (s.startsWith('@')) return s;
+  if (s.startsWith('http')) return s; // unknown URL — return as-is
+  return '@' + s;
+}
+
+/* ─── Competitor: parse follower string ("5K"→5000, "1.2M"→1200000) ─── */
+function _anParseFollowers(str) {
+  if (!str) return null;
+  var n = parseFloat(str.replace(/[^0-9.]/g, ''));
+  if (isNaN(n)) return null;
+  if (/[Mm]/.test(str)) return Math.round(n * 1000000);
+  if (/[Kk]/.test(str)) return Math.round(n * 1000);
+  return Math.round(n);
+}
+
 /* ─── Competitor: Analyze ─── */
 async function anAnalyzeCompetitor() {
   var input = document.getElementById('an-comp-input');
@@ -1311,8 +1343,10 @@ async function anAnalyzeCompetitor() {
   var area  = document.getElementById('an-comp-result-area');
   if (!input || !area) return;
 
-  var handle = input.value.trim();
-  if (!handle) { input.focus(); input.style.borderColor = '#ef4444'; setTimeout(function() { input.style.borderColor = ''; }, 1500); return; }
+  var rawInput = input.value.trim();
+  if (!rawInput) { input.focus(); input.style.borderColor = '#ef4444'; setTimeout(function() { input.style.borderColor = ''; }, 1500); return; }
+  var handle = _anExtractHandle(rawInput);   // bersihkan URL jadi @username
+  input.value = handle;                      // tampilkan handle bersih di input
 
   if (btn) { btn.disabled = true; btn.textContent = 'Menganalisa...'; }
   area.innerHTML =
@@ -1342,6 +1376,15 @@ async function anAnalyzeCompetitor() {
   var compErLbl = compER ? _anErLabel(compER) : null;
   var platName  = (_AN_PLAT[_anCompActivePlatform] || {}).name || _anCompActivePlatform; // untuk label tooltip estimasi
 
+  // FIX 2: validasi ukuran akun — followers < 1000 dianggap akun kecil
+  var followerCount  = _anParseFollowers(result.comp_followers);
+  var isSmallAccount = followerCount !== null && followerCount < 1000;
+  // Prefix "±" untuk data pesaing jika akun kecil (estimasi kurang akurat)
+  var _pfx = isSmallAccount ? '±' : '';
+  var erDisplay        = result.comp_er        ? _pfx + result.comp_er        : null;
+  var followersDisplay = result.comp_followers  ? _pfx + result.comp_followers  : null;
+  var freqDisplay      = result.comp_freq       ? _pfx + result.comp_freq       : null;
+
   area.innerHTML =
     '<div class="an-comp-result">' +
 
@@ -1358,12 +1401,15 @@ async function anAnalyzeCompetitor() {
       '</div>' +
       '<div class="an-comp-col">' +
         '<div class="an-comp-col-label">Pesaing · ' + (result.comp_handle || handle) + '</div>' +
-        (result.comp_er
-          ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Est. ER <span class="an-comp-est-tip" title="Estimasi berdasarkan pola umum akun sejenis di ' + platName + '. Bukan data real-time.">?</span></span><span class="an-comp-metric-val">' + result.comp_er + '</span></div>' +
+        (isSmallAccount
+          ? '<div class="an-comp-small-warning">⚠️ Akun kecil — estimasi mungkin kurang akurat</div>'
+          : '') +
+        (erDisplay
+          ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Est. ER <span class="an-comp-est-tip" title="Estimasi berdasarkan pola umum akun sejenis di ' + platName + '. Bukan data real-time.">?</span></span><span class="an-comp-metric-val">' + erDisplay + '</span></div>' +
             (compErLbl ? '<div class="an-comp-er-lbl comp">' + compErLbl.label + '</div>' : '')
           : '') +
-        (result.comp_freq      ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Freq. posting</span><span class="an-comp-metric-val">' + result.comp_freq + '</span></div>' : '') +
-        (result.comp_followers ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Est. followers <span class="an-comp-est-tip" title="Estimasi kasar berdasarkan pola engagement. Bukan data akun asli.">?</span></span><span class="an-comp-metric-val">' + result.comp_followers + '</span></div>' : '') +
+        (freqDisplay      ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Freq. posting</span><span class="an-comp-metric-val">' + freqDisplay + '</span></div>' : '') +
+        (followersDisplay ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Est. followers <span class="an-comp-est-tip" title="Estimasi kasar berdasarkan pola engagement. Bukan data akun asli.">?</span></span><span class="an-comp-metric-val">' + followersDisplay + '</span></div>' : '') +
         (result.comp_format    ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Format dominan</span><span class="an-comp-metric-val">' + result.comp_format + '</span></div>' : '') +
       '</div>' +
     '</div>' +
@@ -1485,10 +1531,26 @@ function _renderStrategyContent(strat) {
     : '';
 
   // ── Langkah Pertama (ungu) ──
+  var _stepPlatform = _anCurrentCompPlatform || 'ig';
+  var _stepFormat   = strat.format_rekomendasi || 'reel';
+  var _stepHandle   = _anCurrentCompHandle || '';
+  var _fmtLabels    = { reel: 'Reel', post: 'Foto/Post', story: 'Story' };
+  var _platLabels   = { ig: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
+  var _stepFmtName  = _fmtLabels[_stepFormat]   || _stepFormat;
+  var _stepPlatName = _platLabels[_stepPlatform] || _stepPlatform;
+
   var stepsHtml = (strat.langkah || []).map(function(l, i) {
     return '<div class="an-strat-step">' +
       '<div class="an-strat-step-num">' + (i + 1) + '</div>' +
-      '<div class="an-strat-step-text">' + l + '</div>' +
+      '<div class="an-strat-step-body">' +
+        '<div class="an-strat-step-text">' + l + '</div>' +
+        '<div class="an-strat-step-footer">' +
+          '<span class="an-strat-step-meta">📱 ' + _stepPlatName + ' · ' + _stepFmtName + '</span>' +
+          '<button class="an-strat-step-btn" onclick="anLaunchFromStratStep(\'' + _stepPlatform + '\',\'' + _stepFormat + '\',\'' + _stepHandle.replace(/'/g,'') + '\')">' +
+            'Buat Sekarang →' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
     '</div>';
   }).join('');
   var langkahHtml = stepsHtml
@@ -1518,38 +1580,51 @@ async function _anGenerateStrategy(handle, platform, compResult, agg) {
   var supabaseKey = (typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.SUPABASE_ANON_KEY) || '';
   if (!supabaseUrl) return null;
 
-  var platName = (_AN_PLAT[platform] || {}).name || platform;
-  var userER   = agg.avgER ? agg.avgER.toFixed(1) + '%' : 'belum tersedia';
-  var compER   = compResult.comp_er   || 'tidak diketahui';
-  var compFreq = compResult.comp_freq || 'tidak diketahui';
-  var compFmt  = compResult.comp_format || 'tidak diketahui';
+  var platName    = (_AN_PLAT[platform] || {}).name || platform;
+  var userER      = agg.avgER ? agg.avgER.toFixed(1) + '%' : 'belum tersedia';
+  var compER      = compResult.comp_er     || 'tidak diketahui';
+  var compFreq    = compResult.comp_freq   || 'tidak diketahui';
+  var compFmt     = compResult.comp_format || 'tidak diketahui';
+  var userTopFmt  = agg.topFormat          || 'Foto';
+
+  // Konteks bisnis dari onboarding
+  var _sCtx = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : {};
+  var bizCat = _sCtx.businessCategory || 'usaha';
+
+  // Tentukan format yang sebaiknya dicoba user berdasarkan gap
+  var compFmtLower  = compFmt.toLowerCase();
+  var suggestedFmt  = compFmtLower.indexOf('reel') !== -1 || compFmtLower.indexOf('video') !== -1
+    ? 'reel' : (compFmtLower.indexOf('story') !== -1 ? 'story' : 'post');
 
   var sysPrompt = [
     'Kamu adalah SiLaris, Campaign Coach AI untuk UMKM Indonesia.',
-    'Tugas: Buat strategi konkret untuk membantu user unggul dari pesaing mereka di ' + platName + '.',
+    'Tugas: Buat strategi konkret untuk ' + bizCat + ' agar unggul dari pesaing di ' + platName + '.',
     '',
     'ATURAN KERAS: Setiap langkah maksimal 20 kata.',
     'ATURAN KERAS: DILARANG gunakan tanda em-dash dalam output.',
     'ATURAN KERAS: DILARANG menyebut kata "bisnis lokal" dalam output.',
     'ATURAN KERAS: Gunakan bahasa santai dan langsung. Tidak formal.',
-    'ATURAN KERAS: Langkah harus spesifik dan bisa langsung dilakukan hari ini.',
+    'ATURAN KERAS: Sebutkan angka nyata dari data yang diberikan.',
     '',
-    'Data perbandingan:',
-    '- User ER: ' + userER + ' | Pesaing ER: ' + compER,
-    '- Frekuensi pesaing: ' + compFreq,
+    'Data perbandingan NYATA (gunakan angka ini dalam output):',
+    '- ER user: ' + userER + ' | ER pesaing (' + handle + '): ' + compER,
+    '- Format user yang paling banyak dipakai: ' + userTopFmt,
     '- Format dominan pesaing: ' + compFmt,
+    '- Frekuensi posting pesaing: ' + compFreq,
     '- Total reach user: ' + _anFmtK(agg.totalReach || 0),
+    '- Kategori bisnis user: ' + bizCat,
     '',
     'Kembalikan JSON (tanpa teks lain):',
     '{',
-    '  "keunggulan": "1 kalimat: apa yang user sudah lakukan lebih baik dari ' + handle + ' — sertakan angka ER nyata jika ada",',
-    '  "celah": "1 kalimat: peluang konkret yang bisa dimanfaatkan sekarang berdasarkan data pesaing",',
+    '  "keunggulan": "1 kalimat menyebut ER user vs ER pesaing ' + handle + ' secara spesifik — pakai angka dari data",',
+    '  "celah": "1 kalimat tentang format/freq gap konkret yang bisa dimanfaatkan user sekarang",',
     '  "langkah": [',
-    '    "Langkah spesifik 1 yang bisa dilakukan hari ini",',
-    '    "Langkah spesifik 2 tentang format atau konten yang perlu dicoba",',
-    '    "Langkah spesifik 3 tentang frekuensi atau waktu posting yang optimal"',
+    '    "Langkah 1: buat ' + compFmt + ' tentang ' + bizCat + ' hari ini (konkret, max 20 kata)",',
+    '    "Langkah 2: frekuensi atau waktu posting yang optimal berdasarkan data pesaing (' + compFreq + ')",',
+    '    "Langkah 3: cara diferensiasi konten dari format ' + compFmt + ' pesaing (spesifik, action)"',
     '  ],',
-    '  "waktu": "Estimasi waktu untuk lihat hasil pertama"',
+    '  "format_rekomendasi": "' + suggestedFmt + '",',
+    '  "waktu": "Estimasi realistis waktu lihat hasil pertama"',
     '}'
   ].join('\n');
 
@@ -1577,10 +1652,9 @@ async function _anGenerateStrategy(handle, platform, compResult, agg) {
   return null;
 }
 
-/* ─── Save Strategy to localStorage ─── */
-function anSaveCurrentStrategy() {
+/* ─── Save Strategy: internal executor ─── */
+function _anDoSaveStrategy(baseList) {
   if (!_anCurrentStrategyData) return;
-  var strategies = _anGetSavedStrategies();
   var entry = {
     id:         Date.now(),
     handle:     _anCurrentStrategyData.handle,
@@ -1590,18 +1664,58 @@ function anSaveCurrentStrategy() {
     strategy:   _anCurrentStrategyData.strategy,
     compResult: _anCurrentStrategyData.compResult
   };
-  strategies.unshift(entry);
-  if (strategies.length > 10) strategies = strategies.slice(0, 10);
-  _anPersistStrategies(strategies);
-
+  baseList.unshift(entry);
+  if (baseList.length > 10) baseList = baseList.slice(0, 10);
+  _anPersistStrategies(baseList);
   var saveBtn = document.getElementById('an-strat-save-btn');
   if (saveBtn) { saveBtn.textContent = '✓ Tersimpan!'; saveBtn.disabled = true; }
-
   _anRenderSavedStrategies();
   setTimeout(function() {
     anCloseStrategyModal();
     if (typeof switchMenu === 'function') switchMenu('command');
   }, 700);
+}
+
+/* ─── Save Strategy: replace duplicate ─── */
+function _anSaveStratReplace() {
+  if (!_anCurrentStrategyData) return;
+  var cleanH = (_anCurrentStrategyData.handle || '').replace(/^@/, '').toLowerCase();
+  var filtered = _anGetSavedStrategies().filter(function(x) {
+    return (x.handle || '').replace(/^@/, '').toLowerCase() !== cleanH;
+  });
+  _anDoSaveStrategy(filtered);
+}
+window._anSaveStratReplace = _anSaveStratReplace;
+
+/* ─── Save Strategy: keep both ─── */
+function _anSaveStratKeepBoth() {
+  _anDoSaveStrategy(_anGetSavedStrategies());
+}
+window._anSaveStratKeepBoth = _anSaveStratKeepBoth;
+
+/* ─── Save Strategy to localStorage ─── */
+function anSaveCurrentStrategy() {
+  if (!_anCurrentStrategyData) return;
+  var strategies = _anGetSavedStrategies();
+  // FIX 5: cek duplikat — handle sama (case-insensitive, strip @)
+  var cleanH = (_anCurrentStrategyData.handle || '').replace(/^@/, '').toLowerCase();
+  var existing = strategies.find(function(x) {
+    return (x.handle || '').replace(/^@/, '').toLowerCase() === cleanH;
+  });
+  if (existing) {
+    // Tampilkan confirm di footer modal
+    var footer = document.getElementById('an-strat-footer');
+    if (footer) {
+      footer.innerHTML =
+        '<div class="an-strat-dup-msg">Kamu sudah punya strategi untuk <strong>' + (existing.handle || cleanH) + '</strong>.</div>' +
+        '<div class="an-strat-dup-btns">' +
+          '<button class="an-strat-dup-btn" onclick="_anSaveStratReplace()">Timpa yang Lama</button>' +
+          '<button class="an-strat-dup-btn an-strat-dup-btn-outline" onclick="_anSaveStratKeepBoth()">Simpan Keduanya</button>' +
+        '</div>';
+    }
+    return;
+  }
+  _anDoSaveStrategy(strategies);
 }
 window.anSaveCurrentStrategy = anSaveCurrentStrategy;
 
@@ -1625,19 +1739,149 @@ function anToggleStratStatus(id) {
 }
 window.anToggleStratStatus = anToggleStratStatus;
 
+/* ─── Helper: set Dapur Konten globals dari platform+format ─── */
+function _anSetDapurChannel(platform, format) {
+  // Map dari _AN_PLAT key (ig/meta/tiktok/youtube) ke activeChannel
+  var channelMap = { ig: 'instagram', meta: 'meta', tiktok: 'tiktok', youtube: 'youtube' };
+  var ch = channelMap[platform] || 'instagram';
+  var fmt = format || 'reel';
+
+  if (typeof activeChannel !== 'undefined') activeChannel = ch;
+  if (typeof activeFormat  !== 'undefined') activeFormat  = fmt;
+  if (typeof channelIdx !== 'undefined' && typeof channelOrder !== 'undefined') {
+    var idx = channelOrder.indexOf(ch);
+    channelIdx = idx >= 0 ? idx : 0;
+  }
+  // Set activePlatform
+  var fmtMap = (typeof CHANNEL_FORMAT_MAP !== 'undefined' && CHANNEL_FORMAT_MAP[ch]) || { reel: 'ig-reel', post: 'ig-post', story: 'ig-story' };
+  var platKey = fmtMap.single || fmtMap[fmt] || fmtMap.reel || fmtMap.post || 'ig-reel';
+  if (typeof activePlatform !== 'undefined') activePlatform = platKey;
+  return { ch: ch, fmt: fmt, platKey: platKey };
+}
+
 /* ─── Launch Iklan from Saved Strategy ─── */
 function anLaunchFromStrat(id) {
   var strategies = _anGetSavedStrategies();
   var s = strategies.find(function(x) { return x.id === id; });
-  // Pre-fill active channel berdasarkan platform yang disimpan
-  if (s && s.platform) {
-    var platMap = { ig: 'instagram', meta: 'facebook', tiktok: 'tiktok', youtube: 'youtube' };
-    var ch = platMap[s.platform];
-    if (ch && typeof window.activeChannel !== 'undefined') window.activeChannel = ch;
-  }
+
+  var platform = (s && s.platform) || 'ig';
+  var format   = (s && s.strategy && s.strategy.format_rekomendasi) || 'reel';
+  var handle   = (s && s.handle)   || '';
+  var _sCtx    = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : {};
+  var bizCat   = _sCtx.businessCategory || '';
+
+  _anSetDapurChannel(platform, format);
+
+  window._strategyContext = { handle: handle, platform: platform, format: format, bizCat: bizCat };
   if (typeof switchMenu === 'function') switchMenu('command');
+  requestAnimationFrame(function() { _anApplyStrategyContext(); });
 }
 window.anLaunchFromStrat = anLaunchFromStrat;
+
+/* ─── Launch Iklan from Strategy Step button (inline) ─── */
+function anLaunchFromStratStep(platform, format, handle) {
+  var _sCtx  = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : {};
+  var bizCat = _sCtx.businessCategory || '';
+  _anSetDapurChannel(platform, format);
+  window._strategyContext = { handle: handle, platform: platform, format: format, bizCat: bizCat };
+  if (typeof switchMenu === 'function') switchMenu('command');
+  requestAnimationFrame(function() { _anApplyStrategyContext(); });
+}
+window.anLaunchFromStratStep = anLaunchFromStratStep;
+
+/* ─── Apply strategy context ke Dapur Konten setelah switchMenu ─── */
+function _anApplyStrategyContext() {
+  var ctx = window._strategyContext;
+  if (!ctx) return;
+
+  // Update channel badge teks
+  var chNames = { instagram: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
+  var ch = (typeof activeChannel !== 'undefined') ? activeChannel : 'instagram';
+  var badge = document.getElementById('previewLabel');
+  if (badge) badge.textContent = chNames[ch] || 'Instagram';
+
+  // Format selector visibility
+  var hasFmt = (ch === 'instagram' || ch === 'meta');
+  var fmtSel = document.getElementById('formatSelector');
+  if (fmtSel) fmtSel.style.display = hasFmt ? 'flex' : 'none';
+
+  // Format buttons active state
+  if (hasFmt) {
+    var fmt = (typeof activeFormat !== 'undefined') ? activeFormat : 'reel';
+    document.querySelectorAll('.format-btn').forEach(function(b) {
+      b.classList.toggle('active', b.getAttribute('data-format') === fmt);
+    });
+  }
+
+  // Phone shell + labels
+  if (typeof applyShell === 'function' && typeof activePlatform !== 'undefined') applyShell(activePlatform);
+  if (typeof _updateLivePreviewLabel === 'function') _updateLivePreviewLabel();
+  if (typeof updateCaptionPlatformLabel === 'function') updateCaptionPlatformLabel();
+  if (typeof updateReach === 'function') updateReach();
+
+  // Inject banner
+  _anInjectStrategyBanner(ctx);
+
+  // Pre-fill caption
+  setTimeout(function() {
+    if (typeof captionAltIndex !== 'undefined') captionAltIndex = 0;
+    if (typeof generateCaption === 'function' && typeof currentPersona !== 'undefined' && currentPersona) {
+      generateCaption(false);  // pakai template dengan platform yang sudah di-set
+    } else {
+      // Fallback: isi starter text manual
+      var area = document.getElementById('captionArea');
+      if (area) {
+        var fmtNames = { reel: 'Reel', post: 'Foto/Post', story: 'Story' };
+        var d = typeof getDialek === 'function' ? getDialek() : { greeting: 'Halo' };
+        var fmtLabel = fmtNames[ctx.format] || ctx.format;
+        area.value = 'Generate caption ' + fmtLabel + ' untuk ' + (ctx.bizCat || 'usahamu') + ' dengan sapaan \'' + d.greeting + '\'';
+      }
+    }
+  }, 200);
+}
+window._anApplyStrategyContext = _anApplyStrategyContext;
+
+/* ─── Inject strategy context banner di Dapur Konten ─── */
+function _anInjectStrategyBanner(ctx) {
+  var old = document.getElementById('an-strat-banner');
+  if (old) old.remove();
+  if (!ctx || !ctx.handle) return;
+
+  var fmtNames  = { reel: 'Reel', post: 'Foto/Post', story: 'Story' };
+  var platNames = { ig: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
+  var handle    = ctx.handle.startsWith('@') ? ctx.handle : '@' + ctx.handle;
+  var fmtName   = fmtNames[ctx.format]   || ctx.format   || 'Konten';
+  var platName  = platNames[ctx.platform] || ctx.platform || 'Instagram';
+  var bizLabel  = ctx.bizCat || 'usahamu';
+
+  var banner = document.createElement('div');
+  banner.id = 'an-strat-banner';
+  banner.className = 'an-strat-context-banner';
+  banner.innerHTML =
+    '<div class="an-strat-banner-inner">' +
+      '<span class="an-strat-banner-icon">📋</span>' +
+      '<div class="an-strat-banner-content">' +
+        '<div class="an-strat-banner-title">Strategi vs ' + handle + '</div>' +
+        '<div class="an-strat-banner-text">Buat <strong>' + fmtName + '</strong> tentang <strong>' + bizLabel + '</strong> di <strong>' + platName + '</strong> — ungguli pesaing ini.</div>' +
+      '</div>' +
+      '<button class="an-strat-banner-close" onclick="_anDismissStrategyBanner()" title="Tutup panduan">✕</button>' +
+    '</div>';
+
+  var cmdView = document.getElementById('view-command');
+  if (cmdView) cmdView.insertBefore(banner, cmdView.firstChild);
+}
+window._anInjectStrategyBanner = _anInjectStrategyBanner;
+
+/* ─── Dismiss strategy banner ─── */
+function _anDismissStrategyBanner() {
+  var banner = document.getElementById('an-strat-banner');
+  if (banner) {
+    banner.style.animation = 'stratFadeOut 0.2s ease forwards';
+    setTimeout(function() { if (banner.parentNode) banner.remove(); }, 220);
+  }
+  window._strategyContext = null;
+}
+window._anDismissStrategyBanner = _anDismissStrategyBanner;
 
 /* ─── Render Saved Strategies Card ─── */
 var _anStratShowAll = false;
