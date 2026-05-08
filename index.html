@@ -630,5 +630,81 @@
     </div>
   </div>
   <div id="an-toast" class="an-toast" style="display:none"></div>
+
+  <!-- ===== TRIAL EXPIRED MODAL ===== -->
+  <div id="trial-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:20px; padding:36px 32px; max-width:440px; width:90%; text-align:center; box-shadow:0 24px 60px rgba(0,0,0,0.2);">
+      <div style="font-size:40px; margin-bottom:12px;">⏰</div>
+      <h2 style="font-size:22px; font-weight:700; color:#1a1a1a; margin:0 0 8px;">Masa trial kamu sudah selesai!</h2>
+      <p style="font-size:14px; color:#666; margin:0 0 8px;">7 hari gratis telah berakhir. Pilih langkah berikutnya:</p>
+      <div id="trial-modal-plan" style="display:inline-block; background:#f4f0ff; color:#5b17b7; font-size:12px; font-weight:600; padding:4px 12px; border-radius:20px; margin-bottom:24px;"></div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <button onclick="choosePlan('pro')" style="background:#5b17b7; color:#fff; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer;">
+          Lanjut Berlangganan Pro — Rp 199rb/bln
+        </button>
+        <button onclick="choosePlan('starter')" id="trial-btn-starter" style="display:none; background:#5b17b7; color:#fff; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer;">
+          Lanjut Berlangganan Starter — Rp 99rb/bln
+        </button>
+        <button onclick="choosePlan('freemium')" style="background:#fff; color:#1a1a1a; border:2px solid #e5e5e5; border-radius:12px; padding:14px; font-size:15px; font-weight:600; cursor:pointer;">
+          Turun ke Freemium (Gratis selamanya)
+        </button>
+      </div>
+      <p style="font-size:12px; color:#999; margin:16px 0 0;">Tidak ada biaya yang ditagih selama trial. Batalkan kapan saja.</p>
+    </div>
+  </div>
+
+  <!-- ===== TRIAL BANNER (hari ke 1-7) ===== -->
+  <div id="trial-banner" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#5b17b7; color:#fff; border-radius:30px; padding:10px 20px; font-size:13px; font-weight:600; z-index:999; box-shadow:0 4px 20px rgba(91,23,183,0.4); white-space:nowrap;">
+    <span id="trial-banner-text"></span>
+    <a href="#harga" onclick="document.getElementById('trial-banner').style.display='none'" style="color:#f4e6ff; margin-left:12px; text-decoration:underline; cursor:pointer;">Lihat Paket</a>
+  </div>
+
+  <script>
+    (function checkTrial() {
+      const plan       = localStorage.getItem('larisi_selected_plan');
+      const trialStart = localStorage.getItem('larisi_trial_start');
+
+      if (!plan || plan === 'freemium' || !trialStart) return;
+
+      const startDate  = new Date(trialStart);
+      const now        = new Date();
+      const diffDays   = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+      const remaining  = 7 - diffDays;
+
+      if (diffDays >= 7) {
+        // Trial habis → tampilkan modal
+        const modal = document.getElementById('trial-modal');
+        const planBadge = document.getElementById('trial-modal-plan');
+        planBadge.textContent = 'Paket ' + plan.charAt(0).toUpperCase() + plan.slice(1) + ' — trial 7 hari berakhir';
+        if (plan === 'starter') {
+          document.getElementById('trial-btn-starter').style.display = 'block';
+          document.querySelector('#trial-modal button[onclick="choosePlan(\'pro\')"]').style.display = 'none';
+        }
+        modal.style.display = 'flex';
+      } else if (remaining <= 3) {
+        // Sisa 1-3 hari → tampilkan banner pengingat
+        const banner = document.getElementById('trial-banner');
+        document.getElementById('trial-banner-text').textContent =
+          '⏳ Trial berakhir dalam ' + remaining + ' hari';
+        banner.style.display = 'block';
+      }
+    })();
+
+    function choosePlan(plan) {
+      document.getElementById('trial-modal').style.display = 'none';
+      if (plan === 'freemium') {
+        localStorage.setItem('larisi_selected_plan', 'freemium');
+        localStorage.removeItem('larisi_trial_start');
+        localStorage.removeItem('larisi_trial_days');
+        // TODO: panggil API downgrade ke freemium di Supabase
+        alert('Akun Anda telah diturunkan ke paket Freemium. Nikmati fitur dasar tanpa batas waktu!');
+      } else {
+        // TODO: redirect ke payment gateway
+        // window.location.href = 'https://payment.larisi.id/checkout?plan=' + plan;
+        alert('Fitur pembayaran segera hadir! Tim kami akan menghubungi Anda.');
+      }
+    }
+  </script>
 </body>
 </html>

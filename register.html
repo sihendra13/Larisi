@@ -19,6 +19,12 @@
             <div class="auth-container">
         <h1>Mulai Uji Coba Gratis</h1>
 
+        <!-- Badge paket yang dipilih dari landing page -->
+        <div id="plan-badge" style="display:none; background:#f4f0ff; border:1px solid #7c3aed; border-radius:10px; padding:10px 14px; margin-bottom:20px; font-size:13px; color:#5b17b7; display:flex; align-items:center; gap:8px;">
+            <span>🎯</span>
+            <span id="plan-badge-text"></span>
+        </div>
+
         <form action="onboarding.html" method="GET">
             <div class="form-row">
                 <div class="form-group">
@@ -99,12 +105,26 @@
             submitBtn.disabled = !checkbox.checked;
         }
 
-        // Simpan parameter paket harga ke localStorage
+        const PLAN_LABELS = {
+            freemium: 'Freemium – Gratis selamanya',
+            starter:  'Starter – Coba 7 hari gratis',
+            pro:      'Pro – Coba 7 hari gratis',
+            trial:    'Pro – Coba 7 hari gratis'
+        };
+
         window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
-            const plan = urlParams.get('plan');
-            if (plan) {
-                localStorage.setItem('larisi_selected_plan', plan);
+            const plan  = urlParams.get('plan')  || 'freemium';
+            const trial = urlParams.get('trial') || '0';
+
+            localStorage.setItem('larisi_selected_plan', plan);
+            localStorage.setItem('larisi_trial_days', trial);
+
+            const badge = document.getElementById('plan-badge');
+            const badgeText = document.getElementById('plan-badge-text');
+            if (PLAN_LABELS[plan]) {
+                badgeText.textContent = 'Paket dipilih: ' + PLAN_LABELS[plan];
+                badge.style.display = 'flex';
             }
         });
     </script>
@@ -142,7 +162,8 @@
             } else {
                 // Selalu arahkan ke OTP step — biarkan onboarding.html yang handle
                 // (jika Confirm Email OFF di Supabase, onboarding akan detect & skip OTP)
-                window.location.href = 'onboarding.html?email=' + encodeURIComponent(email);
+                const plan = localStorage.getItem('larisi_selected_plan') || 'freemium';
+                window.location.href = 'onboarding.html?email=' + encodeURIComponent(email) + '&plan=' + encodeURIComponent(plan);
             }
         });
     </script>

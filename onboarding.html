@@ -308,15 +308,23 @@
         }
 
         async function finishOnboarding() {
-            // Ambil data paket yang tersimpan dari halaman registrasi
-            const savedPlan = localStorage.getItem('larisi_selected_plan') || 'freemium';
-            
-            // Simpan status onboarding selesai ke profile (optional)
-            await window.updateUserProfile({
+            const savedPlan  = localStorage.getItem('larisi_selected_plan') || 'freemium';
+            const trialDays  = parseInt(localStorage.getItem('larisi_trial_days') || '0');
+            const now        = new Date().toISOString();
+
+            const profileData = {
                 onboarding_completed: true,
                 selected_plan: savedPlan
-            });
-            
+            };
+
+            // Simpan trial_start hanya untuk paket berbayar
+            if (trialDays > 0 && savedPlan !== 'freemium') {
+                localStorage.setItem('larisi_trial_start', now);
+                profileData.trial_start = now;
+                profileData.trial_days  = trialDays;
+            }
+
+            await window.updateUserProfile(profileData);
             window.location.href = 'index.html';
         }
     </script>
