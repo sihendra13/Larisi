@@ -1481,6 +1481,10 @@ async function anAnalyzeCompetitor() {
     area.innerHTML = '<div style="font-size:12px;color:var(--secondary);padding:8px 0;">Gagal menganalisa. Pastikan koneksi internet stabil dan coba lagi.</div>';
     return;
   }
+  if (result.__rateLimitError) {
+    area.innerHTML = '<div style="font-size:12px;color:var(--secondary);padding:8px 0;">⏳ SiLaris sedang istirahat sejenak — kapasitas harian tercapai. Coba lagi dalam <strong>' + (result.waitMsg || 'beberapa menit') + '</strong>.</div>';
+    return;
+  }
 
   // Store module state for strategy modal
   _anCurrentCompResult   = result;
@@ -2450,6 +2454,14 @@ async function _callSilarisCompetitor(handle, platform, agg) {
       var parsed = JSON.parse(text);
       console.log('[RADAR] _callSilarisCompetitor result:', parsed);
       return parsed;
+    }
+    // Deteksi rate limit error → return sentinel object supaya UI bisa tampilkan pesan spesifik
+    var errStr = data && data.error ? String(data.error) : '';
+    if (errStr.indexOf('rate_limit') !== -1 || errStr.indexOf('429') !== -1 || errStr.indexOf('Rate Limit') !== -1) {
+      // Ambil waktu tunggu dari pesan error jika ada ("try again in Xm Ys")
+      var waitMatch = errStr.match(/try again in ([^.]+)/i);
+      var waitMsg   = waitMatch ? waitMatch[1].trim() : 'beberapa menit';
+      return { __rateLimitError: true, waitMsg: waitMsg };
     }
     console.warn('[RADAR] no usable reply. Full data keys:', data ? Object.keys(data).join(', ') : 'null');
   } catch(e) {
