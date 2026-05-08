@@ -691,18 +691,36 @@
       }
     })();
 
-    function choosePlan(plan) {
-      document.getElementById('trial-modal').style.display = 'none';
+    async function choosePlan(plan) {
+      const modal = document.getElementById('trial-modal');
+      const btn = modal.querySelector('button[onclick="choosePlan(\'' + plan + '\')"]');
+      if (btn) { btn.disabled = true; btn.textContent = 'Memproses...'; }
+
       if (plan === 'freemium') {
+        const { error } = await window.updateUserProfile({
+          selected_plan: 'freemium',
+          trial_start:   null,
+          trial_days:    0
+        });
+
+        if (error) {
+          if (btn) { btn.disabled = false; btn.textContent = 'Turun ke Freemium (Gratis selamanya)'; }
+          showAnToast('Gagal memperbarui paket. Coba lagi.');
+          return;
+        }
+
         localStorage.setItem('larisi_selected_plan', 'freemium');
         localStorage.removeItem('larisi_trial_start');
         localStorage.removeItem('larisi_trial_days');
-        // TODO: panggil API downgrade ke freemium di Supabase
-        alert('Akun Anda telah diturunkan ke paket Freemium. Nikmati fitur dasar tanpa batas waktu!');
+        modal.style.display = 'none';
+        showAnToast('Akun diturunkan ke Freemium. Nikmati fitur dasar tanpa batas waktu!', 'success');
+
       } else {
-        // TODO: redirect ke payment gateway
+        // Slot payment gateway — tinggal ganti URL saat payment siap
         // window.location.href = 'https://payment.larisi.id/checkout?plan=' + plan;
-        alert('Fitur pembayaran segera hadir! Tim kami akan menghubungi Anda.');
+        if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label || 'Berlangganan'; }
+        modal.style.display = 'none';
+        showAnToast('Fitur pembayaran segera hadir! Tim kami akan menghubungi Anda.');
       }
     }
   </script>
