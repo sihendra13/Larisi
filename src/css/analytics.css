@@ -2166,6 +2166,59 @@
   text-overflow: ellipsis;
 }
 
+/* ─── Competitor: Category mismatch warning ─── */
+.an-comp-cat-warning {
+  background: rgba(245,158,11,0.07);
+  border: 1px solid rgba(245,158,11,0.3);
+  border-radius: 10px;
+  padding: 11px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.an-comp-cat-warn-row { display: flex; gap: 8px; }
+.an-comp-cat-warn-body { flex: 1; }
+.an-comp-cat-warn-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 3px;
+}
+.an-comp-cat-warn-text {
+  font-size: 11.5px;
+  color: #78350f;
+  line-height: 1.5;
+}
+.an-comp-cat-suggestion {
+  font-size: 11px;
+  color: #92400e;
+  margin-top: 5px;
+  font-style: italic;
+}
+.an-comp-cat-warn-btns {
+  display: flex;
+  gap: 7px;
+}
+.an-comp-cat-ok, .an-comp-cat-new {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background .12s;
+  border: 1.5px solid rgba(245,158,11,0.4);
+  background: rgba(255,255,255,0.7);
+  color: #92400e;
+}
+.an-comp-cat-ok:hover, .an-comp-cat-new:hover { background: rgba(245,158,11,0.12); }
+.an-comp-cat-new {
+  background: #92400e;
+  color: white;
+  border-color: #92400e;
+}
+.an-comp-cat-new:hover { background: #78350f; border-color: #78350f; }
+
 /* ─── Competitor: Small account warning ─── */
 .an-comp-small-warning {
   font-size: 10.5px;

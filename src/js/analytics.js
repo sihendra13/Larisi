@@ -1304,6 +1304,54 @@ function anSetCompPlatform(btn, platform) {
 }
 window.anSetCompPlatform = anSetCompPlatform;
 
+/* ─── Competitor: cek apakah kategori user dan pesaing berbeda jauh ─── */
+function _anIsCategoryMismatch(userCat, compCat) {
+  if (!userCat || !compCat) return false;
+  var groups = {
+    food:     ['kuliner','fnb','makanan','minuman','cafe','restoran','food','kopi','catering','bakery'],
+    fashion:  ['fashion','pakaian','busana','outfit','baju','hijab','batik','clothing','konveksi'],
+    beauty:   ['beauty','kecantikan','skincare','makeup','salon','perawatan','kosmetik'],
+    retail:   ['retail','toko','jualan','produk','shop','market','belanja'],
+    service:  ['jasa','service','layanan','konsultan','reparasi','laundry'],
+    health:   ['kesehatan','health','medis','apotek','klinik','dokter','herbal'],
+    property: ['properti','property','rumah','realestate','kontrakan','kost','ruko'],
+    travel:   ['wisata','travel','pariwisata','hotel','resort','penginapan','tur'],
+    edu:      ['pendidikan','education','kursus','les','belajar','sekolah','training'],
+    auto:     ['otomotif','motor','mobil','automotive','bengkel','sparepart']
+  };
+  function getGroup(cat) {
+    var c = cat.toLowerCase();
+    for (var g in groups) {
+      if (groups[g].some(function(k) { return c.indexOf(k) !== -1; })) return g;
+    }
+    return 'other';
+  }
+  var ug = getGroup(userCat);
+  var cg = getGroup(compCat);
+  // hanya tampilkan warning kalau kedua kategori teridentifikasi DAN berbeda
+  return ug !== 'other' && cg !== 'other' && ug !== cg;
+}
+
+/* ─── Competitor: build category-mismatch warning HTML ─── */
+function _anBuildCatWarning(handle, ctx) {
+  var regionLabel = (ctx && ctx.regionLabel) ? ctx.regionLabel : '';
+  var bizCat      = (ctx && ctx.businessCategory) ? ctx.businessCategory : 'serupa';
+  return '<div class="an-comp-cat-warning">' +
+    '<div class="an-comp-cat-warn-row">' +
+      '<div class="an-comp-cat-warn-body">' +
+        '<div class="an-comp-cat-warn-title">⚠️ Kategori berbeda</div>' +
+        '<div class="an-comp-cat-warn-text">' + handle + ' sepertinya bergerak di kategori yang berbeda dari bisnismu. ' +
+          'Insight tetap ditampilkan — gunakan sebagai inspirasi, bukan patokan langsung.</div>' +
+        (regionLabel ? '<div class="an-comp-cat-suggestion">💡 Untuk perbandingan lebih akurat, coba cari pesaing ' + bizCat + ' di ' + regionLabel + '</div>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div class="an-comp-cat-warn-btns">' +
+      '<button class="an-comp-cat-ok" onclick="this.closest(\'.an-comp-cat-warning\').style.display=\'none\'">Tetap Lanjutkan</button>' +
+      '<button class="an-comp-cat-new" onclick="(function(){var a=document.getElementById(\'an-comp-result-area\');if(a)a.innerHTML=\'\';var i=document.getElementById(\'an-comp-input\');if(i){i.value=\'\';i.focus();}})()">Cari Pesaing Lain</button>' +
+    '</div>' +
+  '</div>';
+}
+
 /* ─── Competitor: extract @username from URL or plain handle ─── */
 function _anExtractHandle(raw) {
   var s = (raw || '').trim();
@@ -1376,6 +1424,12 @@ async function anAnalyzeCompetitor() {
   var compErLbl = compER ? _anErLabel(compER) : null;
   var platName  = (_AN_PLAT[_anCompActivePlatform] || {}).name || _anCompActivePlatform; // untuk label tooltip estimasi
 
+  // FIX 2: cek relevansi kategori pesaing vs user
+  var _userCtxFix2 = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : {};
+  var _userBizCat  = (_userCtxFix2.businessCategory || '').toLowerCase();
+  var _compBizCat  = (result.comp_category || '').toLowerCase();
+  var categoryMismatch = _anIsCategoryMismatch(_userBizCat, _compBizCat);
+
   // FIX 2: validasi ukuran akun — followers < 1000 dianggap akun kecil
   var followerCount  = _anParseFollowers(result.comp_followers);
   var isSmallAccount = followerCount !== null && followerCount < 1000;
@@ -1387,6 +1441,9 @@ async function anAnalyzeCompetitor() {
 
   area.innerHTML =
     '<div class="an-comp-result">' +
+
+    // FIX 2: category mismatch warning (informatif, bukan blokir)
+    (categoryMismatch ? _anBuildCatWarning(handle, _userCtxFix2) : '') +
 
     // Compare grid
     '<div class="an-comp-compare-grid">' +
@@ -1409,7 +1466,7 @@ async function anAnalyzeCompetitor() {
             (compErLbl ? '<div class="an-comp-er-lbl comp">' + compErLbl.label + '</div>' : '')
           : '') +
         (freqDisplay      ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Freq. posting</span><span class="an-comp-metric-val">' + freqDisplay + '</span></div>' : '') +
-        (followersDisplay ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Est. followers <span class="an-comp-est-tip" title="Estimasi kasar berdasarkan pola engagement. Bukan data akun asli.">?</span></span><span class="an-comp-metric-val">' + followersDisplay + '</span></div>' : '') +
+        (followersDisplay ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Est. followers <span class="an-comp-est-tip" title="Estimasi berdasarkan data publik — akurasi ±50% untuk akun dengan followers di bawah 10K">?</span></span><span class="an-comp-metric-val">' + followersDisplay + '</span></div>' : '') +
         (result.comp_format    ? '<div class="an-comp-metric"><span class="an-comp-metric-key">Format dominan</span><span class="an-comp-metric-val">' + result.comp_format + '</span></div>' : '') +
       '</div>' +
     '</div>' +
@@ -1670,10 +1727,25 @@ function _anDoSaveStrategy(baseList) {
   var saveBtn = document.getElementById('an-strat-save-btn');
   if (saveBtn) { saveBtn.textContent = '✓ Tersimpan!'; saveBtn.disabled = true; }
   _anRenderSavedStrategies();
+
+  // Set strategy context for Dapur Konten pre-fill (sebelum modal tutup)
+  var _sSCtx = (typeof buildSilarisContext === 'function') ? buildSilarisContext() : {};
+  var _sPlatform = _anCurrentStrategyData.platform || 'ig';
+  var _sFormat   = (_anCurrentStrategyData.strategy && _anCurrentStrategyData.strategy.format_rekomendasi) || 'reel';
+  _anSetDapurChannel(_sPlatform, _sFormat);
+  window._strategyContext = {
+    handle:   _anCurrentStrategyData.handle,
+    platform: _sPlatform,
+    format:   _sFormat,
+    bizCat:   _sSCtx.businessCategory || ''
+  };
+
+  // FIX 1: tutup modal segera → switch ke Dapur Konten setelah animasi selesai
+  anCloseStrategyModal();
   setTimeout(function() {
-    anCloseStrategyModal();
     if (typeof switchMenu === 'function') switchMenu('command');
-  }, 700);
+    requestAnimationFrame(function() { _anApplyStrategyContext(); });
+  }, 230);
 }
 
 /* ─── Save Strategy: replace duplicate ─── */
@@ -1710,7 +1782,7 @@ function anSaveCurrentStrategy() {
         '<div class="an-strat-dup-msg">Kamu sudah punya strategi untuk <strong>' + (existing.handle || cleanH) + '</strong>.</div>' +
         '<div class="an-strat-dup-btns">' +
           '<button class="an-strat-dup-btn" onclick="_anSaveStratReplace()">Timpa yang Lama</button>' +
-          '<button class="an-strat-dup-btn an-strat-dup-btn-outline" onclick="_anSaveStratKeepBoth()">Simpan Keduanya</button>' +
+          '<button class="an-strat-dup-btn an-strat-dup-btn-outline" onclick="_anSaveStratKeepBoth()">Simpan Baru</button>' +
         '</div>';
     }
     return;
@@ -1784,8 +1856,12 @@ function anLaunchFromStratStep(platform, format, handle) {
   var bizCat = _sCtx.businessCategory || '';
   _anSetDapurChannel(platform, format);
   window._strategyContext = { handle: handle, platform: platform, format: format, bizCat: bizCat };
-  if (typeof switchMenu === 'function') switchMenu('command');
-  requestAnimationFrame(function() { _anApplyStrategyContext(); });
+  // FIX 1: tutup modal DULU, baru tampilkan Dapur Konten
+  anCloseStrategyModal();
+  setTimeout(function() {
+    if (typeof switchMenu === 'function') switchMenu('command');
+    requestAnimationFrame(function() { _anApplyStrategyContext(); });
+  }, 230);
 }
 window.anLaunchFromStratStep = anLaunchFromStratStep;
 
@@ -1970,6 +2046,7 @@ async function _callSilarisCompetitor(handle, platform, agg) {
     'Buat response JSON seperti berikut (estimasi realistis berdasarkan pola umum ' + platName + ' UMKM lokal Indonesia):',
     '{',
     '  "comp_handle": "@handle_atau_nama_singkat",',
+    '  "comp_category": "kategori bisnis pesaing dalam 1-3 kata (contoh: kuliner, fashion, jasa, beauty, otomotif)",',
     '  "comp_er": "X.X%",',
     '  "comp_freq": "Nx/week",',
     '  "comp_followers": "XXK",',
