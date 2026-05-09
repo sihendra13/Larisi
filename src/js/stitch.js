@@ -33,22 +33,31 @@ function updateStitch() {
 
   function updateStitchPosition() {
     var fmt = (typeof activeFormat !== 'undefined' ? activeFormat : 'post').toLowerCase();
+    var ch  = (typeof activeChannel !== 'undefined' ? activeChannel : 'ig').toLowerCase();
     var isVertical = fmt === 'story' || fmt === 'reel';
+    
     stitch.style.position  = 'absolute';
     stitch.style.top       = 'auto';
-    stitch.style.transform = '';
+    stitch.style.left      = '50%';
+    stitch.style.transform = 'translateX(-50%)';
+    stitch.style.textAlign = 'center';
+
     if (isVertical) {
-      // Story/Reel: bottom-center, 18% dari bawah
-      stitch.style.bottom    = '18%';
-      stitch.style.left      = '50%';
-      stitch.style.transform = 'translateX(-50%)';
-      stitch.style.textAlign = 'center';
+      // Story/Reel formats
+      if (ch === 'tiktok') {
+        stitch.style.bottom = '28%'; // TikTok UI requires more bottom clearance
+      } else if (ch === 'fb') {
+        stitch.style.bottom = '22%';
+      } else {
+        stitch.style.bottom = '18%'; // IG Reel/Story
+      }
     } else {
-      // Post: bottom-center, 15% dari bawah
-      stitch.style.bottom    = '15%';
-      stitch.style.left      = '50%';
-      stitch.style.transform = 'translateX(-50%)';
-      stitch.style.textAlign = 'center';
+      // Post formats (Square)
+      if (ch === 'fb') {
+        stitch.style.bottom = '22%'; // FB Post UI (Boost post area) requires more clearance
+      } else {
+        stitch.style.bottom = '15%'; // IG Post
+      }
     }
   }
 
