@@ -44,8 +44,8 @@ function updateStitch() {
       stitch.style.transform = 'translateX(-50%)';
       stitch.style.textAlign = 'center';
     } else {
-      // Post: bottom-center, 10% dari bawah
-      stitch.style.bottom    = '10%';
+      // Post: bottom-center, 15% dari bawah
+      stitch.style.bottom    = '15%';
       stitch.style.left      = '50%';
       stitch.style.transform = 'translateX(-50%)';
       stitch.style.textAlign = 'center';
