@@ -1526,12 +1526,12 @@
 .an-comp-input:focus { border-color: var(--rausch); }
 .an-comp-analyze-btn {
   height: 38px; padding: 0 16px;
-  background: var(--rausch); color: white; border: none;
+  background: var(--near-black); color: white; border: none;
   border-radius: var(--radius-btn); font-size: 12px; font-weight: 700;
   font-family: var(--font); cursor: pointer; white-space: nowrap;
   transition: background .15s; display: flex; align-items: center; gap: 5px;
 }
-.an-comp-analyze-btn:hover    { background: var(--rausch-deep); }
+.an-comp-analyze-btn:hover    { background: var(--rausch); }
 .an-comp-analyze-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* Loading dots */
