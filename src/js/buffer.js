@@ -391,6 +391,8 @@ async function connectPostForMe(platform) {
           console.log('[postforme] resync: akun sudah valid, skip placeholder');
           updateBufferIndicator();
           updateChannelChipsWithUsername();
+          setTimeout(function() { _closePfmModal(); }, 1800);
+          if (typeof showAnToast === 'function') showAnToast('Akun ' + platform + ' berhasil terhubung!', 'success');
           return;
         }
 

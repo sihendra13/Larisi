@@ -80,6 +80,16 @@ async function signIn(email, password) {
         email,
         password
     });
+    if (!error && data.user) {
+        // Jika user berbeda dari sesi sebelumnya, bersihkan akun sosial agar tidak bocor
+        try {
+            const stored = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+            if (stored.id && stored.id !== data.user.id) {
+                localStorage.removeItem('radar_social_accounts');
+                localStorage.removeItem('radar_session_id');
+            }
+        } catch(e) {}
+    }
     return { data, error };
 }
 
@@ -91,6 +101,8 @@ async function signOut() {
     const { error } = await client.auth.signOut();
     if (!error) {
         localStorage.removeItem('radar_user_profile');
+        localStorage.removeItem('radar_social_accounts');
+        localStorage.removeItem('radar_session_id');
         window.location.href = 'login.html';
     }
     return { error };

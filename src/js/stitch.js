@@ -14,13 +14,14 @@ function updateStitch() {
   }
   if (!p) p = personaDB.General;
   var loc = document.querySelector('.popup-loc') ? document.querySelector('.popup-loc').textContent.split(',')[0] : 'Lokasi kamu';
-  var dist = currentRadius.toFixed(1);
-  var d = getDialek();
+  var d   = getDialek();
+  var usp = (typeof getUsp === 'function') ? getUsp() : '';
   var txt = p.stitch
-    .replace(/\{loc\}/g, loc)
-    .replace(/\{dist\}/g, dist)
+    .replace(/\{loc\}/g,      loc)
+    .replace(/\{dist\}/g,     usp)
+    .replace(/\{usp\}/g,      usp)
     .replace(/\{greeting\}/g, d.greeting)
-    .replace(/\{cta\}/g, d.cta);
+    .replace(/\{cta\}/g,      d.cta);
   var s = document.getElementById('phoneStitch');
   s.style.display = 'block'; s.textContent = txt;
 }

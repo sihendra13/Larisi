@@ -106,6 +106,14 @@
                 </div>
             </div>
 
+            <div class="form-group" style="margin-top: 16px;">
+              <label for="usp">
+                Apa yang bikin bisnis kamu spesial?
+                <span style="font-weight:400; color: var(--secondary); font-size: 13px;">(opsional, tapi bikin kontenmu makin keren ✨)</span>
+              </label>
+              <input type="text" id="usp" placeholder="Contoh: Bakso jumbo kuah kaldu sapi asli, buka sampai tengah malam" maxlength="80" style="font-size: 14px;">
+            </div>
+
             <button class="btn btn-primary" onclick="nextStep(3)">Simpan Profil</button>
         </div>
 
@@ -122,17 +130,17 @@
             </p>
 
             <div class="social-buttons">
-                <button class="btn-social" style="border-color: #1877F2; color: #1877F2;">
-                    <i class="fab fa-facebook" style="font-size: 18px;"></i> Facebook Page
+                <button id="ob-btn-facebook" class="btn-social" style="border-color: #1877F2; color: #1877F2;" onclick="onboardConnectSocial(this, 'facebook')">
+                    <i class="fab fa-facebook" style="font-size: 18px;"></i> <span>Facebook Page</span>
                 </button>
-                <button class="btn-social" style="border-color: #E1306C; color: #E1306C;">
-                    <i class="fab fa-instagram" style="font-size: 18px;"></i> Instagram
+                <button id="ob-btn-instagram" class="btn-social" style="border-color: #E1306C; color: #E1306C;" onclick="onboardConnectSocial(this, 'instagram')">
+                    <i class="fab fa-instagram" style="font-size: 18px;"></i> <span>Instagram</span>
                 </button>
-                <button class="btn-social" style="border-color: #000000; color: #000000;">
-                    <i class="fab fa-tiktok" style="font-size: 18px;"></i> TikTok
+                <button id="ob-btn-tiktok" class="btn-social" style="border-color: #000000; color: #000000;" onclick="onboardConnectSocial(this, 'tiktok')">
+                    <i class="fab fa-tiktok" style="font-size: 18px;"></i> <span>TikTok</span>
                 </button>
-                <button class="btn-social" style="border-color: #FF0000; color: #FF0000;">
-                    <i class="fab fa-youtube" style="font-size: 18px;"></i> YouTube
+                <button id="ob-btn-youtube" class="btn-social" style="border-color: #FF0000; color: #FF0000;" onclick="onboardConnectSocial(this, 'youtube')">
+                    <i class="fab fa-youtube" style="font-size: 18px;"></i> <span>YouTube</span>
                 </button>
             </div>
 
@@ -216,6 +224,7 @@
                 const category = document.getElementById('category').value;
                 const city = document.getElementById('city').value;
                 const delivery = document.querySelector('input[name="delivery"]:checked')?.value === 'yes';
+                const usp = document.getElementById('usp')?.value?.trim() || '';
 
                 if (!ownerName || !businessName || !category || !city) {
                     alert('Mohon lengkapi semua data bertanda *');
@@ -231,7 +240,8 @@
                     whatsapp: whatsapp,
                     category: category,
                     city: city,
-                    delivery_service: delivery
+                    delivery_service: delivery,
+                    usp: usp
                 });
 
                 if (error) {
@@ -304,6 +314,101 @@
                         link.textContent = 'Kirim ulang (' + s + 's)';
                     }
                 }, 1000);
+            }
+        }
+
+        async function onboardConnectSocial(btn, platform) {
+            var span = btn.querySelector('span');
+            btn.disabled = true;
+            if (span) span.textContent = 'Memproses...';
+
+            try {
+                var supabaseUrl = RADAR_CONFIG.SUPABASE_URL;
+                var supabaseKey = RADAR_CONFIG.SUPABASE_ANON_KEY;
+                var redirectUri = window.location.origin + '/postforme-callback';
+
+                // Ambil atau buat external_id
+                var externalId = localStorage.getItem('radar_session_id');
+                if (!externalId) {
+                    var profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+                    externalId = profile.postforme_external_id || ('radar_user_' + Math.random().toString(36).slice(2, 10));
+                    localStorage.setItem('radar_session_id', externalId);
+                }
+
+                // Buka popup SEBELUM await — browser hanya izinkan dari user gesture langsung
+                var popup = window.open('about:blank', 'postforme_oauth', 'width=600,height=700,left=200,top=80');
+
+                var resp = await fetch(supabaseUrl + '/functions/v1/postforme-auth', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + supabaseKey, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        platform: platform,
+                        redirect_uri: redirectUri,
+                        external_id: externalId,
+                        scopes: platform === 'instagram'
+                            ? ['instagram_basic','instagram_content_publish','instagram_manage_insights','instagram_manage_comments','pages_read_engagement']
+                            : undefined
+                    })
+                });
+
+                if (!resp.ok) {
+                    if (popup) popup.close();
+                    throw new Error('Server error ' + resp.status);
+                }
+
+                var data   = await resp.json();
+                var authUrl = data.url || data.auth_url || data.redirect_url || data.authorization_url;
+                if (!authUrl) { if (popup) popup.close(); throw new Error('URL OAuth tidak tersedia'); }
+
+                if (popup) popup.location.href = authUrl;
+                else window.open(authUrl, 'postforme_oauth', 'width=600,height=700,left=200,top=80');
+
+                // Dengarkan callback dari postforme-callback.html
+                var msgHandler = function(event) {
+                    if (event.origin !== window.location.origin) return;
+                    if (!event.data) return;
+                    var type = event.data.type;
+                    if (type !== 'postforme_oauth_success' && type !== 'postforme_oauth_resync') return;
+
+                    window.removeEventListener('message', msgHandler);
+                    clearInterval(poll);
+
+                    // Simpan ke localStorage (format sama dengan buffer.js)
+                    var accounts = JSON.parse(localStorage.getItem('radar_social_accounts') || '[]');
+                    accounts = accounts.filter(function(a) { return a.platform !== platform; });
+                    var d = event.data;
+                    var accountId = (d.accountIds && d.accountIds[0]) || d.accountId || d.account_id || ('pfm_' + platform + '_' + Date.now());
+                    accounts.push({ id: accountId, platform: platform, username: null, avatar_url: null });
+                    localStorage.setItem('radar_social_accounts', JSON.stringify(accounts));
+
+                    // Update tampilan tombol → hijau ✓
+                    var colors = { facebook:'#1877F2', instagram:'#E1306C', tiktok:'#000000', youtube:'#FF0000' };
+                    btn.style.borderColor = '#16a34a';
+                    btn.style.color = '#16a34a';
+                    btn.style.background = '#f0fdf4';
+                    if (span) span.textContent = '✓ Terhubung';
+                    btn.disabled = false;
+                };
+                window.addEventListener('message', msgHandler);
+
+                // Fallback: popup ditutup manual
+                var poll = setInterval(function() {
+                    if (!popup || popup.closed) {
+                        clearInterval(poll);
+                        window.removeEventListener('message', msgHandler);
+                        if (span && span.textContent === 'Memproses...') {
+                            if (span) span.textContent = btn.id.replace('ob-btn-', '').charAt(0).toUpperCase() + btn.id.replace('ob-btn-', '').slice(1);
+                            btn.disabled = false;
+                        }
+                    }
+                }, 800);
+                setTimeout(function() { clearInterval(poll); window.removeEventListener('message', msgHandler); }, 300000);
+
+            } catch(e) {
+                console.error('[onboarding] connect error:', e.message);
+                alert('Gagal menghubungkan: ' + e.message);
+                if (span) span.textContent = platform.charAt(0).toUpperCase() + platform.slice(1);
+                btn.disabled = false;
             }
         }
 
