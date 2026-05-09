@@ -45,11 +45,11 @@ function updateStitch() {
     if (isVertical) {
       // Story/Reel formats
       if (ch === 'tiktok') {
-        stitch.style.bottom = '35%'; // TikTok UI requires more bottom clearance
+        stitch.style.bottom = '22%'; // TikTok UI
       } else if (ch === 'meta') {
-        stitch.style.bottom = '24%'; // FB Story/Reel
+        stitch.style.bottom = '16%'; // FB Story/Reel
       } else {
-        stitch.style.bottom = '18%'; // IG Reel/Story
+        stitch.style.bottom = '16%'; // IG Reel/Story
       }
     } else {
       // Post formats (Square)
