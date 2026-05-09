@@ -44,10 +44,11 @@ function updateStitch() {
       stitch.style.transform = 'translateX(-50%)';
       stitch.style.textAlign = 'center';
     } else {
-      // Post: bottom-left, 10% dari bawah, 5% dari kiri
+      // Post: bottom-center, 10% dari bawah
       stitch.style.bottom    = '10%';
-      stitch.style.left      = '5%';
-      stitch.style.textAlign = 'left';
+      stitch.style.left      = '50%';
+      stitch.style.transform = 'translateX(-50%)';
+      stitch.style.textAlign = 'center';
     }
   }
 

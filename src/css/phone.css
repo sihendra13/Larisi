@@ -59,11 +59,11 @@
   bottom: 23%;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: 12px;
   color: #fff;
   font-size: 8px;
   line-height: 1.45;
@@ -71,17 +71,23 @@
   text-align: center;
   width: auto;
   max-width: 88%;
-  cursor: move;
+  cursor: text;
   user-select: none;
   white-space: pre-line;
   box-sizing: border-box;
-  outline: none;
+  outline: 1px solid transparent;
+  transition: outline 0.2s, background 0.2s;
   z-index: 20;
+}
+.phone-stitch:hover {
+  outline: 1px dashed rgba(255,255,255,0.4);
 }
 .phone-stitch.editing {
   cursor: text;
-  outline: 1.5px solid rgba(255,255,255,0.5);
+  outline: 1.5px solid rgba(255,255,255,0.6);
+  background: rgba(0, 0, 0, 0.75);
   user-select: text;
+  border-radius: 8px;
 }
 
 /* ═══════════════════════════════════════════════════════════
