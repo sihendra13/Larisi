@@ -370,6 +370,7 @@ function selectFormat(fmt) {
   applyShell(key);
   // Update label kanan (e.g. "Instagram Reel")
   _updateLivePreviewLabel();
+  if (typeof updateCaptionPlatformLabel === 'function') updateCaptionPlatformLabel();
 }
 
 /* ─── Channel chips — multi select, controls reach ─────────── */
