@@ -45,16 +45,16 @@ function updateStitch() {
     if (isVertical) {
       // Story/Reel formats
       if (ch === 'tiktok') {
-        stitch.style.bottom = '28%'; // TikTok UI requires more bottom clearance
-      } else if (ch === 'fb') {
-        stitch.style.bottom = '22%';
+        stitch.style.bottom = '35%'; // TikTok UI requires more bottom clearance
+      } else if (ch === 'meta') {
+        stitch.style.bottom = '24%'; // FB Story/Reel
       } else {
         stitch.style.bottom = '18%'; // IG Reel/Story
       }
     } else {
       // Post formats (Square)
-      if (ch === 'fb') {
-        stitch.style.bottom = '22%'; // FB Post UI (Boost post area) requires more clearance
+      if (ch === 'meta') {
+        stitch.style.bottom = '24%'; // FB Post UI (Boost post area) requires more clearance
       } else {
         stitch.style.bottom = '15%'; // IG Post
       }
