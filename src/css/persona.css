@@ -99,7 +99,7 @@
   line-height: 1.5; margin-bottom: 12px;
 }
 .vc-question strong { font-weight: 700; color: #1c1917; }
-.vc-actions { display: flex; gap: 8px; }
+.vc-actions { display: flex; flex-direction: column; gap: 8px; }
 .vc-btn {
   flex: 1; padding: 8px 10px;
   border-radius: 8px; font-size: 11px; font-weight: 700;
