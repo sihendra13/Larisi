@@ -358,6 +358,7 @@ function cycleChannel() {
   if (typeof generateCaption === 'function')       generateCaption(false);
   if (typeof updateCaptionPlatformLabel === 'function') updateCaptionPlatformLabel();
   if (typeof updateReach === 'function') updateReach();
+  if (typeof toggleStoryZoomUI === 'function') toggleStoryZoomUI();
 }
 
 /* ─── Format selector (Post / Reel / Story) ────────────────── */
@@ -371,6 +372,7 @@ function selectFormat(fmt) {
   // Update label kanan (e.g. "Instagram Reel")
   _updateLivePreviewLabel();
   if (typeof updateCaptionPlatformLabel === 'function') updateCaptionPlatformLabel();
+  if (typeof toggleStoryZoomUI === 'function') toggleStoryZoomUI();
 }
 
 /* ─── Channel chips — multi select, controls reach ─────────── */

@@ -3,6 +3,15 @@
 
 var uploadedDataURLs = [];
 var uploadedVideoFile = null; // simpan File object asli untuk video
+var currentMediaUrl = null;
+
+// Zoom & Pan state (only active for Story format)
+var storyZoomState = {}; // URL -> { z: 1, x: 0, y: 0 }
+var isDraggingMedia = false;
+var dragStartX = 0;
+var dragStartY = 0;
+var initialPanX = 0;
+var initialPanY = 0;
 
 function addThumb(f, thumbs, uz, isMaster) {
   var wrapper = document.createElement('div');
@@ -346,12 +355,127 @@ function showInPhone(url, isVid) {
     m.innerHTML = '';
     m.appendChild(wrapper);
   } else {
-    m.innerHTML = '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;">';
+    m.innerHTML = '<img src="' + url + '" draggable="false" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;transform-origin:center;">';
   }
+  
+  currentMediaUrl = url;
+  if (!storyZoomState[url]) {
+    storyZoomState[url] = { z: 1, x: 0, y: 0 };
+  }
+  
+  // Attach drag listeners only once to phoneMedia
+  if (!m.dataset.dragAttached) {
+    m.dataset.dragAttached = 'true';
+    m.style.cursor = 'grab';
+    m.style.overflow = 'hidden';
+    m.style.position = 'relative'; // ensure wrapper boundaries
+
+    var onDragStart = function(e) {
+      if (typeof activeFormat === 'undefined' || activeFormat !== 'story') return;
+      isDraggingMedia = true;
+      var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      dragStartX = clientX;
+      dragStartY = clientY;
+      var st = storyZoomState[currentMediaUrl];
+      initialPanX = st ? st.x : 0;
+      initialPanY = st ? st.y : 0;
+      m.style.cursor = 'grabbing';
+    };
+
+    var onDragMove = function(e) {
+      if (!isDraggingMedia) return;
+      if (typeof activeFormat === 'undefined' || activeFormat !== 'story') return;
+      e.preventDefault(); // prevent scrolling
+      var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      var dx = clientX - dragStartX;
+      var dy = clientY - dragStartY;
+      
+      var st = storyZoomState[currentMediaUrl];
+      if (st) {
+        st.x = initialPanX + (dx / st.z);
+        st.y = initialPanY + (dy / st.z);
+        applyStoryZoom(true); // true = no transition
+      }
+    };
+
+    var onDragEnd = function(e) {
+      if (isDraggingMedia) {
+        isDraggingMedia = false;
+        m.style.cursor = 'grab';
+        applyStoryZoom(false); // restore transition
+      }
+    };
+
+    m.addEventListener('mousedown', onDragStart);
+    window.addEventListener('mousemove', onDragMove, {passive: false});
+    window.addEventListener('mouseup', onDragEnd);
+
+    m.addEventListener('touchstart', onDragStart, {passive: false});
+    window.addEventListener('touchmove', onDragMove, {passive: false});
+    window.addEventListener('touchend', onDragEnd);
+  }
+
   applyFilters();
+  toggleStoryZoomUI(); // Setup initial UI state for this image
 }
 
 function applyFilters() {
   var el = document.querySelector('#phoneMedia img, #phoneMedia video');
   if (el) el.style.filter = 'brightness('+brightnessVal+'%) contrast('+contrastVal+'%)';
 }
+
+function applyStoryZoom(skipTransition) {
+  var el = document.querySelector('#phoneMedia img, #phoneMedia video');
+  if (!el || !currentMediaUrl) return;
+
+  var slider = document.getElementById('storyZoomSlider');
+  var isStory = (typeof activeFormat !== 'undefined' && activeFormat === 'story');
+
+  if (isStory) {
+    // We are in story mode
+    el.style.objectFit = 'contain';
+    
+    var st = storyZoomState[currentMediaUrl] || { z: 1, x: 0, y: 0 };
+    // update state from slider if caller is slider
+    if (slider && !isDraggingMedia) {
+      st.z = parseFloat(slider.value);
+    } else if (slider) {
+      slider.value = st.z; // sync slider when switching images
+    }
+    
+    if (skipTransition) {
+      el.style.transition = 'none';
+    } else {
+      el.style.transition = 'transform 0.1s ease-out';
+    }
+    el.style.transform = 'translate(' + st.x + 'px, ' + st.y + 'px) scale(' + st.z + ')';
+    
+    // update the slider input UI
+    if (slider) slider.value = st.z;
+
+  } else {
+    // Normal mode (Post / Reel)
+    el.style.objectFit = 'cover';
+    el.style.transition = 'transform 0.2s';
+    el.style.transform = 'translate(0px, 0px) scale(1)';
+  }
+}
+
+window.applyStoryZoom = applyStoryZoom;
+
+function toggleStoryZoomUI() {
+  var ui = document.getElementById('storyZoomControl');
+  if (!ui) return;
+  var isStory = (typeof activeFormat !== 'undefined' && activeFormat === 'story');
+  ui.style.display = isStory ? 'flex' : 'none';
+  
+  var slider = document.getElementById('storyZoomSlider');
+  if (isStory && currentMediaUrl && slider) {
+    var st = storyZoomState[currentMediaUrl] || { z: 1, x: 0, y: 0 };
+    slider.value = st.z;
+  }
+  applyStoryZoom(false);
+}
+window.toggleStoryZoomUI = toggleStoryZoomUI;
