@@ -901,7 +901,7 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
   return new Promise(function(resolve) {
     var stitchEl = document.getElementById('phoneStitch');
     var text     = stitchEl ? (stitchEl.textContent || stitchEl.innerText || '').trim() : '';
-    if (!text) { resolve(null); return; }
+    // text might be empty if stitch is off, but we still proceed to apply zoom/pan/filters
 
     var vertical = _isVerticalFormat(fmt, platforms);
 
@@ -910,26 +910,14 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
       var origW = img.naturalWidth;
       var origH = img.naturalHeight;
 
-      var cw, ch, photoOffX, photoOffY, photoW, photoH;
-
+      var cw, ch;
       if (vertical) {
-        // Story: canvas fix 1080x1920, foto di-COVER (scale max, crop sisa)
         cw = 1080;
         ch = 1920;
-        var coverScale = Math.max(cw / origW, ch / origH);
-        photoW    = Math.round(origW * coverScale);
-        photoH    = Math.round(origH * coverScale);
-        photoOffX = Math.round((cw - photoW) / 2);
-        photoOffY = Math.round((ch - photoH) / 2);
       } else {
-        // Post: canvas = ukuran foto, scale contain ke max 1080x1350
         var postScale = Math.min(1080 / origW, 1350 / origH, 1);
-        photoW    = Math.round(origW * postScale);
-        photoH    = Math.round(origH * postScale);
-        cw        = photoW;
-        ch        = photoH;
-        photoOffX = 0;
-        photoOffY = 0;
+        cw = Math.round(origW * postScale);
+        ch = Math.round(origH * postScale);
       }
 
       var canvas = document.createElement('canvas');
@@ -937,10 +925,49 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
       canvas.height = ch;
       var ctx = canvas.getContext('2d');
 
-      // Gambar foto — untuk story otomatis ter-crop jika lebih besar dari canvas
-      ctx.drawImage(img, photoOffX, photoOffY, photoW, photoH);
+      // Fill background (Story default black, Post white)
+      ctx.fillStyle = vertical ? '#000000' : '#ffffff';
+      ctx.fillRect(0, 0, cw, ch);
 
-      console.log('[stitch] canvas=' + cw + 'x' + ch + ' photo=' + photoW + 'x' + photoH + ' offset=' + photoOffX + ',' + photoOffY);
+      // --- Apply Filters & Transformations ---
+      ctx.save();
+      
+      // Apply Brightness & Contrast
+      var b = (typeof brightnessVal !== 'undefined') ? brightnessVal : 100;
+      var c = (typeof contrastVal !== 'undefined') ? contrastVal : 100;
+      if (b !== 100 || c !== 100) {
+        ctx.filter = 'brightness(' + b + '%) contrast(' + c + '%)';
+      }
+
+      if (vertical) {
+        // Story: replicate the "contain + transform" logic from preview
+        var st = (typeof storyZoomState !== 'undefined' && storyZoomState[dataUrl]) 
+                 ? storyZoomState[dataUrl] : { z: 1, x: 0, y: 0 };
+        
+        var containScale = Math.min(cw / origW, ch / origH);
+        var photoW = origW * containScale;
+        var photoH = origH * containScale;
+
+        // Move to center of canvas
+        ctx.translate(cw / 2, ch / 2);
+        
+        // Apply Panning (st.x/y is relative to preview width ~160px, convert to 1080px)
+        // Ratio = 1080 / 160 = 6.75
+        var canvasRatio = 6.75; 
+        ctx.translate(st.x * canvasRatio * st.z, st.y * canvasRatio * st.z);
+        
+        // Apply Zoom
+        ctx.scale(st.z, st.z);
+        
+        // Draw image centered
+        ctx.drawImage(img, -photoW / 2, -photoH / 2, photoW, photoH);
+      } else {
+        // Post: simple scale to fit
+        ctx.drawImage(img, 0, 0, cw, ch);
+      }
+      ctx.restore();
+
+      console.log('[process] canvas=' + cw + 'x' + ch + ' vertical=' + vertical);
 
       // ── Parameter stitch text ──
       var pad = Math.round(cw * 0.016);
@@ -984,7 +1011,8 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
         textX     = Math.round(cw / 2);
         textAlign = 'center';
         // pillY relatif ke area foto: 82% dari tinggi foto + offset foto
-        pillY = Math.round(photoOffY + photoH * 0.75);
+        // pillY untuk Story diatur di sekitar 75% tinggi layar
+        pillY = Math.round(ch * 0.75);
       } else {
         pillX     = Math.round(cw * 0.05);
         textX     = pillX + pad;
@@ -995,31 +1023,36 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
       // Clamp agar tidak keluar canvas
       pillX = Math.max(0, pillX);
       if (pillX + pillW > cw) pillX = Math.max(0, cw - pillW);
-      if (pillY + pillH > photoOffY + photoH) pillY = Math.max(photoOffY, photoOffY + photoH - pillH);
-      if (pillY < photoOffY) pillY = photoOffY;
+      if (vertical) {
+        if (pillY + pillH > ch) pillY = Math.max(0, ch - pillH);
+      } else {
+        if (pillY + pillH > ch) pillY = Math.max(0, ch - pillH);
+      }
 
-      // ── Draw pill background ──
-      ctx.globalAlpha = 0.75;
-      ctx.fillStyle   = '#000000';
-      _stitchRoundRect(ctx, pillX, pillY, pillW, pillH, radius);
-      ctx.fill();
-      ctx.globalAlpha = 1.0;
+      if (text) {
+        // ── Draw pill background ──
+        ctx.globalAlpha = 0.75;
+        ctx.fillStyle   = '#000000';
+        _stitchRoundRect(ctx, pillX, pillY, pillW, pillH, radius);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
 
-      // ── Draw text ──
-      ctx.fillStyle    = '#ffffff';
-      ctx.font         = 'bold ' + fontSize + 'px ' + fontBase;
-      ctx.textAlign    = textAlign;
-      ctx.textBaseline = 'top';
-      var textY = pillY + pad;
+        // ── Draw text ──
+        ctx.fillStyle    = '#ffffff';
+        ctx.font         = 'bold ' + fontSize + 'px ' + fontBase;
+        ctx.textAlign    = textAlign;
+        ctx.textBaseline = 'top';
+        var textY = pillY + pad;
 
-      lines.forEach(function(line, i) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(pillX, pillY, pillW, pillH);
-        ctx.clip();
-        ctx.fillText(line, textX, textY + i * lineHeight);
-        ctx.restore();
-      });
+        lines.forEach(function(line, i) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(pillX, pillY, pillW, pillH);
+          ctx.clip();
+          ctx.fillText(line, textX, textY + i * lineHeight);
+          ctx.restore();
+        });
+      }
 
       console.log('[stitch] pill: x=' + pillX + ' y=' + pillY + ' w=' + pillW + ' h=' + pillH + ' fontSize=' + fontSize);
 
@@ -1222,18 +1255,12 @@ async function publishViaPostForMe(canvas, campaignData) {
           var dataUrl = allPhotoURLs[d];
           var blobToUpload = null;
 
-          if (d === 0 && canvas) {
-            // Use the fully rendered html2canvas export (includes zoom, crop, brightness, contrast, and stitch text)
-            blobToUpload = await new Promise(function(resolve) {
-              canvas.toBlob(resolve, 'image/jpeg', 0.9);
-            });
-            console.log('[postforme] foto 1 — using html2canvas rendering (preserves zoom/pan), size:', blobToUpload ? blobToUpload.size : 0);
-          } else if (applyStitch && d === 0) {
-            // Fallback just in case canvas is missing
-            var composited = await _compositeStitchOnDataUrl(dataUrl, fmt, campaignData.platforms);
-            if (composited) {
-              blobToUpload = composited;
-              console.log('[postforme] foto', d + 1, '— fallback stitch composited, size:', composited.size);
+          if (d === 0) {
+            // ALWAYS process the first photo to apply zoom, pan, brightness, contrast, and stitch
+            var processed = await _compositeStitchOnDataUrl(dataUrl, fmt, campaignData.platforms);
+            if (processed) {
+              blobToUpload = processed;
+              console.log('[postforme] foto 1 — processed (zoom/pan/stitch), size:', processed.size);
             }
           }
 
