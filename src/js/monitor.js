@@ -800,7 +800,7 @@ function showDeleteConfirmModal(campaign) {
     +     'style="flex:1;padding:11px;border-radius:12px;'
     +     'border:none;background:#ef4444;color:#fff;'
     +     'font-size:13px;font-weight:600;cursor:pointer;'
-    +     'font-family:var(--font,sans-serif);">Hapus dari RADAR</button>'
+    +     'font-family:var(--font,sans-serif);">Hapus dari Larisi</button>'
     + '</div>'
     + '</div>';
 
@@ -828,7 +828,7 @@ async function _confirmDeleteCampaign(localId, supabaseId) {
   }
 
   if (typeof showTopToast === 'function') {
-    showTopToast('✓ Campaign berhasil dihapus dari RADAR', 'success');
+    showTopToast('✓ Iklan berhasil dihapus dari Larisi', 'success');
   }
 }
 

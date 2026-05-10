@@ -1222,12 +1222,18 @@ async function publishViaPostForMe(canvas, campaignData) {
           var dataUrl = allPhotoURLs[d];
           var blobToUpload = null;
 
-          if (applyStitch && d === 0) {
-            // Composite stitch text HANYA ke foto pertama, pass fmt + platforms untuk posisi
+          if (d === 0 && canvas) {
+            // Use the fully rendered html2canvas export (includes zoom, crop, brightness, contrast, and stitch text)
+            blobToUpload = await new Promise(function(resolve) {
+              canvas.toBlob(resolve, 'image/jpeg', 0.9);
+            });
+            console.log('[postforme] foto 1 — using html2canvas rendering (preserves zoom/pan), size:', blobToUpload ? blobToUpload.size : 0);
+          } else if (applyStitch && d === 0) {
+            // Fallback just in case canvas is missing
             var composited = await _compositeStitchOnDataUrl(dataUrl, fmt, campaignData.platforms);
             if (composited) {
               blobToUpload = composited;
-              console.log('[postforme] foto', d + 1, '— stitch composited, size:', composited.size);
+              console.log('[postforme] foto', d + 1, '— fallback stitch composited, size:', composited.size);
             }
           }
 
