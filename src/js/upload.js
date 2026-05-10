@@ -24,10 +24,10 @@ function getStoryZoomKey(url) {
   return (typeof blobToBase64Map !== 'undefined' && blobToBase64Map[url]) ? blobToBase64Map[url] : url;
 }
 
-function addThumb(f, thumbs, uz, isMaster) {
+function addThumb(f, thumbs, uz, isMaster, existingUrl) {
   var wrapper = document.createElement('div');
   wrapper.className = 'thumb-item';
-  var objUrl = URL.createObjectURL(f);
+  var objUrl = existingUrl || URL.createObjectURL(f);
   var media = f.type.startsWith('video/') ? document.createElement('video') : document.createElement('img');
   media.src = objUrl;
   media.style.borderRadius = '12px';
@@ -233,7 +233,7 @@ function processFiles(rawFiles, hasVideo) {
     if (fi === 0) firstBlobUrl = blobUrl;
     
     var isMaster = isFirstUpload && fi === 0;
-    addThumb(f, thumbs, uz, isMaster);
+    addThumb(f, thumbs, uz, isMaster, blobUrl);
     
     var capturedIdx = existingCount + fi;
     var r = new FileReader();
