@@ -217,9 +217,26 @@ function processFiles(rawFiles, hasVideo) {
   thumbs.style.display = 'flex';
   uz.style.display = 'none';
 
-  files.forEach(function(f, i) {
-    var isMaster = isFirstUpload && i === 0;
+  var firstBlobUrl = null;
+  files.forEach(function(f, fi) {
+    var blobUrl = URL.createObjectURL(f);
+    if (fi === 0) firstBlobUrl = blobUrl;
+    
+    var isMaster = isFirstUpload && fi === 0;
     addThumb(f, thumbs, uz, isMaster);
+    
+    var capturedIdx = existingCount + fi;
+    var r = new FileReader();
+    r.onload = function(ev) {
+      var base64 = ev.target.result;
+      uploadedDataURLs[capturedIdx] = base64;
+      blobToBase64Map[blobUrl] = base64;
+      if (capturedIdx === 0) {
+        uploadedDataURL = base64;
+      }
+      console.log('[upload] foto', capturedIdx + 1, 'base64 ok');
+    };
+    r.readAsDataURL(f);
   });
 
   /* Video: hide add box always */
@@ -238,27 +255,9 @@ function processFiles(rawFiles, hasVideo) {
   } else {
     uploadedVideoFile = null;
   }
-  var url = URL.createObjectURL(first);
-  uploadedDataURL = url;  // blob URL sementara untuk preview
-  showInPhone(url, isVid);
-
-  if (!isVid) {
-    files.forEach(function(f, fi) {
-      var blobUrl = URL.createObjectURL(f);
-      var capturedIdx = existingCount + fi;
-      var r = new FileReader();
-      r.onload = function(ev) {
-        var base64 = ev.target.result;
-        uploadedDataURLs[capturedIdx] = base64;
-        blobToBase64Map[blobUrl] = base64;
-        if (capturedIdx === 0) {
-          uploadedDataURL = base64;
-        }
-        console.log('[upload] foto', capturedIdx + 1, 'base64 ok');
-      };
-      r.readAsDataURL(f);
-    });
-  }
+  
+  uploadedDataURL = firstBlobUrl;  // Gunakan blob URL yang sama dengan yang didaftarkan di map
+  showInPhone(firstBlobUrl, isVid);
 
   var totalCount = document.getElementById('thumbs').querySelectorAll('.thumb-item').length;
   updateCarouselDots(0);
