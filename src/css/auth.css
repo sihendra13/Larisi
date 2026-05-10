@@ -117,12 +117,14 @@ body {
     background-image: url('../../Assets/dashboard-bg.png');
     background-size: cover;
     background-position: center;
-    filter: brightness(0.9); /* Hanya kecerahan, tanpa beban blur */
+    filter: brightness(0.9);
     position: fixed;
     top: 0;
     left: 0;
     overflow: hidden;
     z-index: 1;
+    opacity: 0; /* Mulai dari transparan agar instan */
+    transition: opacity 1.2s ease-in-out; /* Transisi halus */
 }
 
 .dashboard-mockup::before {

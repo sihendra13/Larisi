@@ -182,6 +182,10 @@
                 document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
                 document.getElementById('step-2').classList.add('active');
             }
+
+            // Munculkan background setelah logic inisial selesai (agar instan)
+            const mockup = document.querySelector('.dashboard-mockup');
+            if (mockup) mockup.style.opacity = '1';
         });
 
         function showOtpStatus(msg, isError) {
