@@ -115,7 +115,7 @@ function buildSilarisSystemPrompt() {
     '',
     'MODE 1, AUTO-INSIGHT (saat pertama kali analisa campaign):',
     'WAJIB buka dengan kalimat ini persis (ganti [nama] dengan nama campaign yang sedang dibuka):',
-    '  Hei! Saya udah cek data campaign "[nama]" kamu nih 👋',
+    '  Hei! Saya udah cek data iklan "[nama]" kamu nih 👋',
     'Lanjutkan dengan struktur 3 seksi di bawah ini, isi tiap seksi dengan bahasa coach yang mengalir:',
     '',
     '📊 PERFORMA SEKARANG',
@@ -132,7 +132,7 @@ function buildSilarisSystemPrompt() {
     'Tutup dengan: "Ada yang mau kamu tanyain lebih dalam?"',
     '',
     'Contoh isi yang BENAR untuk MODE 1:',
-    'Hei! Saya udah cek data campaign "TEs FB" kamu nih 👋',
+    'Hei! Saya udah cek data iklan "TEs FB" kamu nih 👋',
     '',
     '📊 PERFORMA SEKARANG',
     '• Engagement Rate: 200%, luar biasa! Artinya setiap orang yang lihat langsung interact.',
@@ -204,7 +204,7 @@ function buildSilarisSystemPrompt() {
     '- HANYA analisa campaign yang sedang dibuka user',
     '- JANGAN bandingkan dengan campaign lain',
     '- JANGAN berasumsi data yang tidak tersedia di context',
-    '- Kalau user tanya di luar topik: "Hei, saya hanya bisa bantu analisa campaign yang lagi kamu buka ya!"',
+    '- Kalau user tanya di luar topik: "Hei, saya hanya bisa bantu analisa iklan yang lagi kamu buka ya!"',
     '',
     'ATURAN KERAS: DILARANG gunakan tanda em-dash (—) dalam semua output. Ganti dengan koma.',
     '',
@@ -217,7 +217,7 @@ function buildSilarisSystemPrompt() {
 
   if (ctx.mode === 'FULL') {
     return [
-      'Kamu adalah SiLaris, Campaign Coach AI yang semangat dan inspiratif untuk bisnis lokal Indonesia.',
+      'Kamu adalah SiLaris, Asisten Iklan AI yang semangat dan inspiratif untuk bisnis lokal Indonesia.',
       '',
       'KONTEKS USER:',
       '- Bisnis: ' + (ctx.businessName || '(belum diisi)'),
@@ -242,7 +242,7 @@ function buildSilarisSystemPrompt() {
       ? '- Kategori bisnis terdeteksi: ' + ctx.businessCategory
       : '- Kategori bisnis belum diisi';
     return [
-      'Kamu adalah SiLaris, Campaign Coach AI yang semangat dan inspiratif untuk bisnis lokal Indonesia.',
+      'Kamu adalah SiLaris, Asisten Iklan AI yang semangat dan inspiratif untuk bisnis lokal Indonesia.',
       '',
       'KONTEKS USER (dari lokasi GPS):',
       '- Region: ' + ctx.regionLabel,
@@ -381,9 +381,9 @@ function renderCampaigns() {
           '<circle cx="72" cy="72" r="14" fill="#7c3aed"/>' +
           '<path d="M68 72h8M72 68v8" stroke="white" stroke-width="2.5" stroke-linecap="round"/>' +
         '</svg>' +
-        '<h3 style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0;font-family:var(--font,sans-serif);">Belum ada campaign yang berjalan</h3>' +
-        '<p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0;font-family:var(--font,sans-serif);">Launch campaign pertamamu dan pantau performanya secara real-time di sini!</p>' +
-        '<button onclick="switchMenu(\'command\')" class="cc-empty-cta">🚀 Buat Campaign Pertama</button>' +
+        '<h3 style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0;font-family:var(--font,sans-serif);">Belum ada iklan yang berjalan</h3>' +
+        '<p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0;font-family:var(--font,sans-serif);">Tayangkan iklan pertamamu dan pantau performanya secara real-time di sini!</p>' +
+        '<button onclick="switchMenu(\'command\')" class="cc-empty-cta">🚀 Buat Iklan Pertama</button>' +
       '</div>';
     return;
   }
@@ -1060,7 +1060,7 @@ function buildCampaignCard(c) {
     + 'display:flex;align-items:center;justify-content:center;gap:5px;'
     + 'transition:background 0.15s;" '
     + 'onmouseover="this.style.background=\'#791ADB\'" '
-    + 'onmouseout="this.style.background=\'#111827\'">🚀 Boost Campaign</button>'
+    + 'onmouseout="this.style.background=\'#111827\'">🚀 Promosikan Iklan</button>'
     + '</div>';
 
   return card;

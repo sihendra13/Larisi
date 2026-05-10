@@ -144,7 +144,7 @@ function downloadCreative() {
   var canvas = window.radarCreativeCanvas;
   if (!canvas) {
     if (typeof showAnToast === 'function') {
-      showAnToast('Belum ada creative yang siap. Luncurkan campaign dulu.');
+      showAnToast('Belum ada creative yang siap. Tayangkan iklan dulu.');
     }
     return;
   }
