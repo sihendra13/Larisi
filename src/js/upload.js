@@ -12,6 +12,7 @@ var dragStartX = 0;
 var dragStartY = 0;
 var initialPanX = 0;
 var initialPanY = 0;
+var blobToBase64Map = {}; // mapping blobUrl -> base64Url for state synchronization
 
 function addThumb(f, thumbs, uz, isMaster) {
   var wrapper = document.createElement('div');
@@ -243,18 +244,18 @@ function processFiles(rawFiles, hasVideo) {
 
   if (!isVid) {
     files.forEach(function(f, fi) {
+      var blobUrl = URL.createObjectURL(f);
+      var capturedIdx = existingCount + fi;
       var r = new FileReader();
-      r.onload = (function(capturedIdx) {
-        return function(ev) {
-          uploadedDataURLs[capturedIdx] = ev.target.result;
-          if (capturedIdx === 0) {
-            uploadedDataURL = ev.target.result;
-          }
-          console.log('[upload] foto', capturedIdx + 1,
-            'base64 ok | total array:',
-            uploadedDataURLs.filter(Boolean).length);
-        };
-      })(existingCount + fi);
+      r.onload = function(ev) {
+        var base64 = ev.target.result;
+        uploadedDataURLs[capturedIdx] = base64;
+        blobToBase64Map[blobUrl] = base64;
+        if (capturedIdx === 0) {
+          uploadedDataURL = base64;
+        }
+        console.log('[upload] foto', capturedIdx + 1, 'base64 ok');
+      };
       r.readAsDataURL(f);
     });
   }
@@ -437,7 +438,9 @@ function applyStoryZoom(skipTransition) {
     // We are in story mode
     el.style.objectFit = 'contain';
     
-    var st = storyZoomState[currentMediaUrl] || { z: 1, x: 0, y: 0 };
+    var key = (typeof blobToBase64Map !== 'undefined' && blobToBase64Map[currentMediaUrl]) ? blobToBase64Map[currentMediaUrl] : currentMediaUrl;
+    var st = storyZoomState[key] || { z: 1, x: 0, y: 0 };
+    storyZoomState[key] = st;
     // update state from slider if caller is slider
     if (slider && !isDraggingMedia) {
       st.z = parseFloat(slider.value);

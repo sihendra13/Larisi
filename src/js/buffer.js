@@ -948,11 +948,20 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
         var photoW = origW * containScale;
         var photoH = origH * containScale;
 
-        // Move to center of canvas
+        // 1. Draw Blurred Background (Native IG Style)
+        ctx.save();
+        var coverScale = Math.max(cw / origW, ch / origH);
+        var bgW = origW * coverScale;
+        var bgH = origH * coverScale;
+        ctx.translate(cw / 2, ch / 2);
+        ctx.filter = 'blur(40px) brightness(0.7)';
+        ctx.drawImage(img, -bgW / 2, -bgH / 2, bgW, bgH);
+        ctx.restore();
+
+        // 2. Draw Main Photo
         ctx.translate(cw / 2, ch / 2);
         
-        // Apply Panning (st.x/y is relative to preview width ~160px, convert to 1080px)
-        // Ratio = 1080 / 160 = 6.75
+        // Apply Panning
         var canvasRatio = 6.75; 
         ctx.translate(st.x * canvasRatio * st.z, st.y * canvasRatio * st.z);
         
@@ -970,15 +979,15 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
       console.log('[process] canvas=' + cw + 'x' + ch + ' vertical=' + vertical);
 
       // ── Parameter stitch text ──
-      var pad = Math.round(cw * 0.016);
+      var pad = Math.round(cw * 0.018);
       var fontBase = '-apple-system, BlinkMacSystemFont, "Inter", Arial, sans-serif';
       var fontSize, minFont, maxTextW, pillMaxW;
 
       if (vertical) {
-        fontSize  = Math.max(16, Math.round(cw * 0.055));
+        fontSize  = Math.max(16, Math.round(cw * 0.052));
         minFont   = Math.max(16, Math.round(cw * 0.028));
-        maxTextW  = Math.round(cw * 0.75 - pad * 2);
-        pillMaxW  = Math.round(cw * 0.75);
+        maxTextW  = Math.round(cw * 0.80 - pad * 2);
+        pillMaxW  = Math.round(cw * 0.80);
       } else {
         fontSize  = Math.max(16, Math.round(cw * 0.038));
         minFont   = Math.max(16, Math.round(cw * 0.018));
@@ -1011,8 +1020,8 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
         textX     = Math.round(cw / 2);
         textAlign = 'center';
         // pillY relatif ke area foto: 82% dari tinggi foto + offset foto
-        // pillY untuk Story diatur di sekitar 75% tinggi layar
-        pillY = Math.round(ch * 0.75);
+        // pillY untuk Story diatur di sekitar 68% tinggi layar agar tidak terlalu turun
+        pillY = Math.round(ch * 0.68);
       } else {
         pillX     = Math.round(cw * 0.05);
         textX     = pillX + pad;
@@ -1031,7 +1040,7 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
 
       if (text) {
         // ── Draw pill background ──
-        ctx.globalAlpha = 0.75;
+        ctx.globalAlpha = 1.0; // Gunakan 1.0 agar lebih kontras dengan background blur
         ctx.fillStyle   = '#000000';
         _stitchRoundRect(ctx, pillX, pillY, pillW, pillH, radius);
         ctx.fill();
