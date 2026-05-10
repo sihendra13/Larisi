@@ -11,16 +11,11 @@ var isDraggingMedia = false;
 var dragStartX = 0;
 var dragStartY = 0;
 var initialPanX = 0;
-var initialPanY = 0;
+var currentMediaIndex = -1; // -1 means none, 0 means master
 var blobToBase64Map = {}; // mapping blobUrl -> base64Url for state synchronization
 
 function getStoryZoomKey(url) {
-  var thumbs = document.getElementById('thumbs');
-  var firstThumb = thumbs ? thumbs.querySelector('.thumb-item img') : null;
-  var isFirst = (firstThumb && firstThumb.src === url) || 
-                 (url === (typeof uploadedDataURLs !== 'undefined' ? uploadedDataURLs[0] : null));
-                 
-  if (isFirst) return 'master';
+  if (currentMediaIndex === 0) return 'master';
   return (typeof blobToBase64Map !== 'undefined' && blobToBase64Map[url]) ? blobToBase64Map[url] : url;
 }
 
@@ -79,6 +74,11 @@ function addThumb(f, thumbs, uz, isMaster, existingUrl) {
     }
     refreshAddBox(thumbs, uz);
   };
+  wrapper.onclick = function() {
+    var allThumbs = Array.from(thumbs.querySelectorAll('.thumb-item'));
+    var myIdx = allThumbs.indexOf(wrapper);
+    showInPhone(objUrl, f.type.startsWith('video/'), myIdx);
+  };
   wrapper.appendChild(xBtn);
   thumbs.appendChild(wrapper);
 }
@@ -101,7 +101,7 @@ function updateCarouselDots(activeIdx) {
     dot.onmouseenter = function() { if (i !== activeIdx) dot.style.background = '#b39ddb'; };
     dot.onmouseleave = function() { if (i !== activeIdx) dot.style.background = '#d4d4d4'; };
     (function(idx, url) {
-      dot.onclick = function() { showInPhone(url, false); updateCarouselDots(idx); };
+      dot.onclick = function() { showInPhone(url, false, idx); updateCarouselDots(idx); };
     })(i, item.dataset.url);
     dotsEl.appendChild(dot);
   });
@@ -265,7 +265,7 @@ function processFiles(rawFiles, hasVideo) {
   }
   
   uploadedDataURL = firstBlobUrl;  // Gunakan blob URL yang sama dengan yang didaftarkan di map
-  showInPhone(firstBlobUrl, isVid);
+  showInPhone(firstBlobUrl, isVid, 0);
 
   var totalCount = document.getElementById('thumbs').querySelectorAll('.thumb-item').length;
   updateCarouselDots(0);
@@ -280,7 +280,10 @@ function processFiles(rawFiles, hasVideo) {
   }
 }
 
-function showInPhone(url, isVid) {
+function showInPhone(url, isVid, idx) {
+  if (typeof idx !== 'undefined') {
+    currentMediaIndex = idx;
+  }
   var m = document.getElementById('phoneMedia');
   if (isVid) {
     var wrapper = document.createElement('div');
@@ -516,11 +519,8 @@ function toggleStoryZoomUI() {
   if (!ui) return;
   var isStory = (typeof activeFormat !== 'undefined' && activeFormat === 'story');
   
-  // Hanya tampilkan UI Zoom jika di format Story DAN yang sedang dibuka adalah foto pertama (berdasarkan DOM)
-  var thumbs = document.getElementById('thumbs');
-  var firstThumb = thumbs ? thumbs.querySelector('.thumb-item img') : null;
-  var isFirst = (firstThumb && firstThumb.src === currentMediaUrl) || 
-                 (currentMediaUrl === (typeof uploadedDataURLs !== 'undefined' ? uploadedDataURLs[0] : null));
+  // Hanya tampilkan UI Zoom jika di format Story DAN yang sedang dibuka adalah foto pertama (index 0)
+  var isFirst = (currentMediaIndex === 0);
   
   ui.style.display = (isStory && isFirst) ? 'flex' : 'none';
   
