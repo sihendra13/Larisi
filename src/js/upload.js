@@ -445,6 +445,36 @@ function applyStoryZoom(skipTransition) {
       slider.value = st.z; // sync slider when switching images
     }
     
+    // Calculate boundaries to prevent panning beyond image edges
+    var nw = el.naturalWidth || el.videoWidth;
+    var nh = el.naturalHeight || el.videoHeight;
+    if (nw && nh) {
+      var cw = el.parentElement.clientWidth;
+      var ch = el.parentElement.clientHeight;
+      var imgRatio = nw / nh;
+      var containerRatio = cw / ch;
+
+      var renderedW, renderedH;
+      if (imgRatio > containerRatio) {
+        renderedW = cw;
+        renderedH = cw / imgRatio;
+      } else {
+        renderedH = ch;
+        renderedW = ch * imgRatio;
+      }
+
+      var scaledW = renderedW * st.z;
+      var scaledH = renderedH * st.z;
+
+      var maxX = Math.max(0, (scaledW - cw) / 2 / st.z);
+      var maxY = Math.max(0, (scaledH - ch) / 2 / st.z);
+
+      if (st.x > maxX) st.x = maxX;
+      if (st.x < -maxX) st.x = -maxX;
+      if (st.y > maxY) st.y = maxY;
+      if (st.y < -maxY) st.y = -maxY;
+    }
+    
     if (skipTransition) {
       el.style.transition = 'none';
     } else {
