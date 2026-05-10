@@ -15,8 +15,11 @@ var initialPanY = 0;
 var blobToBase64Map = {}; // mapping blobUrl -> base64Url for state synchronization
 
 function getStoryZoomKey(url) {
-  var isFirst = (url === (typeof uploadedDataURL !== 'undefined' ? uploadedDataURL : null) || 
-                 url === (typeof uploadedDataURLs !== 'undefined' ? uploadedDataURLs[0] : null));
+  var thumbs = document.getElementById('thumbs');
+  var firstThumb = thumbs ? thumbs.querySelector('.thumb-item img') : null;
+  var isFirst = (firstThumb && firstThumb.src === url) || 
+                 (url === (typeof uploadedDataURLs !== 'undefined' ? uploadedDataURLs[0] : null));
+                 
   if (isFirst) return 'master';
   return (typeof blobToBase64Map !== 'undefined' && blobToBase64Map[url]) ? blobToBase64Map[url] : url;
 }
@@ -238,9 +241,7 @@ function processFiles(rawFiles, hasVideo) {
       var base64 = ev.target.result;
       uploadedDataURLs[capturedIdx] = base64;
       blobToBase64Map[blobUrl] = base64;
-      if (capturedIdx === 0) {
-        uploadedDataURL = base64;
-      }
+      // Stop overwriting uploadedDataURL with base64 to maintain stable Blob identity for UI
       console.log('[upload] foto', capturedIdx + 1, 'base64 ok');
     };
     r.readAsDataURL(f);
@@ -515,9 +516,11 @@ function toggleStoryZoomUI() {
   if (!ui) return;
   var isStory = (typeof activeFormat !== 'undefined' && activeFormat === 'story');
   
-  // Hanya tampilkan UI Zoom jika di format Story DAN yang sedang dibuka adalah foto pertama (Master)
-  var isFirst = (currentMediaUrl === (typeof uploadedDataURL !== 'undefined' ? uploadedDataURL : null) || 
-                 currentMediaUrl === (typeof uploadedDataURLs !== 'undefined' ? uploadedDataURLs[0] : null));
+  // Hanya tampilkan UI Zoom jika di format Story DAN yang sedang dibuka adalah foto pertama (berdasarkan DOM)
+  var thumbs = document.getElementById('thumbs');
+  var firstThumb = thumbs ? thumbs.querySelector('.thumb-item img') : null;
+  var isFirst = (firstThumb && firstThumb.src === currentMediaUrl) || 
+                 (currentMediaUrl === (typeof uploadedDataURLs !== 'undefined' ? uploadedDataURLs[0] : null));
   
   ui.style.display = (isStory && isFirst) ? 'flex' : 'none';
   
