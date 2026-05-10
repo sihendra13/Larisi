@@ -1060,7 +1060,7 @@ function buildCampaignCard(c) {
     + 'display:flex;align-items:center;justify-content:center;gap:5px;'
     + 'transition:background 0.15s;" '
     + 'onmouseover="this.style.background=\'#791ADB\'" '
-    + 'onmouseout="this.style.background=\'#111827\'">🚀 Promosikan Iklan</button>'
+    + 'onmouseout="this.style.background=\'#111827\'">Boost</button>'
     + '</div>';
 
   return card;

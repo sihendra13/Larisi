@@ -113,9 +113,15 @@ body {
 .dashboard-mockup {
     width: 100vw;
     height: 100vh;
-    background: #e9ecef;
-    position: relative;
+    background-image: url('../../Assets/dashboard-bg.png');
+    background-size: cover;
+    background-position: center;
+    filter: blur(8px) brightness(0.9);
+    position: fixed;
+    top: 0;
+    left: 0;
     overflow: hidden;
+    z-index: 1;
 }
 
 .dashboard-mockup::before {
