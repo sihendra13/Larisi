@@ -897,7 +897,8 @@ function _isVerticalFormat(fmt, platforms) {
 // fmt + platforms menentukan posisi stitch:
 //   - POST/landscape → bottom-LEFT (5% dari kiri, 8% dari bawah)
 //   - STORY/REEL/TIKTOK/YOUTUBE (9:16) → bottom-CENTER (12% dari bawah, hindari UI platform)
-function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
+async function _compositeStitchOnDataUrl(dataUrl, fmt, platforms, idx) {
+  idx = idx || 0;
   return new Promise(function(resolve) {
     var stitchEl = document.getElementById('phoneStitch');
     var text     = stitchEl ? (stitchEl.textContent || stitchEl.innerText || '').trim() : '';
@@ -941,8 +942,10 @@ function _compositeStitchOnDataUrl(dataUrl, fmt, platforms) {
 
       if (vertical) {
         // Story: replicate the "contain + transform" logic from preview
-        var st = (typeof storyZoomState !== 'undefined' && storyZoomState[dataUrl]) 
-                 ? storyZoomState[dataUrl] : { z: 1, x: 0, y: 0 };
+        // Use 'master' key for the first photo to ensure 100% stable sync
+        var key = (idx === 0) ? 'master' : dataUrl;
+        var st = (typeof storyZoomState !== 'undefined' && storyZoomState[key]) 
+                 ? storyZoomState[key] : { z: 1, x: 0, y: 0 };
         
         var containScale = Math.min(cw / origW, ch / origH);
         var photoW = origW * containScale;
@@ -1264,12 +1267,16 @@ async function publishViaPostForMe(canvas, campaignData) {
           var dataUrl = allPhotoURLs[d];
           var blobToUpload = null;
 
-          if (d === 0) {
-            // ALWAYS process the first photo to apply zoom, pan, brightness, contrast, and stitch
-            var processed = await _compositeStitchOnDataUrl(dataUrl, fmt, campaignData.platforms);
+          // Process photo:
+          // - For STORY: Always process ALL photos to apply blurred background (Image Expansion style)
+          // - For others: Only process the first photo for zoom/pan/stitch
+          var shouldProcess = (fmt === 'story') || (d === 0);
+          
+          if (shouldProcess) {
+            var processed = await _compositeStitchOnDataUrl(dataUrl, fmt, campaignData.platforms, d);
             if (processed) {
               blobToUpload = processed;
-              console.log('[postforme] foto 1 — processed (zoom/pan/stitch), size:', processed.size);
+              console.log('[postforme] foto ' + (d + 1) + ' — processed (fmt=' + fmt + '), size:', processed.size);
             }
           }
 

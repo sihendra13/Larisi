@@ -14,6 +14,13 @@ var initialPanX = 0;
 var initialPanY = 0;
 var blobToBase64Map = {}; // mapping blobUrl -> base64Url for state synchronization
 
+function getStoryZoomKey(url) {
+  var isFirst = (url === (typeof uploadedDataURL !== 'undefined' ? uploadedDataURL : null) || 
+                 url === (typeof uploadedDataURLs !== 'undefined' ? uploadedDataURLs[0] : null));
+  if (isFirst) return 'master';
+  return (typeof blobToBase64Map !== 'undefined' && blobToBase64Map[url]) ? blobToBase64Map[url] : url;
+}
+
 function addThumb(f, thumbs, uz, isMaster) {
   var wrapper = document.createElement('div');
   wrapper.className = 'thumb-item';
@@ -359,7 +366,7 @@ function showInPhone(url, isVid) {
   }
   
   currentMediaUrl = url;
-  var key = (typeof blobToBase64Map !== 'undefined' && blobToBase64Map[url]) ? blobToBase64Map[url] : url;
+  var key = getStoryZoomKey(url);
   if (!storyZoomState[key]) {
     storyZoomState[key] = { z: 1, x: 0, y: 0 };
   }
@@ -379,7 +386,7 @@ function showInPhone(url, isVid) {
       dragStartX = clientX;
       dragStartY = clientY;
       
-      var k = (typeof blobToBase64Map !== 'undefined' && blobToBase64Map[currentMediaUrl]) ? blobToBase64Map[currentMediaUrl] : currentMediaUrl;
+      var k = getStoryZoomKey(currentMediaUrl);
       var st = storyZoomState[k];
       initialPanX = st ? st.x : 0;
       initialPanY = st ? st.y : 0;
@@ -395,7 +402,7 @@ function showInPhone(url, isVid) {
       var dx = clientX - dragStartX;
       var dy = clientY - dragStartY;
       
-      var k = (typeof blobToBase64Map !== 'undefined' && blobToBase64Map[currentMediaUrl]) ? blobToBase64Map[currentMediaUrl] : currentMediaUrl;
+      var k = getStoryZoomKey(currentMediaUrl);
       var st = storyZoomState[k];
       if (st) {
         st.x = initialPanX + (dx / st.z);
@@ -441,7 +448,9 @@ function applyStoryZoom(skipTransition) {
     // We are in story mode
     el.style.objectFit = 'contain';
     
-    var key = (typeof blobToBase64Map !== 'undefined' && blobToBase64Map[currentMediaUrl]) ? blobToBase64Map[currentMediaUrl] : currentMediaUrl;
+    // Gunakan kunci 'master' khusus untuk foto pertama agar sinkronisasi 100% stabil
+    var key = getStoryZoomKey(currentMediaUrl);
+    
     var st = storyZoomState[key] || { z: 1, x: 0, y: 0 };
     storyZoomState[key] = st;
     // update state from slider if caller is slider
@@ -505,11 +514,17 @@ function toggleStoryZoomUI() {
   var ui = document.getElementById('storyZoomControl');
   if (!ui) return;
   var isStory = (typeof activeFormat !== 'undefined' && activeFormat === 'story');
-  ui.style.display = isStory ? 'flex' : 'none';
+  
+  // Hanya tampilkan UI Zoom jika di format Story DAN yang sedang dibuka adalah foto pertama (Master)
+  var isFirst = (currentMediaUrl === (typeof uploadedDataURL !== 'undefined' ? uploadedDataURL : null) || 
+                 currentMediaUrl === (typeof uploadedDataURLs !== 'undefined' ? uploadedDataURLs[0] : null));
+  
+  ui.style.display = (isStory && isFirst) ? 'flex' : 'none';
   
   var slider = document.getElementById('storyZoomSlider');
   if (isStory && currentMediaUrl && slider) {
-    var st = storyZoomState[currentMediaUrl] || { z: 1, x: 0, y: 0 };
+    var key = getStoryZoomKey(currentMediaUrl);
+    var st = storyZoomState[key] || { z: 1, x: 0, y: 0 };
     slider.value = st.z;
   }
   applyStoryZoom(false);
