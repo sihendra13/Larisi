@@ -383,7 +383,7 @@ function _createThumbDataUrl(dataUrl) {
     var img = new Image();
     img.onload = function() {
       try {
-        var maxW   = 300;
+        var maxW   = 600;
         var ratio  = maxW / img.naturalWidth;
         var targetW = maxW;
         var targetH = Math.round(img.naturalHeight * ratio);
@@ -391,7 +391,7 @@ function _createThumbDataUrl(dataUrl) {
         c.width  = targetW;
         c.height = targetH;
         c.getContext('2d').drawImage(img, 0, 0, targetW, targetH);
-        resolve(c.toDataURL('image/jpeg', 0.65));
+        resolve(c.toDataURL('image/jpeg', 0.9));
       } catch(e) {
         console.warn('[launch] _createThumbDataUrl error:', e.message);
         resolve(null);

@@ -967,7 +967,7 @@ async function _compositeStitchOnDataUrl(dataUrl, fmt, platforms, idx) {
         // Dynamic Ratio Calculation
         var pm = document.getElementById('phoneMedia');
         var previewWidth = (pm && pm.clientWidth) ? pm.clientWidth : 160;
-        var dynamicRatio = cw / previewWidth;
+        var dynamicRatio = (fmt === 'story') ? 6.75 : (cw / previewWidth);
 
         // Apply Zoom THEN Panning to match standard matrix order
         ctx.scale(st.z, st.z);
@@ -1070,7 +1070,7 @@ async function _compositeStitchOnDataUrl(dataUrl, fmt, platforms, idx) {
 
       console.log('[stitch] pill: x=' + pillX + ' y=' + pillY + ' w=' + pillW + ' h=' + pillH + ' fontSize=' + fontSize);
 
-      canvas.toBlob(function(blob) { resolve(blob); }, 'image/jpeg', 0.92);
+      canvas.toBlob(function(blob) { resolve(blob); }, 'image/jpeg', 0.9);
     };
     img.onerror = function() {
       console.warn('[stitch] gagal load image');
@@ -1114,7 +1114,7 @@ async function uploadToPostForMe(canvas) {
 
   if (fmt === 'post' && canvas) {
     blob = await new Promise(function(resolve) {
-      canvas.toBlob(function(b) { resolve(b); }, 'image/jpeg', 0.92);
+      canvas.toBlob(function(b) { resolve(b); }, 'image/jpeg', 0.9);
     });
     console.log('[postforme] Post: canvas 4:5, size:', blob ? blob.size : 0);
   } else if (typeof uploadedDataURL !== 'undefined' && uploadedDataURL &&
