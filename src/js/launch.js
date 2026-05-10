@@ -350,7 +350,7 @@ async function launchRadar() {
   // ── Build nama campaign pre-filled ──
   var personaEl = document.getElementById('personaName');
   var locEl     = document.querySelector('.popup-loc');
-  var personaName = personaEl ? personaEl.textContent.trim() : 'Campaign Baru';
+  var personaName = personaEl ? personaEl.textContent.trim() : 'Iklan Baru';
   var locFull     = locEl ? locEl.textContent.trim() : '';
   var locShort    = locFull ? locFull.split(',')[0].trim() : '';
   var campName    = personaName + (locShort ? ' · ' + locShort : '');
@@ -464,7 +464,7 @@ async function _doLaunch(campNameOverride) {
   var locEl       = document.querySelector('.popup-loc');
   var reachEl     = document.getElementById('reachNum');
 
-  var personaName = personaEl ? personaEl.textContent.trim() : 'Campaign Baru';
+  var personaName = personaEl ? personaEl.textContent.trim() : 'Iklan Baru';
   var locFull     = locEl ? locEl.textContent.trim() : '';
   var locShort    = locFull ? locFull.split(',')[0].trim() : '';
 
@@ -570,12 +570,12 @@ async function _doLaunch(campNameOverride) {
     thumbColor:   '#791ADB',
     thumbUrl:     thumbUrl,
     launchTime:   'Baru saja',
-    aiOpening:    'Campaign <strong>' + campName + '</strong> sudah live!\n\nAudiens tersedia: <strong>' + reachText + '</strong> di area kamu, jangkauan mulai dihitung begitu iklan ditayangkan.\n\nSaya pantau tren di <strong>' + (locShort || 'area target') + '</strong> via <strong>' + platLabel + '</strong> dan akan notify kamu kalau ada yang perlu dioptimalkan.',
+    aiOpening:    'Iklan <strong>' + campName + '</strong> sudah live!\n\nAudiens tersedia: <strong>' + reachText + '</strong> di area kamu, jangkauan mulai dihitung begitu iklan ditayangkan.\n\nSaya pantau tren di <strong>' + (locShort || 'area target') + '</strong> via <strong>' + platLabel + '</strong> dan akan notify kamu kalau ada yang perlu dioptimalkan.',
     aiChips:      ['Lihat proyeksi', 'Optimalkan targeting', 'Bagikan ke tim'],
     aiChipResponses: {
-      'Lihat proyeksi': 'Berdasarkan setting campaign kamu:\n\nTarget reach: <strong>' + reachText + '</strong>\nEstimasi waktu: 24–48 jam dengan burn rate optimal\nPlatform: <strong>' + platLabel + '</strong>\n\nRekomendasi: pantau 2 jam pertama untuk validasi performa awal. Saya akan highlight anomali kalau ada.',
+      'Lihat proyeksi': 'Berdasarkan pengaturan iklan kamu:\n\nTarget reach: <strong>' + reachText + '</strong>\nEstimasi waktu: 24–48 jam dengan burn rate optimal\nPlatform: <strong>' + platLabel + '</strong>\n\nRekomendasi: pantau 2 jam pertama untuk validasi performa awal. Saya akan highlight anomali kalau ada.',
       'Optimalkan targeting': 'Untuk area <strong>' + (locShort || 'target kamu') + '</strong>, langkah optimasi:\n\n1. Buka platform ads (' + platLabel + ')\n2. Cek Audience Insights setelah 200+ impressi pertama\n3. Narrow ke usia & interest dengan CTR tertinggi\n\nBegitu akun terhubung ke RADAR, saya bisa rekomendasikan otomatis.',
-      'Bagikan ke tim': 'Untuk bagikan status campaign ke tim:\n\n1. Screenshot halaman monitor ini\n2. Kirim via WhatsApp grup tim kamu\n\nMau saya siapkan ringkasan performa singkat untuk di-share?'
+      'Bagikan ke tim': 'Untuk bagikan status iklan ke tim:\n\n1. Screenshot halaman monitor ini\n2. Kirim via WhatsApp grup tim kamu\n\nMau saya siapkan ringkasan performa singkat untuk di-share?'
     }
   };
 
