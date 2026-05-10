@@ -499,7 +499,7 @@ function applyStoryZoom(skipTransition) {
     } else {
       el.style.transition = 'transform 0.1s ease-out';
     }
-    el.style.transform = 'translate(' + st.x + 'px, ' + st.y + 'px) scale(' + st.z + ')';
+    el.style.transform = 'scale(' + st.z + ') translate(' + st.x + 'px, ' + st.y + 'px)';
     
     // update the slider input UI
     if (slider) slider.value = st.z;

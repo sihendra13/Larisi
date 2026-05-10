@@ -964,12 +964,14 @@ async function _compositeStitchOnDataUrl(dataUrl, fmt, platforms, idx) {
         // 2. Draw Main Photo
         ctx.translate(cw / 2, ch / 2);
         
-        // Apply Panning
-        var canvasRatio = 6.75; 
-        ctx.translate(st.x * canvasRatio * st.z, st.y * canvasRatio * st.z);
-        
-        // Apply Zoom
+        // Dynamic Ratio Calculation
+        var pm = document.getElementById('phoneMedia');
+        var previewWidth = (pm && pm.clientWidth) ? pm.clientWidth : 160;
+        var dynamicRatio = cw / previewWidth;
+
+        // Apply Zoom THEN Panning to match standard matrix order
         ctx.scale(st.z, st.z);
+        ctx.translate(st.x * dynamicRatio, st.y * dynamicRatio);
         
         // Draw image centered
         ctx.drawImage(img, -photoW / 2, -photoH / 2, photoW, photoH);
