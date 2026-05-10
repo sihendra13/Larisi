@@ -359,8 +359,9 @@ function showInPhone(url, isVid) {
   }
   
   currentMediaUrl = url;
-  if (!storyZoomState[url]) {
-    storyZoomState[url] = { z: 1, x: 0, y: 0 };
+  var key = (typeof blobToBase64Map !== 'undefined' && blobToBase64Map[url]) ? blobToBase64Map[url] : url;
+  if (!storyZoomState[key]) {
+    storyZoomState[key] = { z: 1, x: 0, y: 0 };
   }
   
   // Attach drag listeners only once to phoneMedia
@@ -377,7 +378,9 @@ function showInPhone(url, isVid) {
       var clientY = e.touches ? e.touches[0].clientY : e.clientY;
       dragStartX = clientX;
       dragStartY = clientY;
-      var st = storyZoomState[currentMediaUrl];
+      
+      var k = (typeof blobToBase64Map !== 'undefined' && blobToBase64Map[currentMediaUrl]) ? blobToBase64Map[currentMediaUrl] : currentMediaUrl;
+      var st = storyZoomState[k];
       initialPanX = st ? st.x : 0;
       initialPanY = st ? st.y : 0;
       m.style.cursor = 'grabbing';
@@ -392,7 +395,8 @@ function showInPhone(url, isVid) {
       var dx = clientX - dragStartX;
       var dy = clientY - dragStartY;
       
-      var st = storyZoomState[currentMediaUrl];
+      var k = (typeof blobToBase64Map !== 'undefined' && blobToBase64Map[currentMediaUrl]) ? blobToBase64Map[currentMediaUrl] : currentMediaUrl;
+      var st = storyZoomState[k];
       if (st) {
         st.x = initialPanX + (dx / st.z);
         st.y = initialPanY + (dy / st.z);
