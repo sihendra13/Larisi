@@ -294,7 +294,17 @@ function showInPhone(url, isVid, idx) {
     vid.loop = true;
     vid.playsInline = true;
     vid.muted = false; /* audio ON by default */
-    vid.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:top center;display:block;';
+    vid.style.cssText = 'position:relative;width:100%;height:100%;object-fit:cover;object-position:top center;display:block;z-index:2;';
+
+    // Blur Background for Video (using the video itself but blurred)
+    var blurVid = document.createElement('video');
+    blurVid.id = 'phoneBlurBg';
+    blurVid.src = url;
+    blurVid.autoplay = true;
+    blurVid.loop = true;
+    blurVid.playsInline = true;
+    blurVid.muted = true;
+    blurVid.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;filter:blur(20px) brightness(0.6);display:none;z-index:1;';
     // Tombol PAUSE — pojok kiri atas
     var pauseBtn = document.createElement('button');
     pauseBtn.style.cssText =
@@ -360,13 +370,16 @@ function showInPhone(url, isVid, idx) {
           '</svg>';
     };
 
+    wrapper.appendChild(blurVid);
     wrapper.appendChild(vid);
     wrapper.appendChild(pauseBtn);
     wrapper.appendChild(muteBtn);
     m.innerHTML = '';
     m.appendChild(wrapper);
   } else {
-    m.innerHTML = '<img src="' + url + '" draggable="false" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;transform-origin:center;">';
+    m.innerHTML = 
+      '<div id="phoneBlurBg" style="position:absolute;top:0;left:0;width:100%;height:100%;background-image:url(\''+url+'\');background-size:cover;background-position:center;filter:blur(20px) brightness(0.6);display:none;z-index:1;"></div>' +
+      '<img src="' + url + '" draggable="false" style="position:relative;width:100%;height:100%;object-fit:cover;object-position:center;display:block;transform-origin:center;z-index:2;">';
   }
   
   currentMediaUrl = url;
@@ -448,9 +461,12 @@ function applyStoryZoom(skipTransition) {
   var slider = document.getElementById('storyZoomSlider');
   var isStory = (typeof activeFormat !== 'undefined' && activeFormat === 'story');
 
+  var blurBg = document.getElementById('phoneBlurBg');
+
   if (isStory) {
     // We are in story mode
     el.style.objectFit = 'contain';
+    if (blurBg) blurBg.style.display = 'block';
     
     // Gunakan kunci 'master' khusus untuk foto pertama agar sinkronisasi 100% stabil
     var key = getStoryZoomKey(currentMediaUrl);
@@ -507,6 +523,7 @@ function applyStoryZoom(skipTransition) {
   } else {
     // Normal mode (Post / Reel)
     el.style.objectFit = 'cover';
+    if (blurBg) blurBg.style.display = 'none';
     el.style.transition = 'transform 0.2s';
     el.style.transform = 'translate(0px, 0px) scale(1)';
   }
