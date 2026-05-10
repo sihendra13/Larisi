@@ -113,10 +113,11 @@ body {
 .dashboard-mockup {
     width: 100vw;
     height: 100vh;
+    background-color: #f7f7f7; /* Placeholder warna dasar */
     background-image: url('../../Assets/dashboard-bg.png');
     background-size: cover;
     background-position: center;
-    filter: blur(8px) brightness(0.9);
+    filter: brightness(0.9); /* Hanya kecerahan, tanpa beban blur */
     position: fixed;
     top: 0;
     left: 0;
