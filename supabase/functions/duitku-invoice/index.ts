@@ -17,16 +17,18 @@ serve(async (req) => {
     const merchantCode = Deno.env.get('DUITKU_MERCHANT_CODE') || 'DS30544'
     const apiKey = Deno.env.get('DUITKU_API_KEY') || '01a6dcb08d58cbad3a2edd90253c89f5'
     
-    // Signature v2: md5(merchantCode + merchantOrderId + paymentAmount + apiKey)
-    const signature = md5(merchantCode + orderId + String(amount) + apiKey)
+    // Signature Source: merchantCode + orderId + amount + apiKey
+    const signatureSource = merchantCode + orderId + String(amount) + apiKey
+    const signature = md5(signatureSource)
 
-    const duitkuUrl = 'https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry'
+    // Gunakan Endpoint v1 agar user bisa memilih SEMUA metode pembayaran di Popup
+    const duitkuUrl = 'https://sandbox.duitku.com/webapi/api/merchant/v1/inquiry'
     
     const payload = {
       merchantCode,
       paymentAmount: parseInt(amount),
       merchantOrderId: orderId,
-      productDetails: `Paket ${plan.toUpperCase()}`,
+      productDetails: `Langganan Paket ${plan.toUpperCase()}`,
       email: email,
       phoneNumber: phone || '081234567890',
       customerVaName: name,
@@ -34,7 +36,6 @@ serve(async (req) => {
       returnUrl: 'https://app.larisi.id',
       expiryPeriod: 60,
       signature: signature,
-      paymentMethod: "00", // Nilai '00' memicu halaman pemilihan metode pembayaran
       itemDetails: [{
           name: `Paket ${plan.toUpperCase()}`,
           price: parseInt(amount),
@@ -50,6 +51,7 @@ serve(async (req) => {
 
     const result = await response.json()
 
+    // Di v1, field suksesnya biasanya paymentUrl atau reference
     if (result.paymentUrl) {
         return new Response(JSON.stringify(result), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
