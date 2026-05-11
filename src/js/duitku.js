@@ -35,8 +35,10 @@ window.startDuitkuPayment = async function(plan, amount) {
 
         const result = await response.json();
 
-        if (result.paymentUrl) {
-            // Untuk Duitku v2, cukup panggil paymentUrl tanpa callback onSuccess/onError di frontend
+        if (result.reference) {
+            // Duitku v2 Pop menggunakan 'reference', bukan 'paymentUrl'
+            window.checkout.process(result.reference);
+        } else if (result.paymentUrl) {
             window.checkout.process(result.paymentUrl);
         } else {
             throw new Error(result.error || 'Duitku menolak permintaan pembayaran');
