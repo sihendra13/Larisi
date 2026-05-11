@@ -544,8 +544,12 @@
                 document.getElementById('display-user-name').textContent = profile.full_name;
                 document.getElementById('user-info-text').style.display = 'block';
 
+                // Ambil email dari auth jika di profile tidak ada
+                const user = await window.getCurrentUser();
+                const userEmail = (user && user.email) || profile.email;
+
                 // Tampilkan menu Upgrade KHUSUS untuk akun verifikasi Duitku
-                if (profile.email === 'halo@larisi.id') {
+                if (userEmail === 'halo@larisi.id') {
                     document.getElementById('upgrade-menu-item').style.display = 'flex';
                     document.getElementById('upgrade-divider').style.display = 'block';
                 }
