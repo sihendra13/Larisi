@@ -124,7 +124,8 @@ serve(async (req) => {
     // Generate Signature (MD5)
     const signature = md5(merchantCode + orderId + amount + apiKey)
 
-    const duitkuUrl = 'https://payment-sandbox.duitku.com/api/merchant/v2/inquiry'
+    // Panggil API Duitku (Sandbox) - URL yang benar untuk Sandbox
+    const duitkuUrl = 'https://passport-sandbox.duitku.com/webapi/api/merchant/v2/inquiry'
     
     const payload = {
       merchantCode,
