@@ -575,6 +575,8 @@
   <script src="src/js/boost.js"></script>
   <script src="src/js/monitor.js"></script>
   <script src="src/js/analytics.js"></script>
+  <script src="src/js/duitku.js"></script>
+  <script src="https://app-sandbox.duitku.com/lib/js/duitku.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <!-- Launch Sequence Modal (Loading → Success) -->
@@ -723,11 +725,15 @@
         showAnToast('Akun diturunkan ke Freemium. Nikmati fitur dasar tanpa batas waktu!', 'success');
 
       } else {
-        // Slot payment gateway — tinggal ganti URL saat payment siap
-        // window.location.href = 'https://payment.larisi.id/checkout?plan=' + plan;
-        if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label || 'Berlangganan'; }
-        modal.style.display = 'none';
-        showAnToast('Fitur pembayaran segera hadir! Tim kami akan menghubungi Anda.');
+        // Slot payment gateway — Duitku Sandbox Integration
+        let price = (plan === 'pro') ? 199000 : 99000;
+        
+        if (window.startDuitkuPayment) {
+          window.startDuitkuPayment(plan, price);
+        } else {
+          showAnToast('Sistem pembayaran sedang disiapkan.');
+          modal.style.display = 'none';
+        }
       }
     }
   </script>
