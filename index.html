@@ -766,8 +766,7 @@
         let price = (plan === 'pro') ? 199000 : 99000;
         
         if (window.startDuitkuPayment) {
-          window.startDuitkuPayment(plan, price).catch(err => {
-            console.error('Payment start error:', err);
+          window.startDuitkuPayment(plan, price).finally(() => {
             if (btn) {
               btn.disabled = false;
               btn.textContent = btn.dataset.label || 'Lanjut Berlangganan';
