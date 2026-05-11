@@ -118,11 +118,14 @@ serve(async (req) => {
   try {
     const { plan, amount, email, name, orderId } = await req.json()
 
+    // Ambil dari environment
     const merchantCode = Deno.env.get('DUITKU_MERCHANT_CODE') || 'DS30544'
     const apiKey = Deno.env.get('DUITKU_API_KEY') || '01a6dcb08d58cbad3a2edd90253c89f5'
     
-    // Signature: merchantCode + orderId + amount + apiKey
-    const signature = md5(merchantCode + orderId + amount + apiKey)
+    const amtStr = String(amount)
+    
+    // SIGNATURE V2: md5(merchantCode + orderId + amount + apiKey)
+    const signature = md5(merchantCode + orderId + amtStr + apiKey)
 
     const duitkuUrl = 'https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry'
     
@@ -130,23 +133,19 @@ serve(async (req) => {
       merchantCode,
       paymentAmount: parseInt(amount),
       merchantOrderId: orderId,
-      productDetails: `Langganan Larisi Paket ${plan.toUpperCase()}`,
+      productDetails: `Paket ${plan.toUpperCase()}`,
       email: email,
       customerVaName: name,
       callbackUrl: 'https://larisi.id/callback',
       returnUrl: 'https://app.larisi.id',
       expiryPeriod: 60,
       signature: signature,
-      itemDetails: [
-          {
-              name: `Paket ${plan.toUpperCase()}`,
-              price: parseInt(amount),
-              quantity: 1
-          }
-      ]
+      itemDetails: [{
+          name: `Paket ${plan.toUpperCase()}`,
+          price: parseInt(amount),
+          quantity: 1
+      }]
     }
-
-    console.log('Sending payload to Duitku:', JSON.stringify(payload));
 
     const response = await fetch(duitkuUrl, {
       method: 'POST',
@@ -155,17 +154,17 @@ serve(async (req) => {
     })
 
     const result = await response.json()
-    console.log('Duitku Response:', JSON.stringify(result));
 
-    // Jika Duitku return error (ada field responseCode/resultMessage)
     if (result.paymentUrl) {
         return new Response(JSON.stringify(result), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         })
     } else {
+        // Balikkan seluruh object error dari Duitku agar kita bisa baca di Alert
+        const errorMsg = result.resultMessage || result.responseMessage || JSON.stringify(result)
         return new Response(JSON.stringify({ 
-            error: result.resultMessage || result.responseMessage || 'Duitku rejected request',
+            error: `Duitku: ${errorMsg}`,
             details: result 
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
