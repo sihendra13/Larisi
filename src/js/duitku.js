@@ -15,6 +15,9 @@ window.startDuitkuPayment = async function(plan, amount) {
         const orderId = 'LARISI-' + Date.now();
         if (window.showAnToast) window.showAnToast('Menghubungkan ke Duitku...', 'info');
 
+        // Ambil nomor HP dari profil, jika tidak ada pakai dummy (Duitku butuh format string)
+        const userPhone = userProfile.phone || userProfile.phone_number || '081234567890';
+
         const response = await fetch(`${window.RADAR_CONFIG.SUPABASE_URL}/functions/v1/duitku-invoice`, {
             method: 'POST',
             headers: {
@@ -26,6 +29,7 @@ window.startDuitkuPayment = async function(plan, amount) {
                 amount,
                 email: userEmail,
                 name: userProfile.full_name || 'Pelanggan Larisi',
+                phone: userPhone,
                 orderId: orderId
             })
         });
