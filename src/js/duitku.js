@@ -37,7 +37,7 @@ window.startDuitkuPayment = async function(plan, amount) {
         const result = await response.json();
 
         if (result.paymentUrl) {
-            window.checkout.open(result.paymentUrl, {
+            window.checkout.process(result.paymentUrl, {
                 onSuccess: async function (res) {
                     console.log('Payment Success:', res);
                     if (window.showAnToast) window.showAnToast('Pembayaran Berhasil!', 'success');
