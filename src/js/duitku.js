@@ -132,8 +132,10 @@ function md5(string) {
 window.startDuitkuPayment = async function(plan, amount) {
     console.log('Starting Duitku Payment for:', plan, amount);
     
+    // Ambil email secara akurat dari Auth atau Profile
+    const user = (typeof window.getCurrentUser === 'function') ? await window.getCurrentUser() : null;
     const userProfile = window.userBizProfile || JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
-    const userEmail = userProfile.email || '';
+    const userEmail = (user && user.email ? user.email : (userProfile.email || '')).toLowerCase().trim();
 
     // PROTEKSI: Jika bukan akun verifikator, jangan jalankan simulasi
     if (userEmail !== 'halo@larisi.id') {

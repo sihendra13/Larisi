@@ -544,23 +544,22 @@
                 document.getElementById('display-user-name').textContent = profile.full_name;
                 document.getElementById('user-info-text').style.display = 'block';
 
-                // Ambil email dari auth jika di profile tidak ada
+                // Ambil email dari auth
                 const user = await window.getCurrentUser();
-                const userEmail = (user && user.email) || profile.email;
+                const userEmail = (user && user.email ? user.email : '').toLowerCase().trim();
 
                 // Tampilkan menu Upgrade KHUSUS untuk akun verifikasi Duitku
                 if (userEmail === 'halo@larisi.id') {
                     document.getElementById('upgrade-menu-item').style.display = 'flex';
                     document.getElementById('upgrade-divider').style.display = 'block';
 
-                    // AUTO-SHOW MODAL SETELAH 5 DETIK (Khusus Verifikasi)
-                    console.log('[verifikasi] Menyiapkan auto-show modal dalam 5 detik...');
+                    // AUTO-SHOW MODAL INSTAN (1 Detik)
+                    console.log('[verifikasi] Menampilkan modal dalam 1 detik...');
                     setTimeout(() => {
                         if (typeof window.showTrialModalManual === 'function') {
                             window.showTrialModalManual();
-                            console.log('[verifikasi] Modal otomatis ditampilkan.');
                         }
-                    }, 5000);
+                    }, 1000);
                 }
             }
 
