@@ -769,15 +769,16 @@
           const allButtons = modal.querySelectorAll('button');
           allButtons.forEach(b => b.disabled = true);
           window.startDuitkuPayment(plan, price).finally(() => {
-            allButtons.forEach(b => b.disabled = false);
-            if (btn) btn.textContent = btn.dataset.label || 'Lanjut Berlangganan';
+            // Beri jeda 10 detik sebelum tombol diaktifkan kembali agar tidak tumpang tindih
+            setTimeout(() => {
+              allButtons.forEach(b => b.disabled = false);
+              if (btn) btn.textContent = btn.dataset.label || 'Lanjut Berlangganan';
+            }, 10000);
           });
         } else {
           showAnToast('Sistem pembayaran sedang disiapkan.');
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = btn.dataset.label || 'Lanjut Berlangganan';
-          }
+          btn.disabled = false;
+          btn.textContent = btn.dataset.label || 'Lanjut Berlangganan';
           modal.style.display = 'none';
         }
       }
