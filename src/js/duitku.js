@@ -3,25 +3,18 @@ window.startDuitkuPayment = async function(plan, amount) {
     console.log('Starting Duitku Payment for:', plan, amount);
     
     try {
-        // 1. Ambil Email Pengguna secara akurat
         const user = (typeof window.getCurrentUser === 'function') ? await window.getCurrentUser() : null;
         const userProfile = window.userBizProfile || JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
         const userEmail = (user && user.email ? user.email : (userProfile.email || '')).toLowerCase().trim();
 
-        // 2. PROTEKSI: Hanya aktif untuk akun verifikator
         if (userEmail !== 'halo@larisi.id') {
-            alert('Fitur pembayaran sedang disiapkan. Tim kami akan segera menghubungi Anda untuk proses aktivasi paket ' + plan.toUpperCase() + '. Terima kasih!');
-            if (window.showAnToast) window.showAnToast('Fitur segera hadir!', 'info');
-            const modal = document.getElementById('trial-modal');
-            if (modal) modal.style.display = 'none';
+            alert('Fitur pembayaran sedang disiapkan.');
             return;
         }
 
-        // 3. Persiapkan Data Transaksi
         const orderId = 'LARISI-' + Date.now();
         if (window.showAnToast) window.showAnToast('Menghubungkan ke Duitku...', 'info');
 
-        // 4. Panggil Backend (Edge Function)
         const response = await fetch(`${window.RADAR_CONFIG.SUPABASE_URL}/functions/v1/duitku-invoice`, {
             method: 'POST',
             headers: {
@@ -40,7 +33,6 @@ window.startDuitkuPayment = async function(plan, amount) {
         const result = await response.json();
 
         if (result.paymentUrl) {
-            // 5. Buka Popup Duitku
             window.checkout.open(result.paymentUrl, {
                 onSuccess: async function (res) {
                     console.log('Payment Success:', res);
@@ -65,11 +57,11 @@ window.startDuitkuPayment = async function(plan, amount) {
                 }
             });
         } else {
-            throw new Error(result.error || 'Gagal mendapatkan link pembayaran');
+            throw new Error(result.error || 'Duitku menolak permintaan pembayaran');
         }
 
     } catch (error) {
         console.error('Duitku Error:', error);
-        alert('Maaf, sistem pembayaran sedang mengalami gangguan teknis (Edge Function). Mohon coba lagi nanti.');
+        alert('Maaf, ' + error.message);
     }
 };

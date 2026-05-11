@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Fungsi MD5 Pure JS agar tidak bergantung pada environment
+// Fungsi MD5 Pure JS
 function md5(string) {
     function md5cycle(x, k) {
         var a = x[0], b = x[1], c = x[2], d = x[3];
@@ -121,10 +121,9 @@ serve(async (req) => {
     const merchantCode = Deno.env.get('DUITKU_MERCHANT_CODE') || 'DS30544'
     const apiKey = Deno.env.get('DUITKU_API_KEY') || '01a6dcb08d58cbad3a2edd90253c89f5'
     
-    // Generate Signature (MD5)
+    // Signature: merchantCode + orderId + amount + apiKey
     const signature = md5(merchantCode + orderId + amount + apiKey)
 
-    // Panggil API Duitku (Sandbox) - URL resmi Sandbox
     const duitkuUrl = 'https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry'
     
     const payload = {
@@ -137,8 +136,17 @@ serve(async (req) => {
       callbackUrl: 'https://larisi.id/callback',
       returnUrl: 'https://app.larisi.id',
       expiryPeriod: 60,
-      signature: signature
+      signature: signature,
+      itemDetails: [
+          {
+              name: `Paket ${plan.toUpperCase()}`,
+              price: parseInt(amount),
+              quantity: 1
+          }
+      ]
     }
+
+    console.log('Sending payload to Duitku:', JSON.stringify(payload));
 
     const response = await fetch(duitkuUrl, {
       method: 'POST',
@@ -147,11 +155,23 @@ serve(async (req) => {
     })
 
     const result = await response.json()
+    console.log('Duitku Response:', JSON.stringify(result));
 
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    })
+    // Jika Duitku return error (ada field responseCode/resultMessage)
+    if (result.paymentUrl) {
+        return new Response(JSON.stringify(result), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        })
+    } else {
+        return new Response(JSON.stringify({ 
+            error: result.resultMessage || result.responseMessage || 'Duitku rejected request',
+            details: result 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        })
+    }
 
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
