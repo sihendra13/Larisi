@@ -146,88 +146,68 @@ window.startDuitkuPayment = async function(plan, amount) {
         return;
     }
     
-    // 1. Generate Order ID (Unique)
+    // 1. Persiapkan Data
     const orderId = 'LARISI-' + Date.now();
+    const user = (typeof window.getCurrentUser === 'function') ? await window.getCurrentUser() : null;
+    const userProfile = window.userBizProfile || JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
     
-    // 2. Buat signature
-    // Formula: md5(merchantCode + orderId + amount + apiKey)
-    const signature = md5(DUITKU_CONFIG.merchantCode + orderId + amount + DUITKU_CONFIG.apiKey);
-    
-    // 3. Persiapkan data transaksi
-    // CATATAN: Di production, request ini harus dilakukan via BACKEND untuk keamanan API Key.
-    // Untuk keperluan verifikasi Sandbox Duitku, kita lakukan via frontend.
-    
-    const payload = {
-        merchantCode: DUITKU_CONFIG.merchantCode,
-        paymentAmount: amount,
-        merchantOrderId: orderId,
-        productDetails: 'Langganan Larisi Paket ' + plan.toUpperCase(),
-        email: (window.userBizProfile && window.userBizProfile.email) || 'tester@larisi.id',
-        phoneNumber: '08123456789', // Default phone for demo
-        customerVaName: (window.userBizProfile && window.userBizProfile.full_name) || 'Pelanggan Larisi',
-        callbackUrl: 'https://larisi.id/callback',
-        returnUrl: window.location.href,
-        signature: signature,
-        expiryPeriod: 60
-    };
-
-    // Tampilkan loading toast
     if (window.showAnToast) window.showAnToast('Menyiapkan pembayaran...', 'info');
 
     try {
-        // Karena kita tidak punya backend proxy yang siap, kita simulasikan pemanggilan API Duitku.
-        // Pada integrasi asli, Anda akan mengirim payload ini ke backend Anda, 
-        // lalu backend akan memanggil API Duitku 'createInvoice' dan mengembalikan paymentUrl.
-        
-        console.log('Duitku Payload:', payload);
-        
-        // SIMULASI: Karena Duitku Pop butuh paymentUrl/reference dari backend, 
-        // kita akan memberikan pesan bahwa sistem siap dan menunjukkan integrasi kodenya.
-        
-        // Namun, agar tim verifikasi bisa melihat UI Duitku, kita coba panggil Checkout Duitku Pop jika library sudah dimuat.
-        if (window.checkout) {
-            // Kita butuh paymentUrl dari API Duitku. 
-            // Untuk demo verifikasi, kita tampilkan modal konfirmasi bahwa integrasi sudah terpasang.
-            
-            const confirmPay = confirm(`Konfirmasi Pembayaran:\n\nPaket: ${plan.toUpperCase()}\nHarga: Rp ${amount.toLocaleString('id-ID')}\n\nKlik OK untuk mensimulasikan integrasi Duitku Sandbox.`);
-            
-            if (confirmPay) {
-                if (window.showAnToast) window.showAnToast('Memproses pembaruan akun...', 'info');
+        // 2. Panggil Backend (Edge Function) untuk ambil Payment URL asli
+        const response = await fetch(`${window.RADAR_CONFIG.SUPABASE_URL}/functions/v1/duitku-invoice`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${window.RADAR_CONFIG.SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                plan,
+                amount,
+                email: userEmail,
+                name: userProfile.full_name || 'Pelanggan Larisi',
+                orderId: orderId
+            })
+        });
 
-                // 4. Update selected_plan di Supabase (Sesuai Backlog)
-                const newProfileData = {
-                    selected_plan: plan,
-                    trial_start: new Date().toISOString(), // Update ke tanggal berlangganan
-                    trial_days: 0 // Reset trial karena sudah berlangganan
-                };
+        const result = await response.json();
 
-                try {
-                    const { data, error } = await window.updateUserProfile(newProfileData);
+        if (result.paymentUrl) {
+            // 3. MUNCULKAN POPUP DUITKU YANG ASLI!
+            window.checkout.open(result.paymentUrl, {
+                onSuccess: async function (result) {
+                    console.log('Payment Success:', result);
+                    if (window.showAnToast) window.showAnToast('Pembayaran Berhasil!', 'success');
                     
-                    if (error) throw error;
-
-                    alert('Pembayaran Sukses!\n\nPaket ' + plan.toUpperCase() + ' telah aktif.\nMerchantCode: ' + DUITKU_CONFIG.merchantCode + '\nSignature: ' + signature);
+                    // Update profil ke Pro/Starter
+                    const newProfileData = {
+                        selected_plan: plan,
+                        trial_start: new Date().toISOString(),
+                        trial_days: 0
+                    };
+                    await window.updateUserProfile(newProfileData);
                     
-                    if (window.showAnToast) window.showAnToast('Paket ' + plan.toUpperCase() + ' berhasil diaktifkan!', 'success');
-                    
-                    // Update localStorage untuk konsistensi UI
-                    localStorage.setItem('larisi_selected_plan', plan);
-                    localStorage.removeItem('larisi_trial_start');
-                    localStorage.removeItem('larisi_trial_days');
-                    
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
-                } catch (dbError) {
-                    console.error('Database Update Error:', dbError);
-                    alert('Pembayaran sukses, tapi gagal memperbarui profil. Mohon hubungi support.');
+                    setTimeout(() => window.location.reload(), 2000);
+                },
+                onPending: function (result) {
+                    console.log('Payment Pending:', result);
+                    alert('Pembayaran tertunda. Silakan selesaikan pembayaran Anda.');
+                },
+                onError: function (result) {
+                    console.log('Payment Error:', result);
+                    alert('Pembayaran gagal: ' + result.resultInfo);
+                },
+                onCanceled: function (result) {
+                    console.log('Payment Canceled:', result);
+                    if (window.showAnToast) window.showAnToast('Pembayaran dibatalkan', 'info');
                 }
-            }
+            });
         } else {
-            alert('Library Duitku belum dimuat. Pastikan koneksi internet stabil.');
+            throw new Error(result.error || 'Gagal mendapatkan link pembayaran');
         }
+
     } catch (error) {
         console.error('Duitku Error:', error);
-        if (window.showAnToast) window.showAnToast('Gagal memproses pembayaran.', 'error');
+        alert('Maaf, sistem pembayaran sedang mengalami gangguan teknis. Mohon coba lagi nanti.');
     }
 };
