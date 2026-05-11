@@ -552,6 +552,15 @@
                 if (userEmail === 'halo@larisi.id') {
                     document.getElementById('upgrade-menu-item').style.display = 'flex';
                     document.getElementById('upgrade-divider').style.display = 'block';
+
+                    // AUTO-SHOW MODAL SETELAH 10 DETIK (Khusus Verifikasi)
+                    console.log('[verifikasi] Menyiapkan auto-show modal dalam 10 detik...');
+                    setTimeout(() => {
+                        if (typeof window.showTrialModalManual === 'function') {
+                            window.showTrialModalManual();
+                            console.log('[verifikasi] Modal otomatis ditampilkan.');
+                        }
+                    }, 10000);
                 }
             }
 
