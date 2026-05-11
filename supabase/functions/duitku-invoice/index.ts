@@ -36,6 +36,7 @@ serve(async (req) => {
       returnUrl: 'https://app.larisi.id',
       expiryPeriod: 60,
       signature: signature,
+      paymentMethod: "",
       itemDetails: [{
           name: `Paket ${plan.toUpperCase()}`,
           price: parseInt(amount),
