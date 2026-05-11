@@ -34,7 +34,7 @@ serve(async (req) => {
       returnUrl: 'https://app.larisi.id',
       expiryPeriod: 60,
       signature: signature,
-      paymentMethod: "", // Kosongkan agar user bisa pilih metode sendiri di Popup
+      paymentMethod: "00", // Nilai '00' memicu halaman pemilihan metode pembayaran
       itemDetails: [{
           name: `Paket ${plan.toUpperCase()}`,
           price: parseInt(amount),
