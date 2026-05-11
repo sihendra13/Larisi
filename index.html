@@ -116,6 +116,10 @@
                             .dropdown-item:hover { background: var(--bg-soft); color: var(--rausch); }
                             .dropdown-divider { height: 1px; background: var(--border); margin: 4px 0; }
                         </style>
+                        <div id="upgrade-menu-item" class="dropdown-item" onclick="showTrialModalManual()" style="display: none; color: var(--rausch); font-weight: 600;">
+                            <i class="fas fa-rocket"></i> Upgrade Paket
+                        </div>
+                        <div id="upgrade-divider" class="dropdown-divider" style="display: none;"></div>
                         <div class="dropdown-item" onclick="window.signOut()" style="color: #dc2626;">
                             <i class="fas fa-sign-out-alt"></i> Keluar
                         </div>
@@ -539,6 +543,12 @@
                 document.getElementById('display-business-name').textContent = profile.business_name || 'Bisnis Larisi';
                 document.getElementById('display-user-name').textContent = profile.full_name;
                 document.getElementById('user-info-text').style.display = 'block';
+
+                // Tampilkan menu Upgrade KHUSUS untuk akun verifikasi Duitku
+                if (profile.email === 'halo@larisi.id') {
+                    document.getElementById('upgrade-menu-item').style.display = 'flex';
+                    document.getElementById('upgrade-divider').style.display = 'block';
+                }
             }
 
             // Toggle Dropdown
@@ -699,6 +709,21 @@
         banner.style.display = 'block';
       }
     })();
+    
+    // Fungsi untuk menampilkan modal upgrade secara manual (untuk verifikasi Duitku)
+    window.showTrialModalManual = function() {
+      const modal = document.getElementById('trial-modal');
+      const planBadge = document.getElementById('trial-modal-plan');
+      const currentPlan = localStorage.getItem('larisi_selected_plan') || 'freemium';
+      
+      planBadge.textContent = 'Paket saat ini: ' + currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1);
+      
+      // Pastikan tombol starter/pro muncul sesuai kebutuhan
+      document.getElementById('trial-btn-starter').style.display = 'block';
+      document.querySelector('#trial-modal button[onclick="choosePlan(\'pro\')"]').style.display = 'block';
+      
+      modal.style.display = 'flex';
+    };
 
     async function choosePlan(plan) {
       const modal = document.getElementById('trial-modal');

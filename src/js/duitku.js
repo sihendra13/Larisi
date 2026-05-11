@@ -132,6 +132,18 @@ function md5(string) {
 window.startDuitkuPayment = async function(plan, amount) {
     console.log('Starting Duitku Payment for:', plan, amount);
     
+    const userProfile = window.userBizProfile || JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+    const userEmail = userProfile.email || '';
+
+    // PROTEKSI: Jika bukan akun verifikator, jangan jalankan simulasi
+    if (userEmail !== 'halo@larisi.id') {
+        alert('Fitur pembayaran sedang disiapkan. Tim kami akan segera menghubungi Anda untuk proses aktivasi paket ' + plan.toUpperCase() + '. Terima kasih!');
+        if (window.showAnToast) window.showAnToast('Fitur segera hadir!', 'info');
+        const modal = document.getElementById('trial-modal');
+        if (modal) modal.style.display = 'none';
+        return;
+    }
+    
     // 1. Generate Order ID (Unique)
     const orderId = 'LARISI-' + Date.now();
     
