@@ -100,6 +100,8 @@ async function signOut() {
     const client = getSupabaseClient();
     const { error } = await client.auth.signOut();
     if (!error) {
+        // Membersihkan data sesi lokal (keamanan)
+        // Tapi data tetap aman di database Supabase
         localStorage.removeItem('radar_user_profile');
         localStorage.removeItem('radar_social_accounts');
         localStorage.removeItem('radar_session_id');
@@ -130,14 +132,21 @@ async function getUserProfile(userId) {
     if (data) {
         localStorage.setItem('radar_user_profile', JSON.stringify(data));
 
+        // ── Sinkronisasi Akun Sosial dari Database ke Browser ──────
+        // Jika DB punya data akun sosial, pasang kembali ke localStorage
+        if (data.social_accounts) {
+            console.log('[supabase] Memulihkan akun sosial dari database...');
+            localStorage.setItem('radar_social_accounts', 
+                typeof data.social_accounts === 'string' 
+                    ? data.social_accounts 
+                    : JSON.stringify(data.social_accounts)
+            );
+        }
+
         // ── Sync postforme_external_id ──────────────────────────────
-        // Pastikan radar_session_id selalu konsisten dengan yang tersimpan di DB,
-        // sehingga koneksi PostForMe tidak hilang saat localStorage dihapus / ganti device.
         if (data.postforme_external_id) {
-            // DB sudah punya ID → pakai ini sebagai radar_session_id
             localStorage.setItem('radar_session_id', data.postforme_external_id);
         } else {
-            // DB belum punya → ambil dari localStorage (atau generate baru), lalu simpan ke DB
             var existingId = localStorage.getItem('radar_session_id');
             if (!existingId) {
                 existingId = 'radar_user_' + Math.random().toString(36).slice(2, 10);
@@ -147,13 +156,11 @@ async function getUserProfile(userId) {
                 .update({ postforme_external_id: existingId })
                 .eq('id', userId)
                 .then(function() {
-                    // Update cache lokal setelah DB tersimpan
                     data.postforme_external_id = existingId;
                     localStorage.setItem('radar_user_profile', JSON.stringify(data));
                 })
                 .catch(function() {});
         }
-        // ────────────────────────────────────────────────────────────
     }
     return { data, error };
 }
@@ -179,6 +186,26 @@ async function updateUserProfile(profileData) {
         localStorage.setItem('radar_user_profile', JSON.stringify(data));
     }
     return { data, error };
+}
+
+/**
+ * syncSocialAccounts()
+ * Menyimpan daftar akun sosial dari localStorage ke database permanen Supabase
+ */
+async function syncSocialAccounts() {
+    try {
+        const accountsRaw = localStorage.getItem('radar_social_accounts');
+        if (!accountsRaw) return;
+        
+        const accounts = JSON.parse(accountsRaw);
+        console.log('[supabase] Menyinkronkan ' + accounts.length + ' akun sosial ke database...');
+        
+        await updateUserProfile({
+            social_accounts: accounts
+        });
+    } catch(e) {
+        console.warn('[supabase] syncSocialAccounts error:', e.message);
+    }
 }
 
 /**
@@ -228,6 +255,7 @@ window.resendOtp = resendOtp;
 window.getCurrentUser = getCurrentUser;
 window.getUserProfile = getUserProfile;
 window.updateUserProfile = updateUserProfile;
+window.syncSocialAccounts = syncSocialAccounts; // Ekspos ke global
 window.sendPasswordReset = sendPasswordReset;
 window.updatePassword = updatePassword;
 

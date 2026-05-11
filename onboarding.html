@@ -385,6 +385,11 @@
                     accounts.push({ id: accountId, platform: platform, username: null, avatar_url: null });
                     localStorage.setItem('radar_social_accounts', JSON.stringify(accounts));
 
+                    // SINKRONISASI KE DATABASE (PENTING!)
+                    if (typeof window.syncSocialAccounts === 'function') {
+                        window.syncSocialAccounts();
+                    }
+
                     // Update tampilan tombol → hijau ✓
                     var colors = { facebook:'#1877F2', instagram:'#E1306C', tiktok:'#000000', youtube:'#FF0000' };
                     btn.style.borderColor = '#16a34a';

@@ -208,6 +208,12 @@ async function _fetchConnectedAccounts() {
 
     if (changed) {
       localStorage.setItem('radar_social_accounts', JSON.stringify(existing));
+      
+      // SINKRONISASI KE DATABASE (Agar permanen)
+      if (typeof window.syncSocialAccounts === 'function') {
+        window.syncSocialAccounts();
+      }
+
       updateBufferIndicator();
       updateChannelChipsWithUsername();
     }
@@ -292,6 +298,11 @@ function _saveAndUpdateUI(platform, accountId, username, avatarUrl) {
   setTimeout(function() { _closePfmModal(); }, 1800);
 
   if (typeof showAnToast === 'function') showAnToast('Akun ' + platform + ' berhasil terhubung!', 'success');
+
+  // SINKRONISASI KE DATABASE (Agar permanen)
+  if (typeof window.syncSocialAccounts === 'function') {
+    window.syncSocialAccounts();
+  }
 }
 
 /* ─── Connect via OAuth ────────────────────────────────────── */
