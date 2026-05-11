@@ -766,11 +766,11 @@
         let price = (plan === 'pro') ? 199000 : 99000;
         
         if (window.startDuitkuPayment) {
+          const allButtons = modal.querySelectorAll('button');
+          allButtons.forEach(b => b.disabled = true);
           window.startDuitkuPayment(plan, price).finally(() => {
-            if (btn) {
-              btn.disabled = false;
-              btn.textContent = btn.dataset.label || 'Lanjut Berlangganan';
-            }
+            allButtons.forEach(b => b.disabled = false);
+            if (btn) btn.textContent = btn.dataset.label || 'Lanjut Berlangganan';
           });
         } else {
           showAnToast('Sistem pembayaran sedang disiapkan.');
