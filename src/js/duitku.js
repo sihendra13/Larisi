@@ -15,7 +15,6 @@ window.startDuitkuPayment = async function(plan, amount) {
         const orderId = 'LARISI-' + Date.now();
         if (window.showAnToast) window.showAnToast('Menghubungkan ke Duitku...', 'info');
 
-        // Ambil nomor HP dari profil, jika tidak ada pakai dummy (Duitku butuh format string)
         const userPhone = userProfile.phone || userProfile.phone_number || '081234567890';
 
         const response = await fetch(`${window.RADAR_CONFIG.SUPABASE_URL}/functions/v1/duitku-invoice`, {
@@ -37,29 +36,8 @@ window.startDuitkuPayment = async function(plan, amount) {
         const result = await response.json();
 
         if (result.paymentUrl) {
-            window.checkout.process(result.paymentUrl, {
-                onSuccess: async function (res) {
-                    console.log('Payment Success:', res);
-                    if (window.showAnToast) window.showAnToast('Pembayaran Berhasil!', 'success');
-                    
-                    const newProfileData = {
-                        selected_plan: plan,
-                        trial_start: new Date().toISOString(),
-                        trial_days: 0
-                    };
-                    await window.updateUserProfile(newProfileData);
-                    setTimeout(() => window.location.reload(), 2000);
-                },
-                onPending: function (res) {
-                    alert('Pembayaran tertunda. Silakan selesaikan pembayaran Anda.');
-                },
-                onError: function (res) {
-                    alert('Pembayaran gagal: ' + (res.resultInfo || 'Terjadi kesalahan'));
-                },
-                onCanceled: function (res) {
-                    if (window.showAnToast) window.showAnToast('Pembayaran dibatalkan', 'info');
-                }
-            });
+            // Untuk Duitku v2, cukup panggil paymentUrl tanpa callback onSuccess/onError di frontend
+            window.checkout.process(result.paymentUrl);
         } else {
             throw new Error(result.error || 'Duitku menolak permintaan pembayaran');
         }
