@@ -567,6 +567,36 @@ async function fetchAndUpdatePostUrl(campaign, _attempt) {
 
       console.log('[monitor] post_url updated:', campaign.name, url);
     }
+
+    // --- SINKRONISASI THUMBNAIL (Agar tidak hilang di komputer lain) ---
+    var mediaUrl = null;
+    if (data.media && data.media.length) {
+      // Prioritas 1: Thumbnail URL dari PostForMe
+      mediaUrl = data.media[0].thumb_url || data.media[0].media_url || data.media[0].url || null;
+    }
+    // Fallback root level media_url
+    if (!mediaUrl) mediaUrl = data.media_url || data.thumb_url || null;
+
+    if (mediaUrl && campaign.thumbUrl !== mediaUrl) {
+      console.log('[monitor] Memperbarui thumbnail ke Supabase:', campaign.name);
+      campaign.thumbUrl = mediaUrl;
+      
+      // Simpan ke database agar permanen
+      if (typeof updateCampaignThumbUrl === 'function') {
+        updateCampaignThumbUrl(campaign.supabase_id, mediaUrl);
+      }
+      // Simpan ke localStorage juga untuk performa instan di browser ini
+      localStorage.setItem('radar_thumb_' + campaign.id, mediaUrl);
+
+      // Update gambar di kartu iklan secara instan (DOM)
+      var card = document.querySelector('[data-id="' + campaign.id + '"]');
+      if (card) {
+        var imgWrapper = card.querySelector('.cc-media');
+        if (imgWrapper) {
+          imgWrapper.innerHTML = '<img src="' + mediaUrl + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentNode.innerHTML=\'<div style=\\\'padding:20px;color:#94a3b8;font-size:12px;\\\'>Foto tidak tersedia</div>\'">';
+        }
+      }
+    }
   } catch(e) {
     var msg = e.message || '';
 

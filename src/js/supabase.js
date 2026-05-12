@@ -496,3 +496,19 @@ async function updateCampaignPostUrl(campaignId, postUrl) {
   }
 }
 window.updateCampaignPostUrl = updateCampaignPostUrl;
+async function updateCampaignThumbUrl(campaignId, thumbUrl) {
+  var client = getSupabaseClient();
+  if (!client || !campaignId || !thumbUrl) return;
+  try {
+    var result = await client
+      .from('campaigns')
+      .update({ thumb_url: thumbUrl })
+      .eq('id', campaignId)
+      .eq('session_id', window.radarSessionId);
+    if (result.error) throw result.error;
+    console.log('[supabase] thumb_url updated:', campaignId);
+  } catch(e) {
+    console.warn('[supabase] updateCampaignThumbUrl error:', e.message);
+  }
+}
+window.updateCampaignThumbUrl = updateCampaignThumbUrl;
