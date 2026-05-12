@@ -173,6 +173,8 @@ async function updateUserProfile(profileData) {
     if (!user) return { error: 'Not authenticated' };
     
     const client = getSupabaseClient();
+    console.log('[supabase] Mencoba update profil:', profileData);
+    
     const { data, error } = await client.from('profiles')
         .upsert({
             id: user.id,
@@ -181,6 +183,12 @@ async function updateUserProfile(profileData) {
         })
         .select()
         .single();
+
+    if (error) {
+        console.error('[supabase] GAGAL update profil:', error.message, error.details);
+    } else {
+        console.log('[supabase] BERHASIL update profil ke database.');
+    }
     
     if (data) {
         localStorage.setItem('radar_user_profile', JSON.stringify(data));
