@@ -616,27 +616,19 @@ async function _doLaunch(campNameOverride) {
   const fcEl = document.getElementById('freeCount');
   if (fcEl) fcEl.textContent = window.freeCount;
 
-  // Update ke Database Supabase agar sinkron antar perangkat
+  // Update ke Database Supabase menggunakan fungsi resmi agar sinkron antar perangkat
   try {
-    const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
-    const user = (typeof window.getCurrentUser === 'function') ? await window.getCurrentUser() : null;
-    
-    if (client && user) {
-      const { error } = await client
-        .from('profiles')
-        .update({ ai_launch_count: window.freeCount })
-        .eq('id', user.id);
+    if (typeof window.updateUserProfile === 'function') {
+      await window.updateUserProfile({ ai_launch_count: window.freeCount });
+      console.log('[Database] Jatah iklan berhasil dikunci ke Supabase:', window.freeCount);
       
-      if (error) throw error;
-      console.log('[Database] Jatah iklan diperbarui di Supabase:', window.freeCount);
-
-      // SINKRONISASI LOKAL: Update juga profil di localStorage agar angka sinkron tanpa refresh
+      // SINKRONISASI LOKAL: Update profil di localStorage agar angka sinkron tanpa refresh
       const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
       profile.ai_launch_count = window.freeCount;
       localStorage.setItem('radar_user_profile', JSON.stringify(profile));
     }
   } catch (err) {
-    console.error('[Database] Gagal update jatah ke Supabase:', err);
+    console.error('[Database] Gagal mengunci jatah ke Supabase:', err);
   }
 
   // ── Export canvas (untuk download di Monitor — bukan untuk upload PostForMe) ──
