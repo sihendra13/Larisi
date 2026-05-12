@@ -76,6 +76,68 @@
   <link rel="stylesheet" href="src/css/monitor.css">
   <link rel="stylesheet" href="src/css/analytics.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* Warning Banner Styles */
+    #quota-banner {
+      display: none;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: #fffbeb;
+      border-bottom: 1px solid #fcd34d;
+      padding: 10px 16px;
+      font-family: 'Circular Std', sans-serif;
+      animation: bannerSlideDown 0.3s ease-out;
+    }
+    @keyframes bannerSlideDown {
+      from { transform: translateY(-100%); }
+      to { transform: translateY(0); }
+    }
+    .qb-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .qb-text {
+      font-size: 13px;
+      color: #92400e;
+      font-weight: 500;
+      line-height: 1.4;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .qb-close {
+      background: none;
+      border: none;
+      color: #92400e;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+    .qb-close:hover { opacity: 1; }
+    .qb-upgrade-btn {
+      color: #7c3aed;
+      font-weight: 700;
+      text-decoration: underline;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: inherit;
+    }
+    @media (max-width: 768px) {
+      .qb-text { font-size: 11px; }
+    }
+  </style>
 </head>
 <body>
 
@@ -96,6 +158,16 @@
 </div>
 
 <div class="main">
+  <!-- Warning Banner -->
+  <div id="quota-banner">
+    <div class="qb-content">
+      <div class="qb-text" id="qb-message-text">
+        <!-- Text akan diisi via JS -->
+      </div>
+      <button class="qb-close" onclick="closeQuotaBanner()" title="Tutup">✕</button>
+    </div>
+  </div>
+
   <!-- Header -->
   <div class="header">
     <div style="min-width: 0; overflow: hidden; flex-shrink: 1;">
@@ -778,6 +850,76 @@
       
       modal.style.display = 'flex';
     };
+
+    // --- DYNAMIC QUOTA & TRIAL BANNER ---
+    function closeQuotaBanner() {
+      document.getElementById('quota-banner').style.display = 'none';
+      // Simpan status tutup agar tidak muncul lagi di sesi yang sama
+      localStorage.setItem('hide_quota_banner_session', 'true');
+    }
+
+    async function initQuotaBanner() {
+      try {
+        const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+        const userEmail = profile.email || '';
+        
+        // 1. Safety Guard: Jangan ganggu akun tester
+        if (userEmail === 'halo@larisi.id') return;
+
+        // 2. Cek apakah user sudah menutup banner di sesi ini
+        if (localStorage.getItem('hide_quota_banner_session') === 'true') return;
+
+        // 3. Ambil data jatah iklan (AI Launch Count)
+        // window.aiLaunchCount biasanya di-update oleh launch.js
+        const quota = typeof window.aiLaunchCount !== 'undefined' ? window.aiLaunchCount : 10;
+        
+        // 4. Hitung sisa hari trial (7 hari dari created_at)
+        let remainingDays = 99; // default aman
+        if (profile.created_at) {
+          const startDate = new Date(profile.created_at);
+          const now = new Date();
+          const diffDays = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+          remainingDays = 7 - diffDays;
+        }
+
+        const banner = document.getElementById('quota-banner');
+        const textEl = document.getElementById('qb-message-text');
+        if (!banner || !textEl) return;
+
+        let message = "";
+        
+        // PRIORITAS 1: Jatah Iklan sisa 2 atau kurang
+        if (quota <= 2 && quota > 0) {
+          message = `⚠️ Jatah iklan gratis Anda sisa <b>${quota}</b> lagi. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Upgrade ke Paket Pro sekarang!</button>`;
+        } 
+        // PRIORITAS 2: Sisa hari trial tinggal 1 hari (24 jam terakhir)
+        else if (remainingDays === 1) {
+          message = `⚠️ Masa trial Pro Anda berakhir dalam <b>24 jam</b>. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Amankan jangkauan iklan Anda sekarang!</button>`;
+        }
+        // PRIORITAS 3: Sudah habis (Opsional: bisa juga ditampilkan untuk memaksa upgrade)
+        else if (quota <= 0 || remainingDays <= 0) {
+          message = `⚠️ Masa trial gratis Anda telah berakhir. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Langganan Paket Pro untuk lanjut pasang iklan.</button>`;
+        }
+
+        if (message) {
+          textEl.innerHTML = message;
+          banner.style.display = 'block';
+        } else {
+          banner.style.display = 'none';
+        }
+      } catch (e) {
+        console.warn('[banner] initQuotaBanner error:', e.message);
+      }
+    }
+
+    // Jalankan pengecekan banner setelah profile terload
+    setTimeout(initQuotaBanner, 2000); 
+    // Tambahkan listener agar saat jatah iklan berubah (saat launch), banner terupdate
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'ai_launch_count') initQuotaBanner();
+    });
+    // Pantau perubahan kuota secara berkala
+    setInterval(initQuotaBanner, 10000);
 
     async function choosePlan(plan) {
       const modal = document.getElementById('trial-modal');
