@@ -497,16 +497,15 @@ async function _doLaunch(campNameOverride) {
   if (fcEl) fcEl.textContent = window.freeCount;
 
   try {
-    if (typeof window.updateUserProfile === 'function') {
-      await window.updateUserProfile({ ai_launch_count: window.freeCount });
-      console.log('[Database] Jatah iklan dikunci di awal:', window.freeCount);
-      
-      const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
-      profile.ai_launch_count = window.freeCount;
-      localStorage.setItem('radar_user_profile', JSON.stringify(profile));
-    }
+    console.log('[Database] Memulai sinkronisasi jatah...');
+    await window.updateUserProfile({ ai_launch_count: window.freeCount });
+    console.log('[Database] Jatah iklan dikunci di awal:', window.freeCount);
+    
+    const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+    profile.ai_launch_count = window.freeCount;
+    localStorage.setItem('radar_user_profile', JSON.stringify(profile));
   } catch (err) {
-    console.error('[Database] Gagal mengunci jatah di awal:', err);
+    console.error('[Database] GAGAL KRITIS mengunci jatah:', err.message);
   }
 
   // ── Capture state dari Menu 1 ──
