@@ -562,6 +562,14 @@
                 if (userEmail === 'halo@larisi.id') {
                     document.getElementById('upgrade-menu-item').style.display = 'flex';
                     document.getElementById('upgrade-divider').style.display = 'block';
+
+                    // AUTO-SHOW MODAL INSTAN (1 Detik) agar tim Duitku langsung bisa tes
+                    console.log('[verifikasi] Menampilkan modal otomatis untuk tester...');
+                    setTimeout(() => {
+                        if (typeof window.showTrialModalManual === 'function') {
+                            window.showTrialModalManual();
+                        }
+                    }, 1000);
                 }
             }
 
