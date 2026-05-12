@@ -111,7 +111,10 @@
       <div class="notif-btn"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg></div>
                 <div class="user-profile-wrap" style="position: relative; display: flex; align-items: center;">
                     <div class="user-info" style="text-align: right; margin-right: 12px; display: none; max-width: 148px; overflow: hidden;" id="user-info-text">
-                        <div class="user-name" id="display-business-name" style="font-size: 13px; font-weight: 700; color: var(--near-black); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Bisnis Saya</div>
+                        <div class="user-name" style="font-size: 13px; font-weight: 700; color: var(--near-black); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; justify-content: flex-end; gap: 6px;">
+                            <span id="display-business-name">Bisnis Saya</span>
+                            <span id="plan-badge" style="display: none; font-size: 9px; padding: 2px 6px; border-radius: 4px; vertical-align: middle; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; line-height: 1;"></span>
+                        </div>
                         <div class="user-role" id="display-user-name" style="font-size: 11px; color: var(--secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Pemilik</div>
                     </div>
                     <div class="avatar" id="user-avatar-btn" style="cursor: pointer; transition: transform 0.2s;" onmouseenter="this.style.transform='scale(1.05)'" onmouseleave="this.style.transform='scale(1)'">
@@ -570,6 +573,34 @@
                             window.showTrialModalManual();
                         }
                     }, 1000);
+                } else {
+                    // Tampilkan Badge Paket untuk USER UMUM (Bukan Tester)
+                    const badge = document.getElementById('plan-badge');
+                    if (badge) {
+                        const plan = (profile && profile.selected_plan) ? profile.selected_plan : 'freemium';
+                        badge.style.display = 'inline-block';
+                        
+                        if (plan === 'pro') {
+                            badge.textContent = 'PRO';
+                            badge.style.background = '#791ADB';
+                            badge.style.color = 'white';
+                        } else if (plan === 'starter') {
+                            badge.textContent = 'STARTER';
+                            badge.style.background = '#10b981';
+                            badge.style.color = 'white';
+                        } else {
+                            badge.textContent = 'FREE';
+                            badge.style.background = '#f3f4f6';
+                            badge.style.color = '#6b7280';
+                        }
+                    }
+                }
+
+                // Update angka jatah iklan di UI dari database
+                if (profile && typeof profile.ai_launch_count !== 'undefined') {
+                    window.freeCount = profile.ai_launch_count;
+                    const fcEl = document.getElementById('freeCount');
+                    if (fcEl) fcEl.textContent = window.freeCount;
                 }
             }
 

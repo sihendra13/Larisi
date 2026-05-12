@@ -344,6 +344,24 @@ async function launchRadar() {
   var hasChannel  = typeof activeChannel !== 'undefined' && !!activeChannel;
   if (!hasAsset || !hasAudience || !hasChannel) { showLaunchModal(); return; }
 
+  // ── Cek Kuota Freemium (Persistence Layer) ──
+  // Kita cek dari window.freeCount yang sudah di-sync dengan Database
+  if (typeof window.freeCount !== 'undefined' && window.freeCount <= 0) {
+    const user = (typeof window.getCurrentUser === 'function') ? await window.getCurrentUser() : null;
+    const userEmail = (user && user.email) ? user.email.toLowerCase().trim() : '';
+    
+    // Pengecualian: Tester Duitku tetap bisa lewat agar review lancar
+    if (userEmail !== 'halo@larisi.id') {
+      console.log('[Paywall] Jatah habis, memunculkan modal bayar...');
+      if (typeof showTrialModalManual === 'function') {
+        showTrialModalManual();
+      } else {
+        showTopToast('Jatah iklan gratis Anda sudah habis bulan ini.', 'warning');
+      }
+      return;
+    }
+  }
+
   // ── Rate limiting ──
   if (!checkLaunchRateLimit()) return;
 
@@ -579,9 +597,25 @@ async function _doLaunch(campNameOverride) {
     }
   };
 
-  // ── Decrement free count ──
-  freeCount = Math.max(0, freeCount - 1);
-  document.getElementById('freeCount').textContent = freeCount;
+  // ── Decrement free count & Sync ke Supabase ──
+  window.freeCount = Math.max(0, (window.freeCount || 10) - 1);
+  const fcEl = document.getElementById('freeCount');
+  if (fcEl) fcEl.textContent = window.freeCount;
+
+  // Update ke Database Supabase agar sinkron antar perangkat
+  try {
+    const { supabase } = window;
+    const user = (typeof window.getCurrentUser === 'function') ? await window.getCurrentUser() : null;
+    if (supabase && user) {
+      await supabase
+        .from('profiles')
+        .update({ ai_launch_count: window.freeCount })
+        .eq('id', user.id);
+      console.log('[Database] Jatah iklan diperbarui di Supabase:', window.freeCount);
+    }
+  } catch (err) {
+    console.error('[Database] Gagal update jatah ke Supabase:', err);
+  }
 
   // ── Export canvas (untuk download di Monitor — bukan untuk upload PostForMe) ──
   // Stitch burn ke PostForMe dilakukan via _compositeStitchOnDataUrl() di buffer.js
