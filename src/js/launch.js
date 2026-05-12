@@ -618,13 +618,16 @@ async function _doLaunch(campNameOverride) {
 
   // Update ke Database Supabase agar sinkron antar perangkat
   try {
-    const { supabase } = window;
+    const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
     const user = (typeof window.getCurrentUser === 'function') ? await window.getCurrentUser() : null;
-    if (supabase && user) {
-      await supabase
+    
+    if (client && user) {
+      const { error } = await client
         .from('profiles')
         .update({ ai_launch_count: window.freeCount })
         .eq('id', user.id);
+      
+      if (error) throw error;
       console.log('[Database] Jatah iklan diperbarui di Supabase:', window.freeCount);
 
       // SINKRONISASI LOKAL: Update juga profil di localStorage agar angka sinkron tanpa refresh
