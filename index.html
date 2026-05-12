@@ -670,8 +670,12 @@
                 }
 
                 // Update angka jatah iklan di UI dari database
-                if (profile && typeof profile.ai_launch_count !== 'undefined') {
-                    window.freeCount = profile.ai_launch_count;
+                if (profile) {
+                    // Fallback ke 10 jika data di DB masih kosong (untuk user baru)
+                    window.freeCount = (typeof profile.ai_launch_count !== 'undefined' && profile.ai_launch_count !== null) 
+                        ? profile.ai_launch_count 
+                        : 10;
+                        
                     const fcEl = document.getElementById('freeCount');
                     if (fcEl) fcEl.textContent = window.freeCount;
                 }
@@ -890,15 +894,15 @@
         
         // PRIORITAS 1: Jatah Iklan sisa 2 atau kurang
         if (quota <= 2 && quota > 0) {
-          message = `⚠️ Jatah iklan gratis Anda sisa <b>${quota}</b> lagi. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Upgrade ke Paket Pro sekarang!</button>`;
+          message = `⚠️ Jatah iklan gratis Anda sisa <b>${quota}</b> lagi. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Upgrade ke Pro Sekarang</button>`;
         } 
         // PRIORITAS 2: Sisa hari trial tinggal 1 hari (24 jam terakhir)
         else if (remainingDays === 1) {
-          message = `⚠️ Masa trial Pro Anda berakhir dalam <b>24 jam</b>. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Amankan jangkauan iklan Anda sekarang!</button>`;
+          message = `⚠️ Masa trial Pro Anda berakhir dalam <b>24 jam</b>. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Upgrade ke Pro Sekarang</button>`;
         }
         // PRIORITAS 3: Sudah habis (Opsional: bisa juga ditampilkan untuk memaksa upgrade)
         else if (quota <= 0 || remainingDays <= 0) {
-          message = `⚠️ Masa trial gratis Anda telah berakhir. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Langganan Paket Pro untuk lanjut pasang iklan.</button>`;
+          message = `⚠️ Masa trial gratis Anda telah berakhir. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Upgrade ke Pro Sekarang</button>`;
         }
 
         if (message) {
@@ -943,6 +947,10 @@
         localStorage.removeItem('larisi_trial_start');
         localStorage.removeItem('larisi_trial_days');
         modal.style.display = 'none';
+        
+        // Update banner secara instan
+        if (typeof initQuotaBanner === 'function') initQuotaBanner();
+        
         showAnToast('Akun diturunkan ke Freemium. Nikmati fitur dasar tanpa batas waktu!', 'success');
 
       } else {

@@ -344,21 +344,35 @@ async function launchRadar() {
   var hasChannel  = typeof activeChannel !== 'undefined' && !!activeChannel;
   if (!hasAsset || !hasAudience || !hasChannel) { showLaunchModal(); return; }
 
-  // ── Cek Kuota Freemium (Persistence Layer) ──
-  // Kita cek dari window.freeCount yang sudah di-sync dengan Database
-  if (typeof window.freeCount !== 'undefined' && window.freeCount <= 0) {
-    const user = (typeof window.getCurrentUser === 'function') ? await window.getCurrentUser() : null;
-    const userEmail = (user && user.email) ? user.email.toLowerCase().trim() : '';
+  // ── Cek Status Berlangganan & Gembok (Paywall) ──
+  const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+  const userEmail = (profile && profile.email) ? profile.email.toLowerCase().trim() : '';
+  const isTester = (userEmail === 'halo@larisi.id');
+
+  if (!isTester) {
+    const plan = profile.selected_plan || 'freemium';
     
-    // Pengecualian: Tester Duitku tetap bisa lewat agar review lancar
-    if (userEmail !== 'halo@larisi.id') {
-      console.log('[Paywall] Jatah habis, memunculkan modal bayar...');
-      if (typeof showTrialModalManual === 'function') {
-        showTrialModalManual();
-      } else {
-        showTopToast('Jatah iklan gratis Anda sudah habis bulan ini.', 'warning');
+    // LOGIK A: Untuk FREEMIUM (Hanya cek jatah 10 iklan)
+    if (plan === 'freemium') {
+      const quota = typeof window.freeCount !== 'undefined' ? window.freeCount : 10;
+      if (quota <= 0) {
+        console.log('[Paywall] Freemium: Jatah habis, memunculkan modal bayar...');
+        if (typeof showTrialModalManual === 'function') { showTrialModalManual(); }
+        return;
       }
-      return;
+    } 
+    // LOGIK B: Untuk STARTER/PRO (Cek 7 Hari Trial)
+    else {
+      if (profile.created_at) {
+        const startDate = new Date(profile.created_at);
+        const now = new Date();
+        const diffDays = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 7) {
+          console.log('[Paywall] Trial: Masa trial 7 hari habis, memunculkan modal bayar...');
+          if (typeof showTrialModalManual === 'function') { showTrialModalManual(); }
+          return;
+        }
+      }
     }
   }
 
@@ -612,6 +626,11 @@ async function _doLaunch(campNameOverride) {
         .update({ ai_launch_count: window.freeCount })
         .eq('id', user.id);
       console.log('[Database] Jatah iklan diperbarui di Supabase:', window.freeCount);
+
+      // SINKRONISASI LOKAL: Update juga profil di localStorage agar angka sinkron tanpa refresh
+      const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+      profile.ai_launch_count = window.freeCount;
+      localStorage.setItem('radar_user_profile', JSON.stringify(profile));
     }
   } catch (err) {
     console.error('[Database] Gagal update jatah ke Supabase:', err);
