@@ -136,15 +136,6 @@
                     </div>
                 </div>
     </div>
-  <div id="quota-banner" style="display: none; background: #fff8e1; border-bottom: 1px solid #ffe082; padding: 10px 24px; font-size: 13px; color: #856404; align-items: center; justify-content: space-between; z-index: 900;">
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <span style="font-size: 16px;">📢</span>
-      <span id="quota-message" style="font-weight: 500;">Jatah iklan gratis Anda bulan ini sudah habis.</span>
-    </div>
-    <div style="display: flex; align-items: center; gap: 12px;">
-      <span id="reset-date-info" style="font-weight: 600; font-size: 12px; opacity: 0.8;">Otomatis reset: 1 Juni 2026</span>
-      <button onclick="showTrialModalManual()" style="background: #111827; color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#7C3AED'" onmouseout="this.style.background='#111827'">Upgrade Sekarang</button>
-    </div>
   </div>
 
   <div class="content">
@@ -572,9 +563,6 @@
                     document.getElementById('upgrade-menu-item').style.display = 'flex';
                     document.getElementById('upgrade-divider').style.display = 'block';
                 }
-
-                // Update Banner Kuota
-                if (window.updateQuotaBanner) window.updateQuotaBanner();
             }
 
             // Toggle Dropdown
@@ -801,44 +789,6 @@
         }
       }
     }
-    // Update Quota Banner Visibility & Text
-    window.updateQuotaBanner = function() {
-        const banner = document.getElementById('quota-banner');
-        const msg = document.getElementById('quota-message');
-        const dateInfo = document.getElementById('reset-date-info');
-        if (!banner || !msg || !dateInfo) return;
-
-        // Ambil jatah dari state global (window.freeCount di state.js)
-        const count = (typeof window.freeCount !== 'undefined') ? window.freeCount : 10;
-        
-        // Hitung tanggal 1 bulan depan
-        const now = new Date();
-        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        const options = { day: 'numeric', month: 'long', year: 'numeric' };
-        const dateStr = nextMonth.toLocaleDateString('id-ID', options);
-
-        // Hanya munculkan jika sisa 2 atau kurang
-        if (count <= 2) {
-            banner.style.display = 'flex';
-            msg.textContent = count === 0 
-                ? "Jatah iklan gratis Anda bulan ini sudah habis." 
-                : `Sisa jatah iklan gratis Anda bulan ini: ${count}.`;
-            dateInfo.textContent = `Otomatis reset: ${dateStr}`;
-            
-            // Warna peringatan jika 0 (Merah), jika masih ada (Kuning)
-            if (count === 0) {
-                banner.style.background = '#fff1f0';
-                banner.style.color = '#cf1322';
-                banner.style.borderBottom = '1px solid #ffa39e';
-            } else {
-                banner.style.background = '#fff8e1';
-                banner.style.color = '#856404';
-                banner.style.borderBottom = '1px solid #ffe082';
-            }
-        } else {
-            banner.style.display = 'none';
-        }
-    };
   </script>
 </body>
 </html>
