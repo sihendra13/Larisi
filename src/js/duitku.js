@@ -17,6 +17,7 @@ window.startDuitkuPayment = async function(plan, amount) {
 
         const userPhone = userProfile.phone || userProfile.phone_number || '081234567890';
 
+        console.log('[Duitku] Memanggil server untuk invoice...', { orderId, userEmail, plan, amount });
         const response = await fetch(`${window.RADAR_CONFIG.SUPABASE_URL}/functions/v1/duitku-invoice`, {
             method: 'POST',
             headers: {
@@ -33,14 +34,18 @@ window.startDuitkuPayment = async function(plan, amount) {
             })
         });
 
+        console.log('[Duitku] Respon server diterima, status:', response.status);
         const result = await response.json();
+        console.log('[Duitku] Data dari server:', result);
 
         if (result.reference) {
-            // Duitku v2 Pop menggunakan 'reference', bukan 'paymentUrl'
+            console.log('[Duitku] Menampilkan popup dengan reference:', result.reference);
             window.checkout.process(result.reference);
         } else if (result.paymentUrl) {
+            console.log('[Duitku] Menampilkan popup dengan paymentUrl:', result.paymentUrl);
             window.checkout.process(result.paymentUrl);
         } else {
+            console.error('[Duitku] Gagal: Tidak ada reference/paymentUrl', result);
             throw new Error(result.error || 'Duitku menolak permintaan pembayaran');
         }
 
