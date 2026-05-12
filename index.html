@@ -11,11 +11,9 @@
     <!-- Pakai html bukan body karena body belum di-parse saat script di head ini jalan -->
     <style>
       html { visibility: hidden; }
-      button:disabled {
-        background: #ccc !important;
-        color: #999 !important;
-        cursor: not-allowed !important;
-        border-color: #ccc !important;
+      button:hover {
+        background: #5b17b7 !important;
+        color: #fff !important;
       }
     </style>
     <script src="src/js/config.js"></script>
@@ -679,13 +677,13 @@
       <div id="trial-modal-plan" style="display:inline-block; background:#f4f0ff; color:#5b17b7; font-size:12px; font-weight:600; padding:4px 12px; border-radius:20px; margin-bottom:24px;"></div>
 
       <div style="display:flex; flex-direction:column; gap:12px;">
-        <button onclick="choosePlan('pro')" style="background:#5b17b7; color:#fff; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer;">
+        <button onclick="choosePlan('pro')" style="background:#1a1a1a; color:#fff; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; transition: background 0.2s;">
           Lanjut Berlangganan Pro — Rp 199rb/bln
         </button>
-        <button onclick="choosePlan('starter')" id="trial-btn-starter" style="display:none; background:#5b17b7; color:#fff; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer;">
+        <button onclick="choosePlan('starter')" id="trial-btn-starter" style="display:none; background:#1a1a1a; color:#fff; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; transition: background 0.2s;">
           Lanjut Berlangganan Starter — Rp 99rb/bln
         </button>
-        <button onclick="choosePlan('freemium')" style="background:#fff; color:#1a1a1a; border:2px solid #e5e5e5; border-radius:12px; padding:14px; font-size:15px; font-weight:600; cursor:pointer;">
+        <button onclick="choosePlan('freemium')" style="background:#fff; color:#1a1a1a; border:2px solid #e5e5e5; border-radius:12px; padding:14px; font-size:15px; font-weight:600; cursor:pointer; transition: background 0.2s;">
           Turun ke Freemium (Gratis selamanya)
         </button>
       </div>
@@ -774,16 +772,13 @@
         let price = (plan === 'pro') ? 199000 : 99000;
         
         if (window.startDuitkuPayment) {
-          const allButtons = modal.querySelectorAll('button');
-          allButtons.forEach(b => b.disabled = true);
+          if (btn) btn.textContent = 'Memproses...';
           
           window.startDuitkuPayment(plan, price).then(() => {
             // Begitu popup Duitku berhasil diinisialisasi, tutup modal Larisi
             modal.style.display = 'none';
-            showAnToast('Selesaikan pembayaran di jendela Duitku yang muncul.', 'info');
           }).finally(() => {
-            // Pastikan tombol kembali normal jika modal dibuka lagi nanti
-            allButtons.forEach(b => b.disabled = false);
+            // Kembalikan teks tombol jika modal dibuka lagi nanti
             if (btn) btn.textContent = btn.dataset.label || 'Lanjut Berlangganan';
           });
         } else {
