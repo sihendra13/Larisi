@@ -15,6 +15,10 @@
         background: #5b17b7 !important;
         color: #fff !important;
       }
+      .modal-fade-out {
+        opacity: 0 !important;
+        transition: opacity 0.3s ease !important;
+      }
     </style>
     <script src="src/js/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -775,8 +779,12 @@
           if (btn) btn.textContent = 'Memproses...';
           
           window.startDuitkuPayment(plan, price).then(() => {
-            // Begitu popup Duitku berhasil diinisialisasi, tutup modal Larisi
-            modal.style.display = 'none';
+            // Beri efek memudar sebelum benar-benar hilang
+            modal.classList.add('modal-fade-out');
+            setTimeout(() => {
+              modal.style.display = 'none';
+              modal.classList.remove('modal-fade-out'); // Reset untuk penggunaan berikutnya
+            }, 300);
           }).finally(() => {
             // Kembalikan teks tombol jika modal dibuka lagi nanti
             if (btn) btn.textContent = btn.dataset.label || 'Lanjut Berlangganan';
