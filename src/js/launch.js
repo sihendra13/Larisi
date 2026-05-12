@@ -344,6 +344,17 @@ async function launchRadar() {
   var hasChannel  = typeof activeChannel !== 'undefined' && !!activeChannel;
   if (!hasAsset || !hasAudience || !hasChannel) { showLaunchModal(); return; }
 
+  // ── Cek Kuota Freemium ──
+  var _currentCount = (typeof freeCount !== 'undefined') ? freeCount : 10;
+  if (_currentCount <= 0) {
+    if (typeof showTrialModalManual === 'function') {
+      showTrialModalManual();
+    } else {
+      showTopToast('Jatah iklan gratis Anda sudah habis bulan ini.', 'warning');
+    }
+    return;
+  }
+
   // ── Rate limiting ──
   if (!checkLaunchRateLimit()) return;
 
@@ -581,7 +592,11 @@ async function _doLaunch(campNameOverride) {
 
   // ── Decrement free count ──
   freeCount = Math.max(0, freeCount - 1);
-  document.getElementById('freeCount').textContent = freeCount;
+  var _fcEl = document.getElementById('freeCount');
+  if (_fcEl) _fcEl.textContent = freeCount;
+  
+  // Sync ke Banner di Header
+  if (window.updateQuotaBanner) window.updateQuotaBanner();
 
   // ── Export canvas (untuk download di Monitor — bukan untuk upload PostForMe) ──
   // Stitch burn ke PostForMe dilakukan via _compositeStitchOnDataUrl() di buffer.js
