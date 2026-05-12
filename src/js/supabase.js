@@ -520,3 +520,4 @@ async function updateCampaignThumbUrl(campaignId, thumbUrl) {
   }
 }
 window.updateCampaignThumbUrl = updateCampaignThumbUrl;
+window.updateUserProfile = updateUserProfile;
