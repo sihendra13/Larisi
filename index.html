@@ -963,9 +963,10 @@
           banner.style.borderBottom = '1px solid #fcd34d';
           if (closeBtn) closeBtn.style.display = 'flex';
         }
-        // KONDISI 3: Trial Hampir Habis
-        else if (remainingDays === 1) {
-          message = `⚠️ Masa trial Pro Anda berakhir dalam <b>24 jam</b>. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Upgrade ke Pro Sekarang</button>`;
+        // KONDISI 3: Trial Hampir Habis (2 Hari atau 24 Jam)
+        else if (remainingDays > 0 && remainingDays <= 2) {
+          const timeText = (remainingDays === 1) ? '24 jam' : '2 hari';
+          message = `⚠️ Masa trial Pro Anda berakhir dalam <b>${timeText}</b>. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Upgrade ke Pro Sekarang</button>`;
           banner.style.background = '#fffbeb';
           banner.style.borderBottom = '1px solid #fcd34d';
           if (closeBtn) closeBtn.style.display = 'flex';
