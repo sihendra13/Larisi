@@ -359,17 +359,25 @@ async function launchRadar() {
     const now = new Date();
     const diffDays = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
 
-    // A. KHUSUS PAKET FREE (Freemium): Selalu cek kuota 10
-    if (plan === 'freemium') {
+    // A. KHUSUS PAKET FREE / FREEMIUM
+    // Siapa pun yang bukan Pro atau Starter dianggap Free
+    if (plan !== 'pro' && plan !== 'starter') {
       if (quota <= 0) {
-        console.log('[Paywall] Freemium: Jatah habis. Munculkan modal bayar.');
+        console.log('[Paywall] Free/Freemium: Jatah habis.');
         if (typeof showTrialModalManual === 'function') { showTrialModalManual(); }
         return;
       }
     }
     // B. PAKET BERBAYAR (Starter / Pro)
     else if (plan === 'starter' || plan === 'pro') {
-      // 1. Jika masih status TRIAL (7 Hari Pertama)
+      // 1. Cek Kuota (Khusus Starter wajib kena gembok kuota, tidak peduli paid/trial)
+      if (plan === 'starter' && quota <= 0) {
+        console.log('[Paywall] Starter: Kuota habis.');
+        if (typeof showTrialModalManual === 'function') { showTrialModalManual(); }
+        return;
+      }
+
+      // 2. Jika masih status TRIAL (7 Hari Pertama)
       if (paymentStatus === 'trial') {
         if (diffDays >= trialDays) {
           console.log('[Paywall] Starter/Pro: Masa trial habis.');
@@ -377,17 +385,11 @@ async function launchRadar() {
           return;
         }
       } 
-      // 2. Jika status sudah PAID (Langganan Aktif)
+      // 3. Jika status sudah PAID (Langganan Aktif)
       else if (paymentStatus === 'paid') {
         // Cek Waktu (30 Hari)
         if (diffDays >= 30) {
           console.log('[Paywall] Langganan EXPIRED (30 hari).');
-          if (typeof showTrialModalManual === 'function') { showTrialModalManual(); }
-          return;
-        }
-        // Cek Kuota (Khusus Starter = 50)
-        if (plan === 'starter' && quota <= 0) {
-          console.log('[Paywall] Kuota Starter habis (50).');
           if (typeof showTrialModalManual === 'function') { showTrialModalManual(); }
           return;
         }
