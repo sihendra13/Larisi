@@ -903,12 +903,24 @@
         // 1. Safety Guard: Jangan ganggu akun tester
         if (userEmail === 'halo@larisi.id') return;
 
-        // 2. Cek apakah user sudah menutup banner di sesi ini
-        if (localStorage.getItem('hide_quota_banner_session') === 'true') return;
+        // 2. Cek jatah iklan (Ambil dari variabel global atau langsung dari profile)
+        let quota = (typeof window.freeCount !== 'undefined') ? window.freeCount : 10;
+        if (profile && typeof profile.ai_launch_count !== 'undefined' && profile.ai_launch_count !== null) {
+          quota = profile.ai_launch_count;
+        }
 
-        // 3. Ambil data jatah iklan
-        const quota = (typeof window.freeCount !== 'undefined') ? window.freeCount : 10;
-        
+        // 3. Cek apakah user sudah menutup banner (HANYA jika kuota masih ada)
+        // Jika kuota habis (<=0), banner HARUS muncul terus (sticky)
+        if (quota > 0 && localStorage.getItem('hide_quota_banner_session') === 'true') {
+          document.getElementById('quota-banner').style.display = 'none';
+          return;
+        }
+
+        const banner = document.getElementById('quota-banner');
+        const textEl = document.getElementById('qb-message-text');
+        const closeBtn = banner ? banner.querySelector('.qb-close') : null;
+        if (!banner || !textEl) return;
+
         // 4. Hitung sisa hari trial (7 hari dari created_at)
         let remainingDays = 99; // default aman
         if (profile.created_at) {
@@ -918,17 +930,13 @@
           remainingDays = 7 - diffDays;
         }
 
-        const banner = document.getElementById('quota-banner');
-        const textEl = document.getElementById('qb-message-text');
-        const closeBtn = banner ? banner.querySelector('.qb-close') : null;
-        if (!banner || !textEl) return;
-
         let message = "";
         const resetDate = getNextResetDate();
         
         // KONDISI 1: Kuota Habis (0)
         if (quota <= 0) {
-          if (plan === 'freemium') {
+          // Siapa pun yang bukan Pro/Starter dianggap Free/Freemium
+          if (plan !== 'pro' && plan !== 'starter') {
             message = `⚠️ Kuota iklan gratis Anda habis. Akan diisi kembali otomatis pada <b>${resetDate}</b>. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Upgrade ke Pro Sekarang</button>`;
           } else {
             message = `⚠️ Jatah iklan paket ${plan.toUpperCase()} Anda habis. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Upgrade ke Pro / Isi Ulang</button>`;
