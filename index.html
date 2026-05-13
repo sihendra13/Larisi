@@ -780,22 +780,22 @@
   </div>
   <div id="an-toast" class="an-toast" style="display:none"></div>
 
-  <!-- ===== TRIAL EXPIRED MODAL ===== -->
+   <!-- ===== TRIAL EXPIRED MODAL ===== -->
   <div id="trial-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
     <div style="background:#fff; border-radius:20px; padding:36px 32px; max-width:440px; width:90%; text-align:center; box-shadow:0 24px 60px rgba(0,0,0,0.2);">
       <div style="font-size:40px; margin-bottom:12px;">⏰</div>
-      <h2 style="font-size:22px; font-weight:700; color:#1a1a1a; margin:0 0 8px;">Masa trial kamu sudah selesai!</h2>
-      <p style="font-size:14px; color:#666; margin:0 0 8px;">7 hari gratis telah berakhir. Pilih langkah berikutnya:</p>
+      <h2 id="trial-modal-title" style="font-size:22px; font-weight:700; color:#1a1a1a; margin:0 0 8px;">Masa trial kamu sudah selesai!</h2>
+      <p id="trial-modal-desc" style="font-size:14px; color:#666; margin:0 0 8px;">7 hari gratis telah berakhir. Pilih langkah berikutnya:</p>
       <div id="trial-modal-plan" style="display:inline-block; background:#f4f0ff; color:#5b17b7; font-size:12px; font-weight:600; padding:4px 12px; border-radius:20px; margin-bottom:24px;"></div>
 
       <div style="display:flex; flex-direction:column; gap:12px;">
-        <button onclick="choosePlan('pro')" style="background:#1a1a1a; color:#fff; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; transition: background 0.2s;">
+        <button onclick="choosePlan('pro')" id="trial-btn-pro" style="background:#1a1a1a; color:#fff; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; transition: background 0.2s;">
           Lanjut Berlangganan Pro — Rp 199rb/bln
         </button>
         <button onclick="choosePlan('starter')" id="trial-btn-starter" style="display:none; background:#1a1a1a; color:#fff; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; transition: background 0.2s;">
           Lanjut Berlangganan Starter — Rp 99rb/bln
         </button>
-        <button onclick="choosePlan('freemium')" style="background:#fff; color:#1a1a1a; border:2px solid #e5e5e5; border-radius:12px; padding:14px; font-size:15px; font-weight:600; cursor:pointer; transition: background 0.2s;">
+        <button onclick="choosePlan('freemium')" id="trial-btn-freemium" style="background:#fff; color:#1a1a1a; border:2px solid #e5e5e5; border-radius:12px; padding:14px; font-size:15px; font-weight:600; cursor:pointer; transition: background 0.2s;">
           Turun ke Freemium (Gratis selamanya)
         </button>
       </div>
@@ -844,13 +844,31 @@
     window.showTrialModalManual = function() {
       const modal = document.getElementById('trial-modal');
       const planBadge = document.getElementById('trial-modal-plan');
-      const currentPlan = localStorage.getItem('larisi_selected_plan') || 'freemium';
+      const titleEl = document.getElementById('trial-modal-title');
+      const descEl = document.getElementById('trial-modal-desc');
+      const btnFree = document.getElementById('trial-btn-freemium');
       
-      planBadge.textContent = 'Paket saat ini: ' + currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1);
+      const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+      const currentPlan = (profile.selected_plan || 'freemium').toLowerCase();
+      
+      planBadge.textContent = 'Paket saat ini: ' + currentPlan.toUpperCase();
+      
+      // RESET DEFAULT UI
+      titleEl.textContent = "Masa trial kamu sudah selesai!";
+      descEl.textContent = "7 hari gratis telah berakhir. Pilih langkah berikutnya:";
+      if (btnFree) btnFree.style.display = 'block';
+
+      // KHUSUS JIKA SUDAH FREEMIUM
+      if (currentPlan === 'freemium') {
+        titleEl.textContent = "Jatah Iklan Gratis Habis!";
+        const resetDate = (typeof getNextResetDate === 'function') ? getNextResetDate() : 'Bulan Depan';
+        descEl.innerHTML = `Jatah 10 iklan gratis Anda sudah habis.<br>Akan diisi kembali otomatis pada <b>${resetDate}</b>.`;
+        if (btnFree) btnFree.style.display = 'none'; // Sembunyikan tombol downgrade jika sudah di bawah
+      }
       
       // Pastikan tombol starter/pro muncul sesuai kebutuhan
-      document.getElementById('trial-btn-starter').style.display = 'block';
-      document.querySelector('#trial-modal button[onclick="choosePlan(\'pro\')"]').style.display = 'block';
+      if (document.getElementById('trial-btn-starter')) document.getElementById('trial-btn-starter').style.display = 'block';
+      if (document.getElementById('trial-btn-pro')) document.getElementById('trial-btn-pro').style.display = 'block';
       
       modal.style.display = 'flex';
     };
@@ -867,15 +885,30 @@
         const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
         const userEmail = profile.email || '';
         
+    // Fungsi untuk mendapatkan tanggal 1 bulan berikutnya secara otomatis
+    function getNextResetDate() {
+      const names = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      const now = new Date();
+      let nextMonth = now.getMonth() + 1;
+      let year = now.getFullYear();
+      if (nextMonth > 11) { nextMonth = 0; year++; }
+      return `1 ${names[nextMonth]} ${year}`;
+    }
+
+    function initQuotaBanner() {
+      try {
+        const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+        const userEmail = (profile && profile.email) ? profile.email.toLowerCase().trim() : '';
+        const plan = (profile.selected_plan || 'freemium').toLowerCase();
+        
         // 1. Safety Guard: Jangan ganggu akun tester
         if (userEmail === 'halo@larisi.id') return;
 
         // 2. Cek apakah user sudah menutup banner di sesi ini
         if (localStorage.getItem('hide_quota_banner_session') === 'true') return;
 
-        // 3. Ambil data jatah iklan (AI Launch Count)
-        // window.aiLaunchCount biasanya di-update oleh launch.js
-        const quota = typeof window.aiLaunchCount !== 'undefined' ? window.aiLaunchCount : 10;
+        // 3. Ambil data jatah iklan
+        const quota = (typeof window.freeCount !== 'undefined') ? window.freeCount : 10;
         
         // 4. Hitung sisa hari trial (7 hari dari created_at)
         let remainingDays = 99; // default aman
@@ -888,21 +921,36 @@
 
         const banner = document.getElementById('quota-banner');
         const textEl = document.getElementById('qb-message-text');
+        const closeBtn = banner ? banner.querySelector('.qb-close') : null;
         if (!banner || !textEl) return;
 
         let message = "";
+        const resetDate = getNextResetDate();
         
-        // PRIORITAS 1: Jatah Iklan sisa 2 atau kurang
-        if (quota <= 2 && quota > 0) {
-          message = `⚠️ Jatah iklan gratis Anda sisa <b>${quota}</b> lagi. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Upgrade ke Pro Sekarang</button>`;
+        // KONDISI 1: Kuota Habis (0)
+        if (quota <= 0) {
+          if (plan === 'freemium') {
+            message = `⚠️ Kuota iklan gratis Anda habis. Akan diisi kembali otomatis pada <b>${resetDate}</b>. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Upgrade ke Pro Sekarang</button>`;
+          } else {
+            message = `⚠️ Jatah iklan paket ${plan.toUpperCase()} Anda habis. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Upgrade ke Pro / Isi Ulang</button>`;
+          }
+          banner.style.background = '#fee2e2'; // Merah muda (indikasi error/habis)
+          banner.style.borderBottom = '1px solid #fecaca';
+          if (closeBtn) closeBtn.style.display = 'none'; // Sticky (tidak bisa di-close)
         } 
-        // PRIORITAS 2: Sisa hari trial tinggal 1 hari (24 jam terakhir)
+        // KONDISI 2: Hampir Habis (1-2)
+        else if (quota <= 2) {
+          message = `⚠️ Jatah iklan sisa <b>${quota}</b> lagi. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Upgrade ke Pro Sekarang</button>`;
+          banner.style.background = '#fffbeb'; // Kuning (peringatan)
+          banner.style.borderBottom = '1px solid #fcd34d';
+          if (closeBtn) closeBtn.style.display = 'flex';
+        }
+        // KONDISI 3: Trial Hampir Habis
         else if (remainingDays === 1) {
           message = `⚠️ Masa trial Pro Anda berakhir dalam <b>24 jam</b>. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Upgrade ke Pro Sekarang</button>`;
-        }
-        // PRIORITAS 3: Sudah habis (Opsional: bisa juga ditampilkan untuk memaksa upgrade)
-        else if (quota <= 0 || remainingDays <= 0) {
-          message = `⚠️ Masa trial gratis Anda telah berakhir. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Upgrade ke Pro Sekarang</button>`;
+          banner.style.background = '#fffbeb';
+          banner.style.borderBottom = '1px solid #fcd34d';
+          if (closeBtn) closeBtn.style.display = 'flex';
         }
 
         if (message) {
