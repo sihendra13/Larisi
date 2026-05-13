@@ -1581,6 +1581,7 @@ async function anAnalyzeCompetitor() {
       '</div>' +
       '<div class="an-comp-col">' +
         '<div class="an-comp-col-label">Pesaing · ' + (result.comp_handle || handle) + '</div>' +
+        '<div style="font-size:10px;color:#9ca3af;margin-top:-6px;margin-bottom:6px;">profil estimatif AI · bukan data dashboard</div>' +
         (isSmallAccount
           ? '<div class="an-comp-small-warning">⚠️ Akun kecil — estimasi mungkin kurang akurat</div>'
           : '') +
@@ -1781,7 +1782,8 @@ async function _anGenerateStrategy(handle, platform, compResult, agg) {
     'Kamu SiLaris, AI coach UMKM Indonesia. Buat strategi ' + bizCat + ' unggul dari ' + handle + ' di ' + platName + '.',
     'WAJIB: maks 20 kata/langkah. Tanpa em-dash. Tanpa "bisnis lokal". Bahasa santai. Pakai angka nyata.',
     'Data: ER user=' + userER + ' vs pesaing=' + compER + ', format user=' + userTopFmt + ', format pesaing=' + compFmt + ', freq pesaing=' + compFreq + ', reach=' + _anFmtK(agg.totalReach || 0) + '.',
-    'Return JSON: {"keunggulan":"1 kalimat ER user vs ' + handle + ' pakai angka","celah":"1 kalimat gap format/freq yang bisa dimanfaatkan","langkah":["Langkah 1: buat ' + compFmt + ' tentang ' + bizCat + ' hari ini","Langkah 2: frekuensi optimal dari data ' + handle + ' (' + compFreq + ')","Langkah 3: diferensiasi konkret dari format pesaing"],"format_rekomendasi":"' + suggestedFmt + '","waktu":"estimasi realistis"}'
+    'PENTING: "user" = pemilik bisnis ' + bizCat + ' (BUKAN ' + handle + '). "pesaing" = ' + handle + '.',
+    'Return JSON: {"keunggulan":"1 kalimat: ER kamu ' + userER + ' vs ER ' + handle + ' ' + compER + ' — pakai angka ini","celah":"1 kalimat gap format/freq konkret yang bisa dimanfaatkan sekarang","langkah":["Langkah 1: buat ' + compFmt + ' tentang ' + bizCat + ' hari ini","Langkah 2: frekuensi optimal vs ' + handle + ' yang posting ' + compFreq + '","Langkah 3: diferensiasi konten dari format ' + handle + '"],"format_rekomendasi":"' + suggestedFmt + '","waktu":"estimasi realistis"}'
   ].join('\n');
 
   try {
@@ -2572,16 +2574,23 @@ function showPricingModal() {
   modal.innerHTML =
     '<div class="an-pricing-sheet">' +
     '<div class="an-pricing-header">' +
-      '<div><div class="an-pricing-title">Pilih Paket RADAR</div><div class="an-pricing-subtitle">Mulai gratis, upgrade kapan saja</div></div>' +
+      '<div><div class="an-pricing-title">Pilih Paket Larisi</div><div class="an-pricing-subtitle">Mulai gratis, upgrade kapan saja</div></div>' +
       '<button class="an-pricing-close" onclick="closePricingModal()">✕</button>' +
     '</div>' +
     '<div class="an-pricing-cards">' +
       // Freemium
-      '<div class="an-pricing-card">' +
-        '<div class="an-pc-top"><div class="an-pc-name">Freemium</div><div class="an-pc-price">Gratis <span class="an-pc-period">selamanya</span></div></div>' +
-        '<ul class="an-pc-features"><li>10 AI Launch/bulan</li><li>AI Vision &amp; Master Persona</li><li>4 channel publishing</li><li>Geo-Radar Targeting</li><li>Smart Geo Stitching</li></ul>' +
-        '<button class="an-pc-btn an-pc-btn-outline" onclick="closePricingModal()">Mulai Freemium</button>' +
-      '</div>' +
+      (function() {
+        var profile = {};
+        try { profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}'); } catch(e) {}
+        var isFreemium = !profile.payment_status || profile.payment_status === 'trial' || profile.payment_status === 'free';
+        return '<div class="an-pricing-card">' +
+          '<div class="an-pc-top"><div class="an-pc-name">Freemium</div><div class="an-pc-price">Gratis <span class="an-pc-period">selamanya</span></div></div>' +
+          '<ul class="an-pc-features"><li>10 AI Launch/bulan</li><li>AI Vision &amp; Master Persona</li><li>4 channel publishing</li><li>Geo-Radar Targeting</li><li>Smart Geo Stitching</li></ul>' +
+          (isFreemium
+            ? '<button class="an-pc-btn an-pc-btn-outline" disabled style="opacity:0.5;cursor:default;">Paket Aktif</button>'
+            : '<button class="an-pc-btn an-pc-btn-outline" onclick="closePricingModal()">Mulai Freemium</button>') +
+        '</div>';
+      })() +
       // Starter
       '<div class="an-pricing-card">' +
         '<div class="an-pc-top"><div class="an-pc-name">Starter</div><div class="an-pc-price">Rp 99rb <span class="an-pc-period">/bulan</span></div><div class="an-pc-badge-free">Coba 7 hari gratis</div></div>' +
