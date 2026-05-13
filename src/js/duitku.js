@@ -38,40 +38,16 @@ window.startDuitkuPayment = async function(plan, amount) {
         const result = await response.json();
         console.log('[Duitku] Data dari server:', result);
 
-        return new Promise((resolve, reject) => {
-            if (result.reference || result.paymentUrl) {
-                const target = result.reference || result.paymentUrl;
-                console.log('[Duitku] Menampilkan popup:', target);
-                
-                window.checkout.process(target, {
-                    onSuccess: function(result) {
-                        console.log('[Duitku] Success:', result);
-                        if (window.showAnToast) window.showAnToast('Pembayaran berhasil dikonfirmasi!', 'success');
-                        resolve(result);
-                    },
-                    onPending: function(result) {
-                        console.log('[Duitku] Pending:', result);
-                        if (window.showAnToast) window.showAnToast('Silakan selesaikan pembayaran Anda.', 'info');
-                        // Kita biarkan resolve di sini agar modal Larisi tertutup tapi JANGAN refresh dulu
-                        // Tapi lebih aman kita biarkan user menutup sendiri
-                        resolve(result);
-                    },
-                    onError: function(result) {
-                        console.error('[Duitku] Error:', result);
-                        if (window.showAnToast) window.showAnToast('Terjadi kesalahan pembayaran.', 'error');
-                        reject(new Error('Gagal memproses pembayaran'));
-                    },
-                    onClose: function() {
-                        console.log('[Duitku] Modal Closed');
-                        // Saat user menutup modal Duitku, kita anggap selesai flow UI-nya
-                        resolve({ status: 'closed' });
-                    }
-                });
-            } else {
-                console.error('[Duitku] Gagal: Tidak ada reference/paymentUrl', result);
-                reject(new Error(result.error || 'Duitku menolak permintaan pembayaran'));
-            }
-        });
+        if (result.reference) {
+            console.log('[Duitku] Menampilkan popup dengan reference:', result.reference);
+            window.checkout.process(result.reference);
+        } else if (result.paymentUrl) {
+            console.log('[Duitku] Menampilkan popup dengan paymentUrl:', result.paymentUrl);
+            window.checkout.process(result.paymentUrl);
+        } else {
+            console.error('[Duitku] Gagal: Tidak ada reference/paymentUrl', result);
+            throw new Error(result.error || 'Duitku menolak permintaan pembayaran');
+        }
 
     } catch (error) {
         console.error('Duitku Error:', error);

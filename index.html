@@ -1023,23 +1023,10 @@
         if (window.startDuitkuPayment) {
           if (btn) btn.textContent = 'Memproses...';
           
-          window.startDuitkuPayment(plan, price).then((res) => {
-            if (res && res.status === 'closed') {
-              // User menutup modal tanpa menyelesaikan pembayaran
-              modal.style.display = 'none';
-              return;
-            }
-            
-            // Jika sukses atau pending
-            modal.style.display = 'none';
-            
-            if (res && (res.resultCode === '00' || res.resultCode === '01')) {
-              showAnToast('Status pembayaran: ' + (res.resultCode === '00' ? 'Berhasil' : 'Menunggu Pembayaran'), 'success');
-              // Hanya refresh jika benar-benar berhasil (00)
-              if (res.resultCode === '00') {
-                setTimeout(() => { location.reload(); }, 2000);
-              }
-            }
+          window.startDuitkuPayment(plan, price).then(() => {
+            // Kita biarkan modal tetap terbuka dan JANGAN refresh halaman dulu
+            // Agar jendela Duitku tidak tertutup paksa.
+            console.log('Duitku window should be open now.');
           }).finally(() => {
             if (btn) btn.textContent = btn.dataset.label || 'Lanjut Berlangganan';
           });
