@@ -855,9 +855,6 @@
       const userEmail = (profile && profile.email) ? profile.email.toLowerCase().trim() : '';
       const currentPlan = (profile.selected_plan || 'freemium').toLowerCase();
       
-      // Safety Guard: Jangan ganggu akun tester
-      if (userEmail === 'halo@larisi.id') return;
-      
       planBadge.textContent = 'Paket saat ini: ' + currentPlan.toUpperCase();
       
       // RESET DEFAULT UI
