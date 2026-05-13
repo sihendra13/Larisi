@@ -359,38 +359,38 @@ async function launchRadar() {
     const now = new Date();
     const diffDays = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
 
-    // 1. LOGIKA TRIAL (BEBAS TAYANG)
-    if (paymentStatus === 'trial') {
-      if (diffDays >= trialDays) {
-        console.log('[Paywall] Trial habis:', diffDays, 'hari. Munculkan modal bayar.');
+    // A. KHUSUS PAKET FREE (Freemium): Selalu cek kuota 10
+    if (plan === 'freemium') {
+      if (quota <= 0) {
+        console.log('[Paywall] Freemium: Jatah habis. Munculkan modal bayar.');
         if (typeof showTrialModalManual === 'function') { showTrialModalManual(); }
         return;
       }
-    } 
-    // 2. LOGIKA PAID (DIBATASI KUOTA & WAKTU)
-    else if (paymentStatus === 'paid') {
-      // Cek Waktu (Langganan 30 Hari)
-      if (diffDays >= 30) {
-        console.log('[Paywall] Langganan EXPIRED:', diffDays, 'hari.');
-        if (typeof showTrialModalManual === 'function') { showTrialModalManual(); }
-        return;
-      }
-      
-      // Cek Kuota (Khusus Starter = 50)
-      if (plan === 'starter') {
-        if (quota <= 0) {
-          console.log('[Paywall] Kuota Starter habis (50). Munculkan modal bayar.');
+    }
+    // B. PAKET BERBAYAR (Starter / Pro)
+    else if (plan === 'starter' || plan === 'pro') {
+      // 1. Jika masih status TRIAL (7 Hari Pertama)
+      if (paymentStatus === 'trial') {
+        if (diffDays >= trialDays) {
+          console.log('[Paywall] Starter/Pro: Masa trial habis.');
           if (typeof showTrialModalManual === 'function') { showTrialModalManual(); }
           return;
         }
-      }
-    }
-    // 3. LOGIKA FREEMIUM / LAINNYA (Gembok Kuota)
-    else {
-      if (quota <= 0) {
-        console.log('[Paywall] Jatah iklan habis. Munculkan modal bayar.');
-        if (typeof showTrialModalManual === 'function') { showTrialModalManual(); }
-        return;
+      } 
+      // 2. Jika status sudah PAID (Langganan Aktif)
+      else if (paymentStatus === 'paid') {
+        // Cek Waktu (30 Hari)
+        if (diffDays >= 30) {
+          console.log('[Paywall] Langganan EXPIRED (30 hari).');
+          if (typeof showTrialModalManual === 'function') { showTrialModalManual(); }
+          return;
+        }
+        // Cek Kuota (Khusus Starter = 50)
+        if (plan === 'starter' && quota <= 0) {
+          console.log('[Paywall] Kuota Starter habis (50).');
+          if (typeof showTrialModalManual === 'function') { showTrialModalManual(); }
+          return;
+        }
       }
     }
   }
@@ -512,26 +512,33 @@ function captureVideoFrame(videoFile) {
 async function _doLaunch(campNameOverride) {
   const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
   const paymentStatus = (profile.payment_status || 'trial').toLowerCase();
+  const plan = (profile.selected_plan || 'freemium').toLowerCase();
+  
+  // LOGIKA PENGURANGAN JATAH:
+  // 1. Paket Starter/Pro yang sudah BAYAR (paid) -> Kurangi Jatah.
+  // 2. Paket Freemium (Gratis) -> SELALU Kurangi Jatah (Tidak ada bebas tayang).
+  // 3. Paket Starter/Pro yang masih TRIAL -> BEBAS TAYANG (Jangan kurangi jatah).
+  
   const isPaid = (paymentStatus === 'paid');
+  const isFree = (plan === 'freemium');
+  const shouldDecrement = isPaid || isFree;
 
-  // ── UPDATE JATAH KE DATABASE (Hanya jika SUDAH BAYAR / Bukan Trial) ──
-  if (isPaid) {
+  if (shouldDecrement) {
     window.freeCount = Math.max(0, (window.freeCount || 10) - 1);
     const fcEl = document.getElementById('freeCount');
     if (fcEl) fcEl.textContent = window.freeCount;
 
     try {
-      console.log('[Database] Memulai sinkronisasi jatah (Paid User)...');
+      console.log(`[Database] Mengurangi jatah iklan untuk paket ${plan.toUpperCase()}...`);
       await window.updateUserProfile({ ai_launch_count: window.freeCount });
-      console.log('[Database] Jatah iklan dikunci di awal:', window.freeCount);
       
       profile.ai_launch_count = window.freeCount;
       localStorage.setItem('radar_user_profile', JSON.stringify(profile));
     } catch (err) {
-      console.error('[Database] GAGAL KRITIS mengunci jatah:', err.message);
+      console.error('[Database] GAGAL update jatah:', err.message);
     }
   } else {
-    console.log('[Database] User TRIAL: Bebas Tayang aktif, kuota tidak dikurangi.');
+    console.log('[Database] Mode TRIAL (Starter/Pro): Bebas Tayang aktif.');
   }
 
   // ── Capture state dari Menu 1 ──
