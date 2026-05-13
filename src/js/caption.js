@@ -139,10 +139,26 @@ function fillCaptionVars(text) {
   var dist = getDistText('long');
   var usp  = getUsp();
   var d    = getDialek();
+
+  // Kalau {usp} muncul standalone (setelah titik/newline), bungkus dengan framing
+  // supaya tidak terasa mentah copy-paste dari input user
+  var uspOut = usp;
+  if (/(?:\.|\n)\s*\{usp\}/.test(text)) {
+    var u = usp.replace(/\.$/, '');
+    var frames = [
+      'Keunggulan kami: ' + u,
+      'Yang bikin kami beda — ' + u,
+      u + ' — itulah yang bikin kami istimewa',
+      'Satu hal yang selalu dipuji pelanggan: ' + u,
+      'Rahasia kami? ' + u
+    ];
+    uspOut = frames[captionAltIndex % frames.length];
+  }
+
   return text
     .replace(/\{loc\}/g,      loc)
     .replace(/\{dist\}/g,     dist)
-    .replace(/\{usp\}/g,      usp)
+    .replace(/\{usp\}/g,      uspOut)
     .replace(/\{greeting\}/g, d.greeting)
     .replace(/\{cta\}/g,      d.cta);
 }

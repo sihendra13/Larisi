@@ -107,11 +107,15 @@
             </div>
 
             <div class="form-group" style="margin-top: 16px;">
-              <label for="usp">
-                Apa yang bikin bisnis kamu spesial?
-                <span style="font-weight:400; color: var(--secondary); font-size: 13px;">(opsional, tapi bikin kontenmu makin keren ✨)</span>
-              </label>
+              <label for="usp">Apa yang bikin bisnis kamu spesial?</label>
               <input type="text" id="usp" placeholder="Contoh: Bakso jumbo kuah kaldu sapi asli, buka sampai tengah malam" maxlength="80" style="font-size: 14px;">
+              <div id="usp-warning" style="display:none; margin-top:10px; background:#fffbeb; border:1px solid #fcd34d; border-radius:10px; padding:12px 14px;">
+                <p style="margin:0 0 10px; font-size:13px; color:#92400e;">Bisnis yang punya pembeda jelas terbukti dapat lebih banyak pelanggan. Yakin skip?</p>
+                <div style="display:flex; gap:8px;">
+                  <button type="button" onclick="document.getElementById('usp-warning').style.display='none'; document.getElementById('usp').focus();" style="flex:1; padding:8px; border-radius:8px; border:1.5px solid #92400e; background:white; color:#92400e; font-size:13px; font-weight:600; cursor:pointer;">Tambahkan</button>
+                  <button type="button" onclick="document.getElementById('usp-warning').style.display='none'; _doSaveProfile();" style="flex:1; padding:8px; border-radius:8px; border:1.5px solid #d1d5db; background:white; color:#6b7280; font-size:13px; cursor:pointer;">Lewati</button>
+                </div>
+              </div>
             </div>
 
             <button class="btn btn-primary" onclick="nextStep(3)">Simpan Profil</button>
@@ -186,6 +190,35 @@
             // Munculkan background setelah logic inisial selesai (agar instan)
             const mockup = document.querySelector('.dashboard-mockup');
             if (mockup) mockup.style.opacity = '1';
+
+            // Dynamic USP placeholder per kategori bisnis
+            const USP_PLACEHOLDERS = {
+              'fnb':                'Contoh: Ayam geprek level 1–10, open 24 jam, langganan ojol terbanyak',
+              'kafe':               'Contoh: Kopi single origin Flores, diseduh manual, WiFi kenceng buka sampai malam',
+              'fashion_wanita':     'Contoh: 200+ model, update tiap minggu, bisa custom ukuran',
+              'fashion_pria':       'Contoh: Outfit kasual-formal, brand lokal premium, size XS–5XL tersedia',
+              'fashion_muslim':     'Contoh: Gamis syar\'i tapi modis, bahan adem, jahitan rapi bergaransi',
+              'fashion_muslim_pria':'Contoh: Koko premium bahan toyobo, size M–4XL, bisa seragam pesantren',
+              'jasa':               'Contoh: Servis AC on-site, garansi 30 hari, teknisi bersertifikat',
+              'retail':             'Contoh: 5000+ produk, pengiriman same day, harga grosir untuk pelanggan tetap',
+              'kesehatan':          'Contoh: Skincare herbal lokal, dermatologi tested, cocok untuk kulit sensitif',
+              'salon':              'Contoh: Spesialis smoothing rambut rusak, hasil tahan 6 bulan, tanpa antrian lama',
+              'barber':             'Contoh: Spesialis fade & undercut, hasil rapi dijamin, teknisi bersertifikat',
+              'elektronik':         'Contoh: Gadget garansi resmi 1 tahun, harga termurah sekota, konsultasi gratis',
+              'otomotif':           'Contoh: Teknisi bersertifikat AHM, spare part original, garansi pengerjaan 30 hari',
+              'properti':           'Contoh: Lokasi 5 menit dari tol, KPR dibantu, siap huni tanpa DP besar',
+              'pendidikan':         'Contoh: Kelas maks 8 siswa, pengajar lulusan UI, hasil dijamin atau uang kembali',
+              'wisata':             'Contoh: Paket all-inclusive, pemandu lokal bersertifikat, itinerary fleksibel',
+              'kerajinan':          'Contoh: Handmade 100%, motif eksklusif, bisa custom nama & ukuran',
+              'lainnya':            'Contoh: Apa yang paling sering dipuji pelanggan kamu?'
+            };
+            const catEl = document.getElementById('category');
+            const uspEl = document.getElementById('usp');
+            if (catEl && uspEl) {
+              catEl.addEventListener('change', function() {
+                uspEl.placeholder = USP_PLACEHOLDERS[this.value] || 'Contoh: Bakso jumbo kuah kaldu sapi asli, buka sampai tengah malam';
+              });
+            }
         });
 
         function showOtpStatus(msg, isError) {
@@ -203,31 +236,28 @@
                     showOtpStatus('Masukkan kode verifikasi dari email kamu.', true);
                     return;
                 }
-
                 const btn = document.querySelector('#step-1 .btn-primary');
                 btn.disabled = true;
                 btn.textContent = 'Memverifikasi...';
                 showOtpStatus('', false);
-
                 const { data, error } = await window.verifyOtp(userEmail, otp, 'signup');
-
                 if (error) {
                     showOtpStatus('Kode salah atau sudah kedaluwarsa. Minta kode baru.', true);
                     btn.disabled = false;
                     btn.textContent = 'Verifikasi Kode';
                     return;
                 }
+                document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
+                document.getElementById('step-2').classList.add('active');
+                return;
             }
 
             // STEP 2 -> 3: Simpan Profil Bisnis
             if (stepNumber === 3) {
-                const submitBtn = document.querySelector('#step-2 .btn-primary');
                 const ownerName = document.getElementById('ownerName').value;
                 const businessName = document.getElementById('businessName').value;
-                const whatsapp = document.getElementById('whatsapp').value;
                 const category = document.getElementById('category').value;
                 const city = document.getElementById('city').value;
-                const delivery = document.querySelector('input[name="delivery"]:checked')?.value === 'yes';
                 const usp = document.getElementById('usp')?.value?.trim() || '';
 
                 if (!ownerName || !businessName || !category || !city) {
@@ -235,32 +265,49 @@
                     return;
                 }
 
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Menyimpan...';
-
-                const { error } = await window.updateUserProfile({
-                    full_name: ownerName,
-                    business_name: businessName,
-                    whatsapp: whatsapp,
-                    category: category,
-                    city: city,
-                    delivery_service: delivery,
-                    usp: usp
-                });
-
-                if (error) {
-                    alert('Gagal menyimpan profil: ' + error.message);
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Simpan Profil';
+                // Warning semi-wajib jika USP kosong
+                if (!usp) {
+                    document.getElementById('usp-warning').style.display = 'block';
+                    document.getElementById('usp-warning').scrollIntoView({ behavior: 'smooth', block: 'center' });
                     return;
                 }
+
+                await _doSaveProfile();
+            }
+        }
+
+        async function _doSaveProfile() {
+            const submitBtn = document.querySelector('#step-2 .btn-primary');
+            const ownerName = document.getElementById('ownerName').value;
+            const businessName = document.getElementById('businessName').value;
+            const whatsapp = document.getElementById('whatsapp').value;
+            const category = document.getElementById('category').value;
+            const city = document.getElementById('city').value;
+            const delivery = document.querySelector('input[name="delivery"]:checked')?.value === 'yes';
+            const usp = document.getElementById('usp')?.value?.trim() || '';
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Menyimpan...';
+
+            const { error } = await window.updateUserProfile({
+                full_name: ownerName,
+                business_name: businessName,
+                whatsapp: whatsapp,
+                category: category,
+                city: city,
+                delivery_service: delivery,
+                usp: usp
+            });
+
+            if (error) {
+                alert('Gagal menyimpan profil: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Simpan Profil';
+                return;
             }
 
-            // Ganti tampilan step
-            document.querySelectorAll('.step-container').forEach(el => {
-                el.classList.remove('active');
-            });
-            document.getElementById('step-' + stepNumber).classList.add('active');
+            document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
+            document.getElementById('step-3').classList.add('active');
         }
 
         async function handleResend(e) {
