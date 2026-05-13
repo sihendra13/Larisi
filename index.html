@@ -964,12 +964,26 @@
           if (closeBtn) closeBtn.style.display = 'flex';
         }
         // KONDISI 3: Trial Hampir Habis (2 Hari atau 24 Jam)
-        else if (remainingDays > 0 && remainingDays <= 2) {
+        else if (remainingDays > 0 && remainingDays <= 2 && plan !== 'freemium') {
           const timeText = (remainingDays === 1) ? '24 jam' : '2 hari';
           message = `⚠️ Masa trial Pro Anda berakhir dalam <b>${timeText}</b>. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Upgrade ke Pro Sekarang</button>`;
           banner.style.background = '#fffbeb';
           banner.style.borderBottom = '1px solid #fcd34d';
           if (closeBtn) closeBtn.style.display = 'flex';
+        }
+        // KONDISI 4: Masa Langganan Berbayar Hampir Habis (Sisa 3 Hari)
+        else if (profile.payment_status === 'paid') {
+          // Hitung dari trial_start (yang biasanya jadi tanggal bayar/upgrade) atau created_at
+          const start = profile.trial_start ? new Date(profile.trial_start) : new Date(profile.created_at);
+          const diffPaid = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+          const paidRemaining = 30 - diffPaid;
+          
+          if (paidRemaining > 0 && paidRemaining <= 3) {
+            message = `⚠️ Masa langganan paket ${plan.toUpperCase()} Anda berakhir dalam <b>${paidRemaining} hari</b>. <button class="qb-upgrade-btn" onclick="showTrialModalManual()">Perpanjang Sekarang</button>`;
+            banner.style.background = '#fffbeb';
+            banner.style.borderBottom = '1px solid #fcd34d';
+            if (closeBtn) closeBtn.style.display = 'flex';
+          }
         }
 
         if (message) {
