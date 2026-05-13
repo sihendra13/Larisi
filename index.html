@@ -934,7 +934,8 @@
         const { error } = await window.updateUserProfile({
           selected_plan: 'freemium',
           trial_start:   null,
-          trial_days:    0
+          trial_days:    0,
+          payment_status: 'trial'
         });
 
         if (error) {
@@ -943,15 +944,11 @@
           return;
         }
 
-        localStorage.setItem('larisi_selected_plan', 'freemium');
-        localStorage.removeItem('larisi_trial_start');
-        localStorage.removeItem('larisi_trial_days');
         modal.style.display = 'none';
+        showAnToast('Akun diturunkan ke Freemium. Halaman akan dimuat ulang...', 'success');
         
-        // Update banner secara instan
-        if (typeof initQuotaBanner === 'function') initQuotaBanner();
-        
-        showAnToast('Akun diturunkan ke Freemium. Nikmati fitur dasar tanpa batas waktu!', 'success');
+        // Refresh halaman otomatis agar label header update
+        setTimeout(() => { location.reload(); }, 1500);
 
       } else {
         // Slot payment gateway — Duitku Sandbox Integration
@@ -961,20 +958,16 @@
           if (btn) btn.textContent = 'Memproses...';
           
           window.startDuitkuPayment(plan, price).then(() => {
-            // Beri efek memudar sebelum benar-benar hilang
-            modal.classList.add('modal-fade-out');
-            setTimeout(() => {
-              modal.style.display = 'none';
-              modal.classList.remove('modal-fade-out'); // Reset untuk penggunaan berikutnya
-            }, 300);
+            modal.style.display = 'none';
+            showAnToast('Pembayaran berhasil! Memperbarui status akun...', 'success');
+            // Refresh halaman otomatis agar label header update ke Starter/Pro
+            setTimeout(() => { location.reload(); }, 1500);
           }).finally(() => {
-            // Kembalikan teks tombol jika modal dibuka lagi nanti
             if (btn) btn.textContent = btn.dataset.label || 'Lanjut Berlangganan';
           });
         } else {
           showAnToast('Sistem pembayaran sedang disiapkan.');
           btn.disabled = false;
-          btn.textContent = btn.dataset.label || 'Lanjut Berlangganan';
           modal.style.display = 'none';
         }
       }
