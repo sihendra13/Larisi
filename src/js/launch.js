@@ -351,7 +351,7 @@ async function launchRadar() {
 
   if (!isTester) {
     const paymentStatus = (profile.payment_status || 'trial').toLowerCase();
-    const plan = (profile.d_plan || 'freemium').toLowerCase();
+    const plan = (profile.selected_plan || 'freemium').toLowerCase();
     const quota = typeof window.freeCount !== 'undefined' ? window.freeCount : 10;
     
     const startDate = profile.trial_start ? new Date(profile.trial_start) : new Date(profile.created_at || Date.now());
