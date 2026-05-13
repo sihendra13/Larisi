@@ -350,28 +350,47 @@ async function launchRadar() {
   const isTester = (userEmail === 'halo@larisi.id');
 
   if (!isTester) {
-    const plan = profile.selected_plan || 'freemium';
+    const paymentStatus = (profile.payment_status || 'trial').toLowerCase();
+    const plan = (profile.d_plan || 'freemium').toLowerCase();
+    const quota = typeof window.freeCount !== 'undefined' ? window.freeCount : 10;
     
-    // LOGIK A: Untuk FREEMIUM (Hanya cek jatah 10 iklan)
-    if (plan === 'freemium') {
-      const quota = typeof window.freeCount !== 'undefined' ? window.freeCount : 10;
-      if (quota <= 0) {
-        console.log('[Paywall] Freemium: Jatah habis, memunculkan modal bayar...');
+    const startDate = profile.trial_start ? new Date(profile.trial_start) : new Date(profile.created_at || Date.now());
+    const trialDays = profile.trial_days || 7;
+    const now = new Date();
+    const diffDays = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+
+    // 1. LOGIKA TRIAL (BEBAS TAYANG)
+    if (paymentStatus === 'trial') {
+      if (diffDays >= trialDays) {
+        console.log('[Paywall] Trial habis:', diffDays, 'hari. Munculkan modal bayar.');
         if (typeof showTrialModalManual === 'function') { showTrialModalManual(); }
         return;
       }
     } 
-    // LOGIK B: Untuk STARTER/PRO (Cek 7 Hari Trial)
-    else {
-      if (profile.created_at) {
-        const startDate = new Date(profile.created_at);
-        const now = new Date();
-        const diffDays = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
-        if (diffDays >= 7) {
-          console.log('[Paywall] Trial: Masa trial 7 hari habis, memunculkan modal bayar...');
+    // 2. LOGIKA PAID (DIBATASI KUOTA & WAKTU)
+    else if (paymentStatus === 'paid') {
+      // Cek Waktu (Langganan 30 Hari)
+      if (diffDays >= 30) {
+        console.log('[Paywall] Langganan EXPIRED:', diffDays, 'hari.');
+        if (typeof showTrialModalManual === 'function') { showTrialModalManual(); }
+        return;
+      }
+      
+      // Cek Kuota (Khusus Starter = 50)
+      if (plan === 'starter') {
+        if (quota <= 0) {
+          console.log('[Paywall] Kuota Starter habis (50). Munculkan modal bayar.');
           if (typeof showTrialModalManual === 'function') { showTrialModalManual(); }
           return;
         }
+      }
+    }
+    // 3. LOGIKA FREEMIUM / LAINNYA (Gembok Kuota)
+    else {
+      if (quota <= 0) {
+        console.log('[Paywall] Jatah iklan habis. Munculkan modal bayar.');
+        if (typeof showTrialModalManual === 'function') { showTrialModalManual(); }
+        return;
       }
     }
   }
@@ -491,21 +510,28 @@ function captureVideoFrame(videoFile) {
    5-step flow: collect → export → save → buffer → animate
    ───────────────────────────────────────── */
 async function _doLaunch(campNameOverride) {
-  // ── UPDATE JATAH KE DATABASE (PRIORITAS UTAMA) ──
-  window.freeCount = Math.max(0, (window.freeCount || 10) - 1);
-  const fcEl = document.getElementById('freeCount');
-  if (fcEl) fcEl.textContent = window.freeCount;
+  const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+  const paymentStatus = (profile.payment_status || 'trial').toLowerCase();
+  const isPaid = (paymentStatus === 'paid');
 
-  try {
-    console.log('[Database] Memulai sinkronisasi jatah...');
-    await window.updateUserProfile({ ai_launch_count: window.freeCount });
-    console.log('[Database] Jatah iklan dikunci di awal:', window.freeCount);
-    
-    const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
-    profile.ai_launch_count = window.freeCount;
-    localStorage.setItem('radar_user_profile', JSON.stringify(profile));
-  } catch (err) {
-    console.error('[Database] GAGAL KRITIS mengunci jatah:', err.message);
+  // ── UPDATE JATAH KE DATABASE (Hanya jika SUDAH BAYAR / Bukan Trial) ──
+  if (isPaid) {
+    window.freeCount = Math.max(0, (window.freeCount || 10) - 1);
+    const fcEl = document.getElementById('freeCount');
+    if (fcEl) fcEl.textContent = window.freeCount;
+
+    try {
+      console.log('[Database] Memulai sinkronisasi jatah (Paid User)...');
+      await window.updateUserProfile({ ai_launch_count: window.freeCount });
+      console.log('[Database] Jatah iklan dikunci di awal:', window.freeCount);
+      
+      profile.ai_launch_count = window.freeCount;
+      localStorage.setItem('radar_user_profile', JSON.stringify(profile));
+    } catch (err) {
+      console.error('[Database] GAGAL KRITIS mengunci jatah:', err.message);
+    }
+  } else {
+    console.log('[Database] User TRIAL: Bebas Tayang aktif, kuota tidak dikurangi.');
   }
 
   // ── Capture state dari Menu 1 ──

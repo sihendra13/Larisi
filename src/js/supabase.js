@@ -178,8 +178,7 @@ async function updateUserProfile(profileData) {
     const { data, error } = await client.from('profiles')
         .upsert({
             id: user.id,
-            ...profileData,
-            updated_at: new Date()
+            ...profileData
         })
         .select()
         .single();
