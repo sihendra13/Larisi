@@ -1473,7 +1473,29 @@ async function anAnalyzeCompetitor() {
     '</div>';
 
   var agg = window._anLastAgg || { total: 0, active: 0, avgER: null, totalReach: 0 };
-  var result = await _callSilarisCompetitor(handle, _anCompActivePlatform, agg);
+
+  // Cek cache localStorage (TTL 24 jam) sebelum panggil API
+  var _cacheKey = 'radar_comp_cache_' + handle + '_' + _anCompActivePlatform;
+  var result = null;
+  try {
+    var _cached = localStorage.getItem(_cacheKey);
+    if (_cached) {
+      var _cachedObj = JSON.parse(_cached);
+      if (Date.now() - _cachedObj.timestamp < 86400000) {
+        result = _cachedObj.result;
+      } else {
+        localStorage.removeItem(_cacheKey);
+      }
+    }
+  } catch(e) {}
+
+  if (!result) {
+    result = await _callSilarisCompetitor(handle, _anCompActivePlatform, agg);
+    // Simpan ke cache jika sukses
+    if (result && !result.__rateLimitError) {
+      try { localStorage.setItem(_cacheKey, JSON.stringify({ result: result, timestamp: Date.now() })); } catch(e) {}
+    }
+  }
 
   if (btn) { btn.disabled = false; btn.textContent = 'Analisa →'; }
 
@@ -1756,35 +1778,10 @@ async function _anGenerateStrategy(handle, platform, compResult, agg) {
     ? 'reel' : (compFmtLower.indexOf('story') !== -1 ? 'story' : 'post');
 
   var sysPrompt = [
-    'Kamu adalah SiLaris, Campaign Coach AI untuk UMKM Indonesia.',
-    'Tugas: Buat strategi konkret untuk ' + bizCat + ' agar unggul dari pesaing di ' + platName + '.',
-    '',
-    'ATURAN KERAS: Setiap langkah maksimal 20 kata.',
-    'ATURAN KERAS: DILARANG gunakan tanda em-dash dalam output.',
-    'ATURAN KERAS: DILARANG menyebut kata "bisnis lokal" dalam output.',
-    'ATURAN KERAS: Gunakan bahasa santai dan langsung. Tidak formal.',
-    'ATURAN KERAS: Sebutkan angka nyata dari data yang diberikan.',
-    '',
-    'Data perbandingan NYATA (gunakan angka ini dalam output):',
-    '- ER user: ' + userER + ' | ER pesaing (' + handle + '): ' + compER,
-    '- Format user yang paling banyak dipakai: ' + userTopFmt,
-    '- Format dominan pesaing: ' + compFmt,
-    '- Frekuensi posting pesaing: ' + compFreq,
-    '- Total reach user: ' + _anFmtK(agg.totalReach || 0),
-    '- Kategori bisnis user: ' + bizCat,
-    '',
-    'Kembalikan JSON (tanpa teks lain):',
-    '{',
-    '  "keunggulan": "1 kalimat menyebut ER user vs ER pesaing ' + handle + ' secara spesifik — pakai angka dari data",',
-    '  "celah": "1 kalimat tentang format/freq gap konkret yang bisa dimanfaatkan user sekarang",',
-    '  "langkah": [',
-    '    "Langkah 1: buat ' + compFmt + ' tentang ' + bizCat + ' hari ini (konkret, max 20 kata)",',
-    '    "Langkah 2: frekuensi atau waktu posting yang optimal berdasarkan data pesaing (' + compFreq + ')",',
-    '    "Langkah 3: cara diferensiasi konten dari format ' + compFmt + ' pesaing (spesifik, action)"',
-    '  ],',
-    '  "format_rekomendasi": "' + suggestedFmt + '",',
-    '  "waktu": "Estimasi realistis waktu lihat hasil pertama"',
-    '}'
+    'Kamu SiLaris, AI coach UMKM Indonesia. Buat strategi ' + bizCat + ' unggul dari ' + handle + ' di ' + platName + '.',
+    'WAJIB: maks 20 kata/langkah. Tanpa em-dash. Tanpa "bisnis lokal". Bahasa santai. Pakai angka nyata.',
+    'Data: ER user=' + userER + ' vs pesaing=' + compER + ', format user=' + userTopFmt + ', format pesaing=' + compFmt + ', freq pesaing=' + compFreq + ', reach=' + _anFmtK(agg.totalReach || 0) + '.',
+    'Return JSON: {"keunggulan":"1 kalimat ER user vs ' + handle + ' pakai angka","celah":"1 kalimat gap format/freq yang bisa dimanfaatkan","langkah":["Langkah 1: buat ' + compFmt + ' tentang ' + bizCat + ' hari ini","Langkah 2: frekuensi optimal dari data ' + handle + ' (' + compFreq + ')","Langkah 3: diferensiasi konkret dari format pesaing"],"format_rekomendasi":"' + suggestedFmt + '","waktu":"estimasi realistis"}'
   ].join('\n');
 
   try {
@@ -2220,19 +2217,11 @@ async function _anStratGenerateCaption() {
   var d = typeof getDialek === 'function' ? getDialek() : { greeting: 'Halo', cta: 'kunjungi' };
 
   var sysPrompt = [
-    'Kamu adalah SiLaris, Campaign Coach AI untuk UMKM Indonesia.',
-    'Tugas: Tulis 1 caption media sosial yang menarik untuk ' + bizCat + ' di ' + platName + '.',
-    '',
-    'ATURAN KERAS: Kembalikan teks caption saja — tanpa penjelasan, tanpa heading, tanpa markdown.',
-    'ATURAN KERAS: Mulai dengan sapaan lokal “' + d.greeting + '”.',
-    'ATURAN KERAS: Sertakan 3–5 hashtag relevan di akhir.',
-    'ATURAN KERAS: Bahasa Indonesia santai dan langsung.',
-    'ATURAN KERAS: Maksimal 280 karakter (tidak termasuk hashtag).',
-    (currentText ? 'Referensi (gunakan sebagai inspirasi, bukan copy): ' + currentText : ''),
-    (handle ? 'Konteks: caption ini untuk konten yang bersaing dengan ' + handle + ' di ' + platName + '.' : ''),
-    '',
-    'Format: ' + fmtName + ' · Platform: ' + platName
-  ].filter(Boolean).join('\n');
+    'Kamu SiLaris, AI coach UMKM Indonesia. Tulis 1 caption ' + fmtName + ' ' + platName + ' untuk ' + bizCat + '.',
+    'WAJIB: teks caption saja, mulai “' + d.greeting + '”, 3-5 hashtag di akhir, bahasa santai, maks 280 karakter.',
+    (currentText ? 'Inspirasi: ' + currentText : ''),
+    (handle ? 'Bersaing dengan ' + handle + '.' : '')
+  ].filter(Boolean).join(' ');
 
   try {
     var resp = await fetch(supabaseUrl + '/functions/v1/silaris-chat', {
@@ -2378,52 +2367,12 @@ async function _callSilarisCompetitor(handle, platform, agg) {
 
   var platName = (_AN_PLAT[platform] || {}).name || platform;
   var sysPrompt = [
-    'Kamu adalah SiLaris, Campaign Coach AI untuk UMKM Indonesia.',
-    'Tugas: Buat analisa pesaing estimatif untuk handle/URL yang diberikan di platform ' + platName + '.',
-    'Ini adalah ESTIMASI — tidak ada akses ke data internal pesaing.',
-    '',
-    'ATURAN KERAS: Setiap teks insight maksimal 20 kata.',
-    'ATURAN KERAS: DILARANG gunakan tanda em-dash dalam output.',
-    'ATURAN KERAS: DILARANG menyebut kata "bisnis lokal" dalam output.',
-    'ATURAN KERAS: Gunakan bahasa santai dan langsung seperti berbicara ke teman UMKM.',
-    '',
-    'Data user sebagai pembanding:',
-    '- Total campaign: ' + (agg.total || 0),
-    '- Avg ER: ' + (agg.avgER ? agg.avgER.toFixed(1) + '%' : 'belum tersedia'),
-    '- Total reach: ' + _anFmtK(agg.totalReach),
-    '',
-    'PANDUAN FIELD:',
-    '- comp_category: deteksi dari NAMA AKUN atau BIO profil, bukan dari isi foto.',
-    '  Contoh keyword → kategori:',
-    '  museum/gallery/galeri/art/seni/budaya/film/culture/pameran/exhibition → "seni budaya"',
-    '  resto/warung/cafe/makanan/food/fnb/makan/catering/bakery/kedai → "kuliner"',
-    '  fashion/baju/outfit/clothing/hijab/busana/konveksi → "fashion"',
-    '  salon/skincare/beauty/kecantikan/makeup/kosmetik → "beauty"',
-    '  properti/rumah/kost/kontrakan/real estate/ruko → "properti"',
-    '  motor/mobil/bengkel/otomotif/sparepart → "otomotif"',
-    '  jasa/service/konsultan/laundry/reparasi → "jasa"',
-    '  kursus/les/sekolah/training/education → "pendidikan"',
-    '  Jika tidak bisa mendeteksi: kembalikan string kosong "".',
-    '',
-    '- comp_format: HANYA berdasarkan jenis post (image/video/reel/carousel).',
-    '  DILARANG mendeteksi dari objek/konten dalam foto (makanan, orang, produk).',
-    '  Jika tidak punya akses post publik akun ini: kembalikan "Tidak tersedia".',
-    '',
-    '- comp_er: tidak dipakai — ER dihitung otomatis dari comp_followers di klien.',
-    '',
-    'Kembalikan JSON bersih tanpa komentar, tanpa teks lain:',
-    '{',
-    '  "comp_handle": "@handle_atau_nama_singkat",',
-    '  "comp_category": "kategori dalam 1-3 kata (contoh: kuliner, fashion, seni budaya) atau kosong",',
-    '  "comp_freq": "Nx/week",',
-    '  "comp_followers": "XXK",',
-    '  "comp_format": "format post dominan atau Tidak tersedia",',
-    '  "insights": [',
-    '    {"type": "green", "text": "keunggulan spesifik user vs pola pesaing ini"},',
-    '    {"type": "red", "text": "area yang perlu diwaspadai atau ditingkatkan"},',
-    '    {"type": "purple", "text": "saran strategis konkret untuk unggul"}',
-    '  ]',
-    '}'
+    'Kamu SiLaris, AI coach UMKM Indonesia. Analisa estimatif akun ' + platName + ': ' + handle + '.',
+    'WAJIB: maks 20 kata/insight. Tanpa em-dash. Tanpa "bisnis lokal". Bahasa santai.',
+    'Data user: campaign=' + (agg.total || 0) + ', ER=' + (agg.avgER ? agg.avgER.toFixed(1) + '%' : '-') + ', reach=' + _anFmtK(agg.totalReach) + '.',
+    'comp_category: deteksi dari nama/bio. museum/gallery/art→"seni budaya", resto/warung/food→"kuliner", fashion/hijab→"fashion", salon/beauty→"beauty", properti/rumah→"properti", motor/bengkel→"otomotif", jasa/konsultan→"jasa", kursus/les→"pendidikan". Kosong jika tidak terdeteksi.',
+    'comp_format: hanya dari jenis post (image/video/reel/carousel). "Tidak tersedia" jika tidak tahu.',
+    'Return JSON bersih: {"comp_handle":"@x","comp_category":"","comp_freq":"Nx/week","comp_followers":"XXK","comp_format":"...","insights":[{"type":"green","text":"..."},{"type":"red","text":"..."},{"type":"purple","text":"..."}]}'
   ].join('\n');
 
   try {
