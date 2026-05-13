@@ -852,7 +852,11 @@
       const btnFree = document.getElementById('trial-btn-freemium');
       
       const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+      const userEmail = (profile && profile.email) ? profile.email.toLowerCase().trim() : '';
       const currentPlan = (profile.selected_plan || 'freemium').toLowerCase();
+      
+      // Safety Guard: Jangan ganggu akun tester
+      if (userEmail === 'halo@larisi.id') return;
       
       planBadge.textContent = 'Paket saat ini: ' + currentPlan.toUpperCase();
       
@@ -908,6 +912,8 @@
         if (profile && typeof profile.ai_launch_count !== 'undefined' && profile.ai_launch_count !== null) {
           quota = profile.ai_launch_count;
         }
+        
+        console.log('[Banner Debug] Plan:', plan, 'Quota:', quota);
 
         const now = new Date();
         const isResetDay = now.getDate() === 1;
