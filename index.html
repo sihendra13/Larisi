@@ -843,37 +843,69 @@
       }
     })();
     
-    // Fungsi untuk menampilkan modal upgrade secara manual (untuk verifikasi Duitku)
+    // Fungsi untuk menampilkan modal upgrade secara manual (Dinamis per Skenario)
     window.showTrialModalManual = function() {
       const modal = document.getElementById('trial-modal');
       const planBadge = document.getElementById('trial-modal-plan');
       const titleEl = document.getElementById('trial-modal-title');
       const descEl = document.getElementById('trial-modal-desc');
+      
+      const btnPro = document.getElementById('trial-btn-pro');
+      const btnStarter = document.getElementById('trial-btn-starter');
       const btnFree = document.getElementById('trial-btn-freemium');
       
       const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
-      const userEmail = (profile && profile.email) ? profile.email.toLowerCase().trim() : '';
       const currentPlan = (profile.selected_plan || 'freemium').toLowerCase();
+      const paymentStatus = (profile.payment_status || 'trial').toLowerCase();
+      const quota = (typeof window.freeCount !== 'undefined') ? window.freeCount : 10;
       
-      planBadge.textContent = 'Paket saat ini: ' + currentPlan.toUpperCase();
+      const now = new Date();
+      const start = profile.trial_start ? new Date(profile.trial_start) : new Date(profile.created_at);
+      const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
       
-      // RESET DEFAULT UI
-      titleEl.textContent = "Masa trial kamu sudah selesai!";
-      descEl.textContent = "7 hari gratis telah berakhir. Pilih langkah berikutnya:";
-      if (btnFree) btnFree.style.display = 'block';
+      // Default: Reset Tombol
+      if (btnPro) {
+        btnPro.style.display = 'block';
+        btnPro.textContent = (currentPlan === 'pro') ? 'Perpanjang Paket Pro — Rp 199rb/bln' : 'Lanjut Berlangganan Pro — Rp 199rb/bln';
+      }
+      if (btnStarter) {
+        btnStarter.style.display = 'block';
+        btnStarter.textContent = (currentPlan === 'starter') ? 'Perpanjang Paket Starter — Rp 99rb/bln' : 'Lanjut Berlangganan Starter — Rp 99rb/bln';
+      }
+      if (btnFree) {
+        btnFree.style.display = 'block';
+        btnFree.textContent = 'Turun ke Freemium (Gratis selamanya)';
+      }
 
-      // KHUSUS JIKA SUDAH FREEMIUM / FREE
-      // Kita anggap siapa pun yang bukan Pro/Starter adalah FREE/Freemium
-      if (currentPlan !== 'pro' && currentPlan !== 'starter') {
+      planBadge.textContent = 'Paket saat ini: ' + currentPlan.toUpperCase();
+
+      // --- SKENARIO 1: PAID EXPIRED (30 HARI) ---
+      if (paymentStatus === 'paid' && diffDays >= 30) {
+        titleEl.textContent = "Masa Langganan Habis!";
+        descEl.innerHTML = `Masa aktif paket <b>${currentPlan.toUpperCase()}</b> Anda telah berakhir. Silakan perpanjang sekarang agar iklan Anda tetap bisa tayang.`;
+      }
+      // --- SKENARIO 2: TRIAL EXPIRED (7 HARI) ---
+      else if (paymentStatus === 'trial' && diffDays >= 7) {
+        titleEl.textContent = "Masa Trial Selesai!";
+        descEl.textContent = "7 hari gratis telah berakhir. Pilih langkah berikutnya:";
+      }
+      // --- SKENARIO 3: FREEMIUM QUOTA EXPIRED (10 IKLAN) ---
+      else if (currentPlan !== 'pro' && currentPlan !== 'starter') {
         titleEl.textContent = "Jatah Iklan Gratis Habis!";
         const resetDate = (typeof getNextResetDate === 'function') ? getNextResetDate() : 'Bulan Depan';
         descEl.innerHTML = `Jatah 10 iklan gratis Anda sudah habis.<br>Akan diisi kembali otomatis pada <b>${resetDate}</b>.`;
-        if (btnFree) btnFree.style.display = 'none'; // Sembunyikan tombol downgrade jika sudah di paket terendah
+        
+        if (btnFree) {
+          btnFree.textContent = 'Tetap di Paket Freemium';
+          // Tombol ini hanya menutup modal agar banner merah di atas terlihat
+          btnFree.onclick = () => { 
+            modal.style.display = 'none'; 
+            if(typeof initQuotaBanner === 'function') initQuotaBanner();
+          };
+        }
+        if (btnPro) btnPro.textContent = 'Upgrade ke Pro — Rp 199rb/bln';
+        if (btnStarter) btnStarter.textContent = 'Upgrade ke Starter — Rp 99rb/bln';
       }
-      
-      // Pastikan tombol starter/pro muncul sesuai kebutuhan
-      if (document.getElementById('trial-btn-starter')) document.getElementById('trial-btn-starter').style.display = 'block';
-      if (document.getElementById('trial-btn-pro')) document.getElementById('trial-btn-pro').style.display = 'block';
       
       modal.style.display = 'flex';
     };
