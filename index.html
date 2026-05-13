@@ -857,37 +857,34 @@
       const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
       const currentPlan = (profile.selected_plan || 'freemium').toLowerCase();
       const paymentStatus = (profile.payment_status || 'trial').toLowerCase();
-      const quota = (typeof window.freeCount !== 'undefined') ? window.freeCount : 10;
       
       const now = new Date();
       const start = profile.trial_start ? new Date(profile.trial_start) : new Date(profile.created_at);
       const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
       
-      // Default: Reset Tombol
-      if (btnPro) {
-        btnPro.style.display = 'block';
-        btnPro.textContent = (currentPlan === 'pro') ? 'Perpanjang Paket Pro — Rp 199rb/bln' : 'Lanjut Berlangganan Pro — Rp 199rb/bln';
-      }
-      if (btnStarter) {
-        btnStarter.style.display = 'block';
-        btnStarter.textContent = (currentPlan === 'starter') ? 'Perpanjang Paket Starter — Rp 99rb/bln' : 'Lanjut Berlangganan Starter — Rp 99rb/bln';
-      }
-      if (btnFree) {
-        btnFree.style.display = 'block';
-        btnFree.textContent = 'Turun ke Freemium (Gratis selamanya)';
-      }
-
       planBadge.textContent = 'Paket saat ini: ' + currentPlan.toUpperCase();
 
       // --- SKENARIO 1: PAID EXPIRED (30 HARI) ---
       if (paymentStatus === 'paid' && diffDays >= 30) {
         titleEl.textContent = "Masa Langganan Habis!";
-        descEl.innerHTML = `Masa aktif paket <b>${currentPlan.toUpperCase()}</b> Anda telah berakhir. Silakan perpanjang sekarang agar iklan Anda tetap bisa tayang.`;
+        descEl.innerHTML = `Masa aktif paket <b>${currentPlan.toUpperCase()}</b> Anda telah berakhir. Perpanjang sekarang agar tetap tayang.`;
+        
+        if (btnPro) {
+          btnPro.textContent = (currentPlan === 'pro') ? 'Perpanjang Paket Pro — Rp 199rb/bln' : 'Upgrade ke Pro — Rp 199rb/bln';
+        }
+        if (btnStarter) {
+          btnStarter.textContent = (currentPlan === 'starter') ? 'Perpanjang Paket Starter — Rp 99rb/bln' : 'Lanjut ke Paket Starter — Rp 99rb/bln';
+        }
+        if (btnFree) btnFree.textContent = 'Lanjut ke Freemium (Gratis selamanya)';
       }
       // --- SKENARIO 2: TRIAL EXPIRED (7 HARI) ---
       else if (paymentStatus === 'trial' && diffDays >= 7) {
         titleEl.textContent = "Masa Trial Selesai!";
-        descEl.textContent = "7 hari gratis telah berakhir. Pilih langkah berikutnya:";
+        descEl.textContent = "7 hari gratis Anda telah berakhir. Pilih paket untuk mulai berlangganan:";
+        
+        if (btnPro) btnPro.textContent = 'Mulai Berlangganan Pro — Rp 199rb/bln';
+        if (btnStarter) btnStarter.textContent = 'Mulai Berlangganan Starter — Rp 99rb/bln';
+        if (btnFree) btnFree.textContent = 'Lanjut ke Freemium (Gratis selamanya)';
       }
       // --- SKENARIO 3: FREEMIUM QUOTA EXPIRED (10 IKLAN) ---
       else if (currentPlan !== 'pro' && currentPlan !== 'starter') {
@@ -895,6 +892,8 @@
         const resetDate = (typeof getNextResetDate === 'function') ? getNextResetDate() : 'Bulan Depan';
         descEl.innerHTML = `Jatah 10 iklan gratis Anda sudah habis.<br>Akan diisi kembali otomatis pada <b>${resetDate}</b>.`;
         
+        if (btnPro) btnPro.textContent = 'Upgrade ke Pro — Rp 199rb/bln';
+        if (btnStarter) btnStarter.textContent = 'Upgrade ke Starter — Rp 99rb/bln';
         if (btnFree) {
           btnFree.textContent = 'Tetap di Paket Freemium';
           // Tombol ini hanya menutup modal agar banner merah di atas terlihat
@@ -903,8 +902,6 @@
             if(typeof initQuotaBanner === 'function') initQuotaBanner();
           };
         }
-        if (btnPro) btnPro.textContent = 'Upgrade ke Pro — Rp 199rb/bln';
-        if (btnStarter) btnStarter.textContent = 'Upgrade ke Starter — Rp 99rb/bln';
       }
       
       modal.style.display = 'flex';
