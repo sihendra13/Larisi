@@ -1191,6 +1191,11 @@ function _renderCompetitorSection() {
 
 /* ─── Section: Upgrade Pro ─── */
 function _renderUpgradePro() {
+  // Sembunyikan banner kalau user sudah Pro
+  try {
+    var _p = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+    if ((_p.selected_plan || '').toLowerCase() === 'pro') return '';
+  } catch(e) {}
   return '<div class="an-pro-banner">' +
     '<div class="an-pro-top">' +
       '<div class="an-pro-icon">🚀</div>' +
