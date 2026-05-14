@@ -318,7 +318,20 @@ async function refreshAnalyticsData() {
   if (btn) { btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; }
   var userId = await _anEnsureAnonUser();
   if (userId) await _anInvalidateCache(userId, 'narasi');
+  localStorage.setItem('radar_last_analytics_refresh', String(Date.now()));
   initAnalytics();
+}
+
+// Auto-refresh: cek apakah sudah >24 jam sejak refresh terakhir
+// Dipanggil saat analytics dibuka — tidak pakai setInterval
+function _anCheckAutoRefresh() {
+  var TWENTY_FOUR_H = 24 * 60 * 60 * 1000;
+  var last = parseInt(localStorage.getItem('radar_last_analytics_refresh') || '0', 10);
+  if (!last || (Date.now() - last) > TWENTY_FOUR_H) {
+    refreshAnalyticsData();
+    return true; // sedang auto-refresh
+  }
+  return false;
 }
 
 /* ─── Build Analytics System Prompt ─── */
@@ -2465,6 +2478,9 @@ function waitForCampaigns(callback) {
 function initAnalytics() {
   var container = document.getElementById('view-analytics');
   if (!container) return;
+
+  // Auto-refresh 24 jam: kalau sudah lewat, refresh dulu (skip render lanjut)
+  if (_anCheckAutoRefresh()) return;
 
   // KPI dulu (full-width), lalu 2-col layout (63% left / 37% right sticky)
   // Left:  SiLaris · Campaign Terbaik · Local Pulse · Rekomendasi · Competitor
