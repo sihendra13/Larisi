@@ -4,13 +4,5 @@
     { "source": "/login", "destination": "/login.html" },
     { "source": "/register", "destination": "/register.html" },
     { "source": "/onboarding", "destination": "/onboarding.html" }
-  ],
-  "headers": [
-    {
-      "source": "/postforme-callback(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }
-      ]
-    }
   ]
 }
