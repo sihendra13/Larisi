@@ -737,11 +737,14 @@ function showConnectAccountsFlow() {
       var badge  = isConn
         ? ('✓ @' + (acc.username || acc.id))
         : 'Hubungkan';
+      var _bgDefault = isConn ? '#f9fafb' : '#fafafa';
       return '<button id="pfm-btn-' + p.id + '" ' +
         'onclick="' + (isConn ? '_disconnectAccount(\'' + p.id + '\')' : 'connectPostForMe(\'' + p.id + '\')') + '" ' +
+        'onmouseenter="this.style.background=\'#f0f0f0\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.10)\'" ' +
+        'onmouseleave="this.style.background=\'' + _bgDefault + '\';this.style.boxShadow=\'none\'" ' +
         'style="display:flex;align-items:center;gap:14px;width:100%;padding:12px 16px;' +
         'margin-bottom:10px;border:1.5px solid ' + (isConn ? '#e5e7eb' : '#f0f0f0') + ';' +
-        'border-radius:12px;background:' + (isConn ? '#f9fafb' : '#fafafa') + ';' +
+        'border-radius:12px;background:' + _bgDefault + ';' +
         'cursor:pointer;font-family:var(--font,sans-serif);transition:all 0.15s;">' +
         '<div style="width:40px;height:40px;border-radius:10px;background:' +
         (p.id === 'tiktok' ? '#f0f0f0' : color + '18') +
