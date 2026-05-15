@@ -83,15 +83,15 @@
   transition: color .2s;
 }
 .add-channel-btn:hover {
-  background: #fff;
-  border-color: #791ADB;
-  border-style: solid;
-  color: #791ADB;
+  background: #fff !important;
+  border-color: #791ADB !important;
+  border-style: solid !important;
+  color: #791ADB !important;
   width: auto;
   padding: 0 12px;
   border-radius: 20px;
   gap: 0;
-  box-shadow: 0 2px 10px rgba(121,26,219,0.18);
+  box-shadow: 0 2px 10px rgba(121,26,219,0.18) !important;
 }
 .add-channel-btn:hover .add-icon { color: #791ADB; }
 .add-channel-btn:hover .add-label { display: inline; color: #791ADB; }
