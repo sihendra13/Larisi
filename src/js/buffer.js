@@ -719,7 +719,13 @@ function showConnectAccountsFlow() {
     'animation:pfmFadeIn 0.2s ease;';
 
   card.innerHTML =
-    '<style>@keyframes pfmFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}</style>' +
+    '<style>' +
+    '@keyframes pfmFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}' +
+    '#pfmModalOverlay .pfm-platform-btn{-webkit-appearance:none;appearance:none;outline:none!important;box-shadow:none;}' +
+    '#pfmModalOverlay .pfm-platform-btn:hover{background:#efefef!important;box-shadow:0 2px 8px rgba(0,0,0,0.09)!important;outline:none!important;}' +
+    '#pfmModalOverlay .pfm-platform-btn:focus{outline:none!important;background:#efefef!important;}' +
+    '#pfmModalOverlay .pfm-platform-btn:active{background:#e5e5e5!important;box-shadow:none!important;}' +
+    '</style>' +
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">' +
     '<div>' +
     '<div style="font-size:16px;font-weight:700;color:#111827;">Hubungkan Akun Sosial</div>' +
@@ -727,7 +733,7 @@ function showConnectAccountsFlow() {
     '</div>' +
     '<button onclick="_closePfmModal()" style="background:none;border:none;cursor:pointer;' +
     'width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;' +
-    'color:#9ca3af;font-size:18px;line-height:1;">✕</button>' +
+    'color:#9ca3af;font-size:18px;line-height:1;outline:none;">✕</button>' +
     '</div>' +
     platforms.map(function(p) {
       var acc    = connectedMap[p.id];
@@ -738,14 +744,12 @@ function showConnectAccountsFlow() {
         ? ('✓ @' + (acc.username || acc.id))
         : 'Hubungkan';
       var _bgDefault = isConn ? '#f9fafb' : '#fafafa';
-      return '<button id="pfm-btn-' + p.id + '" ' +
+      return '<button id="pfm-btn-' + p.id + '" class="pfm-platform-btn" ' +
         'onclick="' + (isConn ? '_disconnectAccount(\'' + p.id + '\')' : 'connectPostForMe(\'' + p.id + '\')') + '" ' +
-        'onmouseenter="this.style.background=\'#f0f0f0\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.10)\'" ' +
-        'onmouseleave="this.style.background=\'' + _bgDefault + '\';this.style.boxShadow=\'none\'" ' +
         'style="display:flex;align-items:center;gap:14px;width:100%;padding:12px 16px;' +
         'margin-bottom:10px;border:1.5px solid ' + (isConn ? '#e5e7eb' : '#f0f0f0') + ';' +
         'border-radius:12px;background:' + _bgDefault + ';' +
-        'cursor:pointer;font-family:var(--font,sans-serif);transition:all 0.15s;' +
+        'cursor:pointer;font-family:var(--font,sans-serif);transition:background 0.15s,box-shadow 0.15s;' +
         'outline:none;-webkit-appearance:none;appearance:none;">' +
         '<div style="width:40px;height:40px;border-radius:10px;background:' +
         (p.id === 'tiktok' ? '#f0f0f0' : color + '18') +
