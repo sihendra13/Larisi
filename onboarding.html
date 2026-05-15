@@ -151,6 +151,18 @@
                 </button>
             </div>
 
+            <!-- Error box: muncul hanya saat OAuth gagal -->
+            <div id="ob-oauth-error" style="display:none; background:#fffbeb; border:1px solid #fcd34d; border-radius:12px; padding:14px 16px; margin-bottom:20px;">
+                <p style="margin:0 0 12px; font-size:13px; color:#92400e; display:flex; align-items:flex-start; gap:8px;">
+                    <span>⚠️</span>
+                    <span>Koneksi gagal. Coba lagi atau lewati untuk sementara.</span>
+                </p>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" onclick="_obRetry()" style="flex:1; padding:9px; border-radius:8px; border:1.5px solid #92400e; background:white; color:#92400e; font-size:13px; font-weight:600; cursor:pointer;">Coba Lagi</button>
+                    <button type="button" onclick="finishOnboarding()" style="flex:1; padding:9px; border-radius:8px; border:1.5px solid #d1d5db; background:white; color:#6b7280; font-size:13px; cursor:pointer;">Lewati Dulu</button>
+                </div>
+            </div>
+
             <button id="ob-finish-btn" class="btn btn-primary" onclick="finishOnboarding()" disabled>Mulai Buat Konten</button>
             <a href="#" class="skip-link" onclick="finishOnboarding()" style="font-size: 11px; color: var(--secondary); opacity: 0.6;">Lewati — tambah akun kapan saja</a>
         </div>
@@ -372,7 +384,55 @@
             }
         }
 
+        /* ── OAuth error state helpers ── */
+        var _OB_PLAT_COLOR  = { facebook: '#1877F2', instagram: '#E1306C', tiktok: '#000000', youtube: '#FF0000' };
+        var _OB_PLAT_LABEL  = { facebook: 'Facebook Page', instagram: 'Instagram', tiktok: 'TikTok', youtube: 'YouTube' };
+        var _obFailedBtn     = null;
+        var _obFailedPlatform = null;
+
+        function _showOauthError(btn, platform) {
+            _obFailedBtn      = btn;
+            _obFailedPlatform = platform;
+            /* Tombol → error state (oranye) */
+            var span = btn.querySelector('span');
+            btn.style.borderColor = '#f59e0b';
+            btn.style.color       = '#92400e';
+            btn.style.background  = '#fffbeb';
+            if (span) span.textContent = '⚠️ Coba lagi';
+            btn.disabled = false;
+            /* Tampilkan error box */
+            var box = document.getElementById('ob-oauth-error');
+            if (box) box.style.display = 'block';
+        }
+
+        function _clearOauthError() {
+            var box = document.getElementById('ob-oauth-error');
+            if (box) box.style.display = 'none';
+            if (_obFailedBtn) {
+                var span = _obFailedBtn.querySelector('span');
+                var col  = _OB_PLAT_COLOR[_obFailedPlatform] || '#888';
+                _obFailedBtn.style.borderColor = col;
+                _obFailedBtn.style.color       = col;
+                _obFailedBtn.style.background  = '';
+                if (span) span.textContent = _OB_PLAT_LABEL[_obFailedPlatform] || _obFailedPlatform;
+                _obFailedBtn = null;
+                _obFailedPlatform = null;
+            }
+        }
+
+        function _obRetry() {
+            if (!_obFailedBtn || !_obFailedPlatform) return;
+            var btn = _obFailedBtn;
+            var platform = _obFailedPlatform;
+            _clearOauthError();
+            onboardConnectSocial(btn, platform);
+        }
+        /* ─────────────────────────────── */
+
         async function onboardConnectSocial(btn, platform) {
+            /* Bersihkan error state platform lain jika ada */
+            if (_obFailedBtn && _obFailedBtn !== btn) _clearOauthError();
+
             var span = btn.querySelector('span');
             btn.disabled = true;
             if (span) span.textContent = 'Memproses...';
@@ -506,9 +566,7 @@
 
             } catch(e) {
                 console.error('[onboarding] connect error:', e.message);
-                alert('Gagal menghubungkan: ' + e.message);
-                if (span) span.textContent = platform.charAt(0).toUpperCase() + platform.slice(1);
-                btn.disabled = false;
+                _showOauthError(btn, platform);
             }
         }
 
