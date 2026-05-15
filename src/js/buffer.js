@@ -822,13 +822,7 @@ function _disconnectAccount(platform) {
           'background:white;color:#791ADB;font-size:14px;font-weight:600;cursor:pointer;' +
           'font-family:var(--font,sans-serif);">Batal</button>' +
         '<button id="disconnectConfirmBtn" disabled ' +
-          'onclick="if(this.disabled)return;' +
-          'var accs=_getStoredAccounts().filter(function(a){return a.platform!==\'' + platform + '\';});' +
-          'localStorage.setItem(\'radar_social_accounts\',JSON.stringify(accs));' +
-          'updateBufferIndicator();updateChannelChipsWithUsername();' +
-          'document.getElementById(\'disconnectModal\').remove();' +
-          '_closePfmModal();' +
-          'if(typeof showAnToast===\'function\')showAnToast(\'Akun ' + platform + ' dilepas\');" ' +
+          'onclick="_confirmDisconnect(\'' + platform + '\',\'' + (acc.id || '') + '\')" ' +
           'style="padding:10px 24px;border-radius:8px;border:none;' +
           'background:#d1d5db;color:#9ca3af;font-size:14px;font-weight:600;' +
           'cursor:not-allowed;font-family:var(--font,sans-serif);">' +
@@ -850,6 +844,35 @@ function _disconnectAccount(platform) {
   overlay.onclick = function(e) {
     if (e.target === overlay) overlay.remove();
   };
+}
+
+/* ─── Eksekusi disconnect yang benar: hapus dari localStorage + PostForMe + Supabase ── */
+async function _confirmDisconnect(platform, accId) {
+  // 1. Tutup modal segera → UI responsif
+  var modal = document.getElementById('disconnectModal');
+  if (modal) modal.remove();
+  _closePfmModal();
+
+  // 2. Hapus dari localStorage
+  var accs = _getStoredAccounts().filter(function(a) { return a.platform !== platform; });
+  localStorage.setItem('radar_social_accounts', JSON.stringify(accs));
+  updateBufferIndicator();
+  updateChannelChipsWithUsername();
+
+  // 3. Sync ke Supabase (penting! agar login ulang tidak restore akun lama)
+  if (typeof window.syncSocialAccounts === 'function') {
+    window.syncSocialAccounts();
+  }
+
+  // 4. Hapus dari PostForMe API (background, tidak blocking UI)
+  var fakePat = /^pfm_[a-z]+_\d+$/;
+  if (accId && !fakePat.test(accId)) {
+    _pfmProxy('/v1/social-accounts/' + accId, 'DELETE', {})
+      .then(function() { console.log('[postforme] disconnect API berhasil:', accId); })
+      .catch(function(e) { console.warn('[postforme] disconnect API gagal (tidak masalah):', e.message); });
+  }
+
+  if (typeof showAnToast === 'function') showAnToast('Akun ' + platform + ' dilepas', 'success');
 }
 
 /* ─── Geo-Stitch Canvas Compositing ───────────────────────── */
