@@ -16,6 +16,7 @@ function typewriterEffect(text, callback) {
     } else {
       clearInterval(typewriterTimer);
       isTyping = false;
+      area.scrollTop = 0; /* scroll ke atas setelah selesai — user lihat awal caption */
       if (callback) callback();
     }
   }, speed);
