@@ -240,8 +240,9 @@ async function startScanWithFile(filename, fileCount) {
         ? personaDB[bizTileKey].name
         : (bizCategory || 'Konten Umum');
 
-      /* Ada konflik jika biz key berbeda dengan vision key (termasuk null vs non-null) */
-      var hasConflict = bizTileKey !== visionKey;
+      /* Ada konflik hanya jika biz key TERDEFINISI dan berbeda dari vision key.
+         bizTileKey null = kategori bisnis tidak punya preferensi persona → pakai AI */
+      var hasConflict = bizTileKey !== null && bizTileKey !== visionKey;
 
       if (hasConflict) {
         _showVisionConflict(visionKey, visionLabel, bizTileKey, bizLabelForUI);
@@ -270,7 +271,7 @@ async function startScanWithFile(filename, fileCount) {
         if (_bizCat2) {
           var _bizKey2   = (typeof _BIZ_CAT_TO_TILE !== 'undefined') ? (_BIZ_CAT_TO_TILE[_bizCat2] || null) : null;
           var _bizLbl2   = _bizKey2 && personaDB && personaDB[_bizKey2] ? personaDB[_bizKey2].name : (_bizCat2 || 'Konten Umum');
-          var _conflict2 = _bizKey2 !== filenameKey;
+          var _conflict2 = _bizKey2 !== null && _bizKey2 !== filenameKey;
           if (_conflict2) {
             _showVisionConflict(filenameKey, p.name, _bizKey2, _bizLbl2);
             return; /* Tunggu pilihan user — jangan langsung apply */
