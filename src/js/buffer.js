@@ -745,7 +745,8 @@ function showConnectAccountsFlow() {
         'style="display:flex;align-items:center;gap:14px;width:100%;padding:12px 16px;' +
         'margin-bottom:10px;border:1.5px solid ' + (isConn ? '#e5e7eb' : '#f0f0f0') + ';' +
         'border-radius:12px;background:' + _bgDefault + ';' +
-        'cursor:pointer;font-family:var(--font,sans-serif);transition:all 0.15s;">' +
+        'cursor:pointer;font-family:var(--font,sans-serif);transition:all 0.15s;' +
+        'outline:none;-webkit-appearance:none;appearance:none;">' +
         '<div style="width:40px;height:40px;border-radius:10px;background:' +
         (p.id === 'tiktok' ? '#f0f0f0' : color + '18') +
         ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
