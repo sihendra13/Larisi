@@ -17,10 +17,11 @@ var personaDB = {
   Otomotif:   {name:'Otomotif',           target:'Car & Motorcycle Enthusiasts',  tags:['Usia 20–45','Otomotif','Kendaraan'], age:'20–45', gender:'Mixed',   conf:83, stitch:'{greeting} — {usp} di {loc}. {cta}'},
   Pendidikan: {name:'Pendidikan',         target:'Students, Parents & Learners',  tags:['Usia 15–45','Pelajar','Orang tua'],  age:'15–45', gender:'Mixed',   conf:81, stitch:'{greeting} — {usp} di {loc}. {cta}'},
   Kerajinan:  {name:'Kerajinan / Craft',  target:'Craft Lovers & Handmade Fans',  tags:['Usia 20–45','Kreator','Handmade'],   age:'20–45', gender:'Mixed',   conf:82, stitch:'{greeting} — {usp} di {loc}. {cta}'},
+  Olahraga:   {name:'Olahraga & Fitness', target:'Fitness Enthusiasts & Athletes', tags:['Usia 16–45','Aktif','Sporty'],        age:'16–45', gender:'Mixed',   conf:83, stitch:'{greeting} — {usp} di {loc}. {cta}'},
   General:    {name:'General Content',    target:'Broad Local Awareness',         tags:['Semua usia','Lokal','Umum'],          conf:62,                        stitch:'{greeting} — {usp} di {loc}. {cta}'}
 };
 
-var personaKeys = ['Kuliner','Kafe','FashionWanita','FashionPria','FashionMuslim','FashionMuslimPria','Properti','Beauty','Salon','Barber','Bayi','Gadget','Wisata','Pet','Seni','Otomotif','Pendidikan','Kerajinan'];
+var personaKeys = ['Kuliner','Kafe','FashionWanita','FashionPria','FashionMuslim','FashionMuslimPria','Properti','Beauty','Salon','Barber','Bayi','Gadget','Wisata','Pet','Seni','Otomotif','Pendidikan','Kerajinan','Olahraga'];
 
 /* ── Filename-based persona detection ── */
 var filenamePersonaMap = [
@@ -44,7 +45,7 @@ var filenamePersonaMap = [
   {keys:['home','dekor','interior'],                            p:{name:'Interior Design',            target:'Minimalist Living',                          age:'Usia 25–45', gender:'Mixed'}},
   {keys:['luxury','branded','tas'],                             p:{name:'High-end Goods',             target:'Luxury Lifestyle',                           age:'Usia 25–50', gender:'Mixed'}},
   {keys:['cincin','jewelry','wedding'],                         p:{name:'Wedding/Jewelry',            target:'Engaged Couples',                            age:'Usia 22–35', gender:'Mixed'}},
-  {keys:['sepatu','olahraga','sports'],                         p:{name:'Sports Apparel',             target:'Runners & Athletes',                         age:'Usia 18–40', gender:'Mixed'}},
+  {keys:['sepatu','olahraga','sports','fitness','gym','beladiri','martial','karate','silat','boxing','tinju','renang','badminton','futsal','basket'], p:{name:'Olahraga & Fitness', target:'Fitness Enthusiasts & Athletes', age:'Usia 16–45', gender:'Mixed'}},
   {keys:['bank','saham','investasi'],                           p:{name:'Banking/Finance',            target:'Financial Literacy & Investors',             age:'Usia 22–45', gender:'Mixed'}},
   {keys:['konser','musik','event'],                             p:{name:'Music/Events',               target:'Concert Goers',                              age:'Usia 18–35', gender:'Mixed'}},
   {keys:['lukisan','seni','art'],                               p:{name:'Creative/Arts',              target:'Artists & Art Lovers',                       age:'Usia 20–40', gender:'Mixed'}},

@@ -19,7 +19,7 @@ var _VISION_TO_PERSONA = {
   manusia:    null,             // selfie/orang → tidak konklusif
   dokumen:    'Pendidikan',  // dokumen/buku/materi → konteks pendidikan
   furniture:  null,
-  olahraga:   null,
+  olahraga:   'Olahraga',
   seni:       'Seni',
   general:    null,
 };
