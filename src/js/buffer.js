@@ -163,11 +163,19 @@ async function _fetchConnectedAccounts() {
       var apiUsername = a.username || a.handle || a.name || '';
       var apiId       = a.id || '';
 
-      // Cari akun yang cocok by platform atau by id
+      // Cari akun yang cocok — prioritaskan by ID (exact match)
+      // Jangan update akun berbeda hanya karena platform sama (cegah akun lama overwrite akun baru)
       var idx = -1;
       for (var i = 0; i < existing.length; i++) {
-        if (existing[i].platform === apiPlatform || existing[i].id === apiId) {
-          idx = i; break;
+        if (apiId && existing[i].id === apiId) { idx = i; break; } // ID exact match
+      }
+      if (idx === -1) {
+        // Fallback: match by platform HANYA jika stored account belum punya real ID
+        for (var i = 0; i < existing.length; i++) {
+          var fakePat2 = /^pfm_[a-z]+_\d+$/;
+          if (existing[i].platform === apiPlatform && (!existing[i].id || fakePat2.test(existing[i].id))) {
+            idx = i; break;
+          }
         }
       }
       if (idx === -1) return; // bukan akun user ini, skip
