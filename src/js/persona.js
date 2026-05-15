@@ -216,8 +216,17 @@ async function startScanWithFile(filename, fileCount) {
     /* ── Cek konflik dengan profil bisnis ── */
     var bizCategory = window.userBizProfile && window.userBizProfile.category;
 
+    /* Fallback: kalau userBizProfile belum selesai load dari Supabase,
+       baca dari localStorage (cache) agar conflict check tetap bisa jalan */
     if (!bizCategory) {
-      /* Tidak ada profil bisnis → langsung pakai hasil AI */
+      try {
+        var _cached = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+        bizCategory = _cached.category || null;
+      } catch(e) {}
+    }
+
+    if (!bizCategory) {
+      /* Benar-benar tidak ada profil bisnis → langsung pakai hasil AI */
       _applyVisionPersona(visionKey);
     } else {
       /* Petakan kategori biz ke persona key.
