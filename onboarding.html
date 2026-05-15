@@ -415,7 +415,7 @@
                 else window.open(authUrl, 'postforme_oauth', 'width=600,height=700,left=200,top=80');
 
                 // Dengarkan callback dari postforme-callback.html
-                var msgHandler = function(event) {
+                var msgHandler = async function(event) {
                     if (event.origin !== window.location.origin) return;
                     if (!event.data) return;
                     var type = event.data.type;
@@ -424,12 +424,48 @@
                     window.removeEventListener('message', msgHandler);
                     clearInterval(poll);
 
+                    var d = event.data;
+                    // ID awal dari pesan callback (mungkin tersedia di oauth_success)
+                    var accountId = (d.accountIds && d.accountIds[0]) || d.accountId || d.account_id || '';
+                    var username  = null;
+                    var avatarUrl = null;
+
+                    // Ambil detail akun nyata dari PostForMe API
+                    // Ini menggantikan fake ID dan mengisi username + avatar_url
+                    try {
+                        var pfResp = await fetch(supabaseUrl + '/functions/v1/postforme-proxy', {
+                            method: 'POST',
+                            headers: { 'Authorization': 'Bearer ' + supabaseKey, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                endpoint: '/v1/social-accounts?external_id=' + encodeURIComponent(externalId),
+                                method: 'GET'
+                            })
+                        });
+                        if (pfResp.ok) {
+                            var pfData = await pfResp.json();
+                            var list = pfData.data || pfData.accounts || (Array.isArray(pfData) ? pfData : []);
+                            for (var i = 0; i < list.length; i++) {
+                                var apiPlatform = (list[i].platform || list[i].provider || '').toLowerCase();
+                                if (apiPlatform === platform || apiPlatform.startsWith(platform)) {
+                                    if (list[i].id) accountId = list[i].id;
+                                    username  = list[i].username || list[i].handle || list[i].name || null;
+                                    avatarUrl = list[i].profile_photo_url || list[i].profile_picture_url
+                                              || list[i].picture || list[i].avatar || list[i].image_url || null;
+                                    break;
+                                }
+                            }
+                        }
+                    } catch(pfErr) {
+                        console.warn('[onboarding] fetch account details error:', pfErr.message);
+                    }
+
+                    // Fallback: jika masih tidak ada ID nyata, buat placeholder sementara
+                    if (!accountId) accountId = 'pfm_' + platform + '_' + Date.now();
+
                     // Simpan ke localStorage (format sama dengan buffer.js)
                     var accounts = JSON.parse(localStorage.getItem('radar_social_accounts') || '[]');
                     accounts = accounts.filter(function(a) { return a.platform !== platform; });
-                    var d = event.data;
-                    var accountId = (d.accountIds && d.accountIds[0]) || d.accountId || d.account_id || ('pfm_' + platform + '_' + Date.now());
-                    accounts.push({ id: accountId, platform: platform, username: null, avatar_url: null });
+                    accounts.push({ id: accountId, platform: platform, username: username, avatar_url: avatarUrl });
                     localStorage.setItem('radar_social_accounts', JSON.stringify(accounts));
 
                     // SINKRONISASI KE DATABASE (PENTING!)
@@ -438,11 +474,10 @@
                     }
 
                     // Update tampilan tombol → hijau ✓
-                    var colors = { facebook:'#1877F2', instagram:'#E1306C', tiktok:'#000000', youtube:'#FF0000' };
                     btn.style.borderColor = '#16a34a';
                     btn.style.color = '#16a34a';
                     btn.style.background = '#f0fdf4';
-                    if (span) span.textContent = '✓ Terhubung';
+                    if (span) span.textContent = username ? ('✓ @' + username) : '✓ Terhubung';
                     btn.disabled = false;
                 };
                 window.addEventListener('message', msgHandler);
