@@ -100,18 +100,27 @@
         setTimeout(function() { window.close(); }, 2000);
 
       } else {
-        // isSuccess=false tanpa accountId → mungkin akun sudah terhubung sebelumnya
-        // atau user membatalkan. Kirim pesan ke opener untuk sync ulang dari PostForMe API.
-        if (window.opener && !window.opener.closed) {
-          try {
-            window.opener.postMessage({
-              type:     'postforme_oauth_resync',
-              provider: provider
-            }, window.location.origin);
-          } catch(e) {}
+        document.getElementById('spinner').style.display = 'none';
+
+        // Jika dibuka langsung (bukan popup) tanpa params → arahkan ke dashboard
+        if (!window.opener || window.opener.closed) {
+          document.getElementById('card').innerHTML =
+            '<div class="icon">🔗</div>' +
+            '<div class="title">Larisi</div>' +
+            '<div class="subtitle">Halaman ini digunakan saat menghubungkan akun sosial media.' +
+            ' <a href="/" style="color:#791ADB;font-weight:600;">Kembali ke dashboard</a></div>';
+          return;
         }
 
-        document.getElementById('spinner').style.display = 'none';
+        // isSuccess=false tanpa accountId → mungkin akun sudah terhubung sebelumnya
+        // atau user membatalkan. Kirim pesan ke opener untuk sync ulang dari PostForMe API.
+        try {
+          window.opener.postMessage({
+            type:     'postforme_oauth_resync',
+            provider: provider
+          }, window.location.origin);
+        } catch(e) {}
+
         document.getElementById('card').innerHTML =
           '<div class="icon">🔄</div>' +
           '<div class="title">Menyinkronkan akun…</div>' +
