@@ -40,6 +40,7 @@
             <div class="stepper">
                 <div class="step active"></div>
                 <div class="step"></div>
+                <div class="step"></div>
             </div>
 
             <h2>Informasi Bisnis</h2>
@@ -127,11 +128,12 @@
             <div class="stepper">
                 <div class="step active"></div>
                 <div class="step active"></div>
+                <div class="step active"></div>
             </div>
 
             <h2>Hubungkan Akun</h2>
             <p class="subtitle" style="text-align: left; margin-bottom: 24px;">
-                Hubungkan akun sosial media bisnis Anda untuk mulai mengelola postingan.
+                Hubungkan minimal 1 akun sosial media bisnis Anda untuk mulai membuat konten.
             </p>
 
             <div class="social-buttons">
@@ -149,8 +151,8 @@
                 </button>
             </div>
 
-            <button class="btn btn-primary" onclick="finishOnboarding()">Selesai</button>
-            <a href="#" class="skip-link" onclick="finishOnboarding()">Anda bisa menambah akun lainnya kapan saja</a>
+            <button id="ob-finish-btn" class="btn btn-primary" onclick="finishOnboarding()" disabled>Mulai Buat Konten</button>
+            <a href="#" class="skip-link" onclick="finishOnboarding()" style="font-size: 11px; color: var(--secondary); opacity: 0.6;">Lewati — tambah akun kapan saja</a>
         </div>
 
     </div>
@@ -481,6 +483,11 @@
                     btn.style.background = '#f0fdf4';
                     if (span) span.textContent = username ? ('✓ @' + username) : '✓ Terhubung';
                     btn.disabled = false;
+
+                    // Enable finish button setelah minimal 1 akun terhubung
+                    var _conns = JSON.parse(localStorage.getItem('radar_social_accounts') || '[]');
+                    var _finBtn = document.getElementById('ob-finish-btn');
+                    if (_conns.length > 0 && _finBtn) { _finBtn.disabled = false; }
                 };
                 window.addEventListener('message', msgHandler);
 
