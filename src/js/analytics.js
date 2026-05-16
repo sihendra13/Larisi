@@ -1326,21 +1326,31 @@ window.anSetCompPlatform = anSetCompPlatform;
 function _anIsCategoryMismatch(userCat, compCat) {
   if (!userCat || !compCat) return false;
   var groups = {
-    food:     ['kuliner','fnb','makanan','minuman','cafe','kafe','restoran','resto','food','kopi',
-               'catering','bakery','warung','kedai','mie','bakso','nasi','rumah makan','makan'],
-    fashion:  ['fashion','pakaian','busana','outfit','baju','hijab','batik','clothing','konveksi'],
-    beauty:   ['beauty','kecantikan','skincare','makeup','salon','perawatan','kosmetik'],
-    retail:   ['retail','toko','jualan','produk','shop','market','belanja'],
-    service:  ['jasa','service','layanan','konsultan','reparasi','laundry'],
-    health:   ['kesehatan','health','medis','apotek','klinik','dokter','herbal'],
-    property: ['properti','property','rumah','realestate','kontrakan','kost','ruko'],
-    travel:   ['wisata','travel','pariwisata','hotel','resort','penginapan','tur'],
-    edu:      ['pendidikan','education','kursus','les','belajar','sekolah','training'],
-    auto:     ['otomotif','motor','mobil','automotive','bengkel','sparepart'],
-    // Seni & Budaya — penting untuk deteksi mismatch (museum, gallery, dll)
-    seni:     ['museum','gallery','galeri','art','seni','budaya','film','culture','creative',
-               'pertunjukan','teater','musik','kultura','heritage','kebudayaan','pameran',
-               'sinema','exhibition','kurasi','arsip','literasi']
+    food:      ['kuliner','fnb','makanan','minuman','restoran','resto','food',
+                'catering','bakery','warung','kedai','mie','bakso','nasi','rumah makan','makan'],
+    cafe:      ['kafe','cafe','kopi','coffee','boba','minuman','kedai kopi','espresso','tea'],
+    fashion:   ['fashion','pakaian','busana','outfit','baju','hijab','batik','clothing','konveksi','thrift'],
+    beauty:    ['beauty','kecantikan','skincare','makeup','salon','perawatan','kosmetik','spa','lash','nail'],
+    barber:    ['barber','barbershop','cukur','pangkas','potong rambut','hairstyle'],
+    retail:    ['retail','toko','jualan','produk','shop','market','belanja','olshop','store'],
+    service:   ['jasa','service','layanan','konsultan','reparasi','laundry','sablon','percetakan'],
+    health:    ['kesehatan','health','medis','apotek','klinik','dokter','herbal','farmasi','wellness'],
+    property:  ['properti','property','rumah','realestate','kontrakan','kost','ruko','kavling','perumahan'],
+    accom:     ['hotel','resort','penginapan','villa','homestay','bnb','motel','inn','lodge','akomodasi'],
+    travel:    ['wisata','travel','pariwisata','tur','tour','piknik','destinasi','liburan','backpacker'],
+    edu:       ['pendidikan','education','kursus','les','belajar','sekolah','training','kampus','bimbel'],
+    auto:      ['otomotif','motor','mobil','automotive','bengkel','sparepart','variasi','modifikasi'],
+    sport:     ['olahraga','sport','gym','fitness','futsal','badminton','renang','lari','yoga','crossfit'],
+    seni:      ['museum','gallery','galeri','art','seni','budaya','film','culture','creative',
+                'pertunjukan','teater','kultura','heritage','kebudayaan','pameran',
+                'sinema','exhibition','kurasi','arsip','literasi'],
+    music:     ['musik','band','dj','hiburan','entertainment','konser','manggung','studio musik'],
+    photo:     ['foto','photography','photographer','studio foto','kamera','visual','cinematography'],
+    event:     ['wedding','pernikahan','bridal','dekorasi','event organizer','wedding organizer','eo'],
+    pet:       ['pet','hewan','anjing','kucing','vet','veteriner','grooming hewan','reptil','burung'],
+    komunitas: ['komunitas','community','club','squad','organisasi','yayasan','paguyuban','forum','base'],
+    media:     ['media','berita','news','magazine','konten','content creator','podcast','blog','vlog'],
+    tech:      ['teknologi','tech','startup','digital','software','app','aplikasi','it','coding','developer'],
   };
   function getGroup(cat) {
     var c = cat.toLowerCase();
@@ -2390,7 +2400,7 @@ async function _callSilarisCompetitor(handle, platform, agg) {
     'Kamu SiLaris, AI coach UMKM Indonesia. Analisa estimatif akun ' + platName + ': ' + handle + '.',
     'WAJIB: maks 20 kata/insight. Tanpa em-dash. Tanpa "bisnis lokal". Bahasa santai.',
     'Data user: campaign=' + (agg.total || 0) + ', ER=' + (agg.avgER ? agg.avgER.toFixed(1) + '%' : '-') + ', reach=' + _anFmtK(agg.totalReach) + '.',
-    'comp_category: deteksi dari nama/bio. museum/gallery/art→"seni budaya", resto/warung/food→"kuliner", fashion/hijab→"fashion", salon/beauty→"beauty", properti/rumah→"properti", motor/bengkel→"otomotif", jasa/konsultan→"jasa", kursus/les→"pendidikan". Kosong jika tidak terdeteksi.',
+    'comp_category: deteksi dari nama/bio username. Gunakan mapping ini: resto/warung/food/bakso/nasi/makan→"kuliner", kafe/coffee/kopi/boba/minuman→"kafe", fashion/hijab/baju/outfit/clothing/batik/thrift→"fashion", salon/beauty/skincare/makeup/kosmetik/spa/nail→"beauty", barber/barbershop/cukur/pangkas→"barber", hotel/resort/penginapan/villa/homestay/bnb→"hotel & akomodasi", wisata/travel/tur/destinasi/liburan→"wisata", properti/rumah/kost/kontrakan/ruko/kavling→"properti", motor/bengkel/mobil/otomotif/sparepart→"otomotif", klinik/dokter/kesehatan/apotek/herbal/wellness→"kesehatan", gym/fitness/olahraga/sport/yoga/futsal→"olahraga", kursus/les/sekolah/pendidikan/training/bimbel→"pendidikan", museum/galeri/art/seni/budaya/pameran/exhibition→"seni budaya", musik/band/dj/entertainment/konser→"hiburan", foto/photography/photographer/studio foto→"fotografi", wedding/pernikahan/bridal/event organizer→"wedding & event", pet/hewan/anjing/kucing/vet/grooming→"pet", komunitas/community/club/organisasi/yayasan/paguyuban/base→"komunitas", media/berita/news/konten/podcast/content creator→"media & konten", teknologi/startup/digital/app/software/developer→"teknologi", jasa/konsultan/laundry/reparasi/sablon→"jasa", toko/retail/shop/olshop→"retail". Kosong jika benar-benar tidak bisa dideteksi.',
     'comp_format: hanya dari jenis post (image/video/reel/carousel). "Tidak tersedia" jika tidak tahu.',
     'Return JSON bersih: {"comp_handle":"@x","comp_category":"","comp_freq":"Nx/week","comp_followers":"XXK","comp_format":"...","insights":[{"type":"green","text":"..."},{"type":"red","text":"..."},{"type":"purple","text":"..."}]}'
   ].join('\n');
