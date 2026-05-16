@@ -1779,7 +1779,7 @@ function _renderStrategyContent(strat) {
   if (footer) {
     footer.innerHTML =
       '<button class="an-strat-save-btn" id="an-strat-save-btn" onclick="anSaveCurrentStrategy()">' +
-        '💾 Simpan &amp; Mulai Sekarang →' +
+        'Simpan &amp; Mulai Sekarang →' +
       '</button>';
   }
 }
