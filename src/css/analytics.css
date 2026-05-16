@@ -1930,8 +1930,8 @@
   margin-top: 4px;
 }
 .an-strat-save-btn {
-  flex: 1;
   height: 42px;
+  padding: 0 24px;
   background: var(--near-black);
   color: white;
   border: none;
@@ -1940,7 +1940,8 @@
   font-family: var(--font);
   cursor: pointer;
   transition: background .15s;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  width: fit-content;
 }
 .an-strat-save-btn:hover    { background: var(--rausch); }
 .an-strat-save-btn:disabled { opacity: 0.55; cursor: default; background: var(--near-black); }
