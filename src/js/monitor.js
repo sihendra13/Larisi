@@ -2170,6 +2170,12 @@ function _startRealtimeCampaignSync() {
       return;
     }
 
+    // Unsubscribe channel lama sebelum buat baru — cegah subscription numpuk
+    if (window._realtimeCampaignChannel) {
+      try { window._realtimeCampaignChannel.unsubscribe(); } catch(_) {}
+      window._realtimeCampaignChannel = null;
+    }
+
     var channel = client
       .channel('radar-campaigns-' + (window.radarSessionId || 'anon'))
       .on('postgres_changes', {
