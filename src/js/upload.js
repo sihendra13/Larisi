@@ -46,8 +46,17 @@ function addThumb(f, thumbs, uz, isMaster, existingUrl) {
       thumbs.style.display = 'none';
       uz.style.display = '';
       uploadMode = null;
+      uploadedVideoFile = null;
       masterPersonaLocked = false;
       currentPersona = null;
+      // Reset stitch UI ke state awal (foto)
+      var _tEl = document.getElementById('toggleStitch');
+      var _nEl = document.getElementById('stitchVideoNotice');
+      var _dEl = document.getElementById('stitchDesc');
+      if (_tEl) { _tEl.classList.add('on'); _tEl.classList.remove('disabled'); }
+      if (_nEl) _nEl.style.display = 'none';
+      if (_dEl) _dEl.style.display = 'block';
+      if (typeof geoStitchVisible !== 'undefined') geoStitchVisible = true;
       captionAltIndex = 0;
       uploadedDataURL = null;
       uploadedDataURLs = [];

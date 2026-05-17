@@ -23,6 +23,8 @@ function updateStitch() {
     .replace(/\{greeting\}/g, d.greeting)
     .replace(/\{cta\}/g,      d.cta);
   var s = document.getElementById('phoneStitch');
+  var isVideo = typeof uploadedVideoFile !== 'undefined' && uploadedVideoFile instanceof File;
+  if (isVideo) { s.style.display = 'none'; return; }
   s.style.display = 'block'; s.textContent = txt;
 }
 
