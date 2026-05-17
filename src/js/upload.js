@@ -263,6 +263,21 @@ function processFiles(rawFiles, hasVideo) {
   } else {
     uploadedVideoFile = null;
   }
+
+  // Disable stitch toggle untuk video, enable untuk foto
+  var toggleEl = document.getElementById('toggleStitch');
+  var noticeEl = document.getElementById('stitchVideoNotice');
+  var stitchEl = document.getElementById('phoneStitch');
+  if (isVid) {
+    if (toggleEl) { toggleEl.classList.remove('on'); toggleEl.classList.add('disabled'); }
+    if (noticeEl) noticeEl.style.display = 'block';
+    if (stitchEl) stitchEl.style.display = 'none';
+    if (typeof geoStitchVisible !== 'undefined') geoStitchVisible = false;
+  } else {
+    if (toggleEl) { toggleEl.classList.add('on'); toggleEl.classList.remove('disabled'); }
+    if (noticeEl) noticeEl.style.display = 'none';
+    if (typeof geoStitchVisible !== 'undefined') geoStitchVisible = true;
+  }
   
   uploadedDataURL = firstBlobUrl;  // Gunakan blob URL yang sama dengan yang didaftarkan di map
   showInPhone(firstBlobUrl, isVid, 0);
