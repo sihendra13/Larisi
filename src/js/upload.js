@@ -267,15 +267,18 @@ function processFiles(rawFiles, hasVideo) {
   // Disable stitch toggle untuk video, enable untuk foto
   var toggleEl = document.getElementById('toggleStitch');
   var noticeEl = document.getElementById('stitchVideoNotice');
+  var descEl   = document.getElementById('stitchDesc');
   var stitchEl = document.getElementById('phoneStitch');
   if (isVid) {
     if (toggleEl) { toggleEl.classList.remove('on'); toggleEl.classList.add('disabled'); }
     if (noticeEl) noticeEl.style.display = 'block';
+    if (descEl)   descEl.style.display   = 'none';
     if (stitchEl) stitchEl.style.display = 'none';
     if (typeof geoStitchVisible !== 'undefined') geoStitchVisible = false;
   } else {
     if (toggleEl) { toggleEl.classList.add('on'); toggleEl.classList.remove('disabled'); }
     if (noticeEl) noticeEl.style.display = 'none';
+    if (descEl)   descEl.style.display   = 'block';
     if (typeof geoStitchVisible !== 'undefined') geoStitchVisible = true;
   }
   
