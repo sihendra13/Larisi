@@ -39,7 +39,8 @@ function addThumb(f, thumbs, uz, isMaster, existingUrl) {
   var xBtn = document.createElement('button');
   xBtn.className = 'thumb-x';
   xBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-  xBtn.onclick = function() {
+  xBtn.onclick = function(e) {
+    e.stopPropagation();
     wrapper.remove();
     var remaining = thumbs.querySelectorAll('.thumb-item');
     if (remaining.length === 0) {
