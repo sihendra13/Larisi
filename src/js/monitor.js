@@ -949,7 +949,8 @@ function buildCampaignCard(c) {
     : _isImage
     ? '<div class="cc-thumbnail-container" style="margin:0 12px 8px;height:240px;border-radius:8px;overflow:hidden;">'
     +   '<img src="' + _thumb + '" class="cc-thumbnail-img" style="width:100%;height:100%;'
-    +   'object-fit:cover;object-position:top;display:block;">'
+    +   'object-fit:cover;object-position:top;display:block;"'
+    +   ' onerror="_onThumbError(this,' + (_isActualVideo ? '1' : '0') + ',' + JSON.stringify(c.thumbColor || '#1a1a2e') + ')">'
     + '</div>'
     : _videoPlaceholderHTML;
 
@@ -2225,3 +2226,25 @@ function _startRealtimeCampaignSync() {
   }
 }
 window._startRealtimeCampaignSync = _startRealtimeCampaignSync;
+
+function _onThumbError(img, isVideo, thumbColor) {
+  var container = img.parentNode;
+  if (!container) return;
+  if (isVideo) {
+    container.style.background = thumbColor || '#1a1a2e';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.alignItems = 'center';
+    container.style.justifyContent = 'center';
+    container.style.gap = '8px';
+    container.innerHTML =
+      '<span style="font-size:36px;line-height:1;">&#9654;</span>' +
+      '<span style="color:white;font-size:12px;font-weight:600;letter-spacing:0.05em;">VIDEO</span>';
+  } else {
+    container.style.display = 'flex';
+    container.style.alignItems = 'center';
+    container.style.justifyContent = 'center';
+    container.innerHTML = '<span style="color:#9ca3af;font-size:12px;text-align:center;">Foto tidak tersedia</span>';
+  }
+}
+window._onThumbError = _onThumbError;
