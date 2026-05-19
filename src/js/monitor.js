@@ -949,9 +949,10 @@ function buildCampaignCard(c) {
     : _isVideoPlaceholder
     ? _videoPlaceholderHTML
     : _isImage
-    ? '<div class="cc-thumbnail-container" style="margin:0 12px 8px;height:240px;border-radius:8px;overflow:hidden;">'
+    ? '<div class="cc-thumbnail-container" style="margin:0 12px 8px;height:240px;border-radius:8px;overflow:hidden;background:#f3f4f6;">'
     +   '<img src="' + _thumb + '" class="cc-thumbnail-img" style="width:100%;height:100%;'
-    +   'object-fit:cover;object-position:top;display:block;"'
+    +   'object-fit:cover;object-position:top;display:none;"'
+    +   ' onload="this.style.display=\'block\'"'
     +   ' onerror="_onThumbError(this,' + (_isActualVideo ? '1' : '0') + ",'" + (c.thumbColor || '#1a1a2e') + "')\""  + '>'
     + '</div>'
     : _videoPlaceholderHTML;
