@@ -929,7 +929,7 @@ function buildCampaignCard(c) {
   var _isActualVideo = _thumb.startsWith('data:video') ||
     (c.format && (c.format === 'reel' || c.format === 'video')) ||
     (typeof uploadedVideoFile !== 'undefined' && uploadedVideoFile && c.id === (window._lastLaunchedId));
-  var _isVideoPlaceholder = _isActualVideo && !_thumb.startsWith('data:image');
+  var _isVideoPlaceholder = _isActualVideo && !_thumb.startsWith('data:image') && !_thumb.startsWith('https://');
   // Hanya pakai data: atau https: — blob: sudah dibuang di atas
   var _isImage = _thumb.startsWith('data:image') || _thumb.startsWith('https://');
   var _videoPlaceholderHTML =
@@ -1250,6 +1250,8 @@ async function _loadAnalyticsForCard(campaign) {
       }
     }
     if (!targetPost) return;
+    // Jangan tampilkan engagement dari fallback yang tidak akurat (posts[0] atau temporal > 15 menit)
+    if (!_isExactMatch) return;
 
     // Extract metrics — PostForMe menyimpan di targetPost.metrics
     var m = targetPost.metrics || {};
