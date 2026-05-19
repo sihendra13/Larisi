@@ -503,6 +503,41 @@ async function updateCampaignPostUrl(campaignId, postUrl) {
   }
 }
 window.updateCampaignPostUrl = updateCampaignPostUrl;
+async function uploadThumbToStorage(supabaseId, dataUrl) {
+  if (!supabaseId || !dataUrl || !dataUrl.startsWith('data:image')) return null;
+  try {
+    var base64 = dataUrl.split(',')[1];
+    var binary = atob(base64);
+    var bytes  = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    var blob = new Blob([bytes], { type: 'image/jpeg' });
+    var path = supabaseId + '.jpg';
+    var res  = await fetch(
+      RADAR_CONFIG.SUPABASE_URL + '/storage/v1/object/thumbnails/' + path,
+      {
+        method:  'POST',
+        headers: {
+          'Authorization': 'Bearer ' + RADAR_CONFIG.SUPABASE_ANON_KEY,
+          'Content-Type':  'image/jpeg',
+          'x-upsert':      'true'
+        },
+        body: blob
+      }
+    );
+    if (!res.ok) {
+      console.warn('[supabase] uploadThumbToStorage failed:', res.status, await res.text());
+      return null;
+    }
+    var publicUrl = RADAR_CONFIG.SUPABASE_URL + '/storage/v1/object/public/thumbnails/' + path;
+    console.log('[supabase] thumbnail uploaded to Storage:', publicUrl);
+    return publicUrl;
+  } catch(e) {
+    console.warn('[supabase] uploadThumbToStorage error:', e.message);
+    return null;
+  }
+}
+window.uploadThumbToStorage = uploadThumbToStorage;
+
 async function updateCampaignThumbUrl(campaignId, thumbUrl) {
   var client = getSupabaseClient();
   if (!client || !campaignId || !thumbUrl) return;

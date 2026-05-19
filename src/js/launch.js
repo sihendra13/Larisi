@@ -722,17 +722,18 @@ async function _doLaunch(campNameOverride) {
       newCamp.supabase_id      = saveResult.id;
       campaignData.supabase_id = saveResult.id;
       console.log('[launch] supabase_id ready:', saveResult.id);
-      // thumb_url sudah disimpan ke Supabase via saveCampaign (compressed JPEG).
-      // Simpan juga compressed version ke localStorage sebagai fallback cepat (sesi saat ini).
-      if (compressedThumb) {
-        try {
-          localStorage.setItem('radar_thumb_' + saveResult.id, compressedThumb);
-          console.log('[launch] compressed thumb saved to localStorage for', saveResult.id,
-            '| size:', compressedThumb.length);
-        } catch(e) {
-          // localStorage penuh — tidak masalah, Supabase sudah punya thumb_url
-          console.warn('[launch] localStorage thumb save failed (OK — Supabase sudah punya):', e.message);
-        }
+      // Upload thumbnail ke Supabase Storage → URL permanen, tidak expire
+      if (compressedThumb && typeof uploadThumbToStorage === 'function') {
+        uploadThumbToStorage(saveResult.id, compressedThumb).then(function(storageUrl) {
+          if (storageUrl) {
+            newCamp.thumbUrl = storageUrl;
+            updateCampaignThumbUrl(saveResult.id, storageUrl);
+            try { localStorage.setItem('radar_thumb_' + saveResult.id, storageUrl); } catch(e) {}
+          } else {
+            // Fallback: simpan base64 ke localStorage kalau Storage gagal
+            try { localStorage.setItem('radar_thumb_' + saveResult.id, compressedThumb); } catch(e) {}
+          }
+        });
       }
     }
 
