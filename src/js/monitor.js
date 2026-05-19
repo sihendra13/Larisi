@@ -950,7 +950,7 @@ function buildCampaignCard(c) {
     ? '<div class="cc-thumbnail-container" style="margin:0 12px 8px;height:240px;border-radius:8px;overflow:hidden;">'
     +   '<img src="' + _thumb + '" class="cc-thumbnail-img" style="width:100%;height:100%;'
     +   'object-fit:cover;object-position:top;display:block;"'
-    +   ' onerror="_onThumbError(this,' + (_isActualVideo ? '1' : '0') + ',' + JSON.stringify(c.thumbColor || '#1a1a2e') + ')">'
+    +   ' onerror="_onThumbError(this,' + (_isActualVideo ? '1' : '0') + ",'" + (c.thumbColor || '#1a1a2e') + "')\""  + '>'
     + '</div>'
     : _videoPlaceholderHTML;
 
