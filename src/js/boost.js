@@ -7,7 +7,13 @@ var BOOST_HANDLER = {
 
   // MODE 1 (aktif sekarang): buka Ads Manager + salin rekomendasi
   redirect: function(boostData) {
-    var url = 'https://www.facebook.com/adsmanager/creation';
+    var raw = boostData.platformsRaw || [];
+    var isTikTokOnly = raw.length === 1 && raw[0] === 'tiktok';
+    var hasTikTok    = raw.indexOf('tiktok') !== -1;
+    var hasMetaOrIg  = raw.indexOf('meta') !== -1 || raw.indexOf('ig') !== -1;
+    var url = (hasTikTok && !hasMetaOrIg)
+      ? 'https://ads.tiktok.com/i18n/creation/campaign'
+      : 'https://www.facebook.com/adsmanager/creation';
     window.open(url, '_blank');
   },
 
@@ -50,17 +56,18 @@ function _buildBoostRecommendation(campaign) {
   var reachMax  = Math.round((campaign.reachMax || 8000));
 
   return {
-    platform:    platNames,
-    location:    campaign.kecamatan || 'Area target',
-    radius:      (campaign.radius || 1) + ' km',
-    audience:    campaign.kategori || 'General',
-    format:      formatLabel,
-    budgetMin:   budgetMin,
-    budgetMax:   budgetMax,
-    reachMin:    reachMin,
-    reachMax:    reachMax,
-    primeTime:   'Kamis–Sabtu, 18.00–21.00',
-    campName:    campaign.nama || campaign.name || 'Campaign'
+    platform:     platNames,
+    platformsRaw: campaign.platforms || ['ig'],
+    location:     campaign.kecamatan || 'Area target',
+    radius:       (campaign.radius || 1) + ' km',
+    audience:     campaign.kategori || 'General',
+    format:       formatLabel,
+    budgetMin:    budgetMin,
+    budgetMax:    budgetMax,
+    reachMin:     reachMin,
+    reachMax:     reachMax,
+    primeTime:    'Kamis–Sabtu, 18.00–21.00',
+    campName:     campaign.nama || campaign.name || 'Campaign'
   };
 }
 
@@ -190,12 +197,16 @@ function showBoostModal(campaign) {
           'color:#fff;font-size:13px;font-weight:700;cursor:pointer;' +
           'font-family:var(--font,sans-serif);transition:background 0.15s;" ' +
           'onmouseover="this.style.background=\'#374151\'" onmouseout="this.style.background=\'#111827\'">' +
-          'Buka Meta Ads' +
+          (rec.platformsRaw.indexOf('tiktok') !== -1 && rec.platformsRaw.indexOf('meta') === -1 && rec.platformsRaw.indexOf('ig') === -1
+            ? 'Buka TikTok Ads'
+            : 'Buka Meta Ads') +
         '</button>' +
       '</div>' +
 
       '<div style="text-align:center;margin-top:10px;font-size:10px;color:#9ca3af;">' +
-        'Form Ads Manager perlu diisi manual · Salin rekomendasi di atas sebagai panduan' +
+        (rec.platformsRaw.indexOf('tiktok') !== -1 && rec.platformsRaw.indexOf('meta') === -1 && rec.platformsRaw.indexOf('ig') === -1
+          ? 'TikTok Ads Manager perlu diisi manual · Salin rekomendasi di atas sebagai panduan'
+          : 'Form Ads Manager perlu diisi manual · Salin rekomendasi di atas sebagai panduan') +
       '</div>' +
 
     '</div></div>';
