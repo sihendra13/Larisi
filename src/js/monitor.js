@@ -577,10 +577,12 @@ async function fetchAndUpdatePostUrl(campaign, _attempt) {
     // Fallback root level media_url
     if (!mediaUrl) mediaUrl = data.media_url || data.thumb_url || null;
 
-    if (mediaUrl && campaign.thumbUrl !== mediaUrl) {
+    // Jangan timpa data:image base64 (permanen) dengan URL CDN PostForMe yang bisa expire
+    var _hasPermThumb = campaign.thumbUrl && campaign.thumbUrl.startsWith('data:');
+    if (mediaUrl && campaign.thumbUrl !== mediaUrl && !_hasPermThumb) {
       console.log('[monitor] Memperbarui thumbnail ke Supabase:', campaign.name);
       campaign.thumbUrl = mediaUrl;
-      
+
       // Simpan ke database agar permanen
       if (typeof updateCampaignThumbUrl === 'function') {
         updateCampaignThumbUrl(campaign.supabase_id, mediaUrl);
@@ -1363,9 +1365,11 @@ async function _loadAnalyticsForCard(campaign) {
     var mediaUrl = null;
     if (targetPost.media && targetPost.media.length && targetPost.media[0].url) {
       mediaUrl = targetPost.media[0].url;
-      // Update thumbUrl campaign hanya jika ini exact match (bukan fallback sembarangan)
+      // Update thumbUrl campaign hanya jika ini exact match dan belum ada base64 permanen
       if (campaign.platform_post_id && targetPost.platform_post_id === campaign.platform_post_id) {
-        campaign.thumbUrl = mediaUrl;
+        if (!campaign.thumbUrl || !campaign.thumbUrl.startsWith('data:')) {
+          campaign.thumbUrl = mediaUrl;
+        }
       }
     }
 
