@@ -7,11 +7,6 @@ window.startDuitkuPayment = async function(plan, amount) {
         const userProfile = window.userBizProfile || JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
         const userEmail = (user && user.email ? user.email : (userProfile.email || '')).toLowerCase().trim();
 
-        if (userEmail !== 'halo@larisi.id') {
-            alert('Fitur pembayaran sedang disiapkan.');
-            return;
-        }
-
         const orderId = 'LARISI-' + Date.now();
         if (window.showAnToast) window.showAnToast('Menghubungkan ke Duitku...', 'info');
 
