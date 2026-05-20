@@ -113,11 +113,11 @@ function _dkOnPaymentSuccess(plan) {
   var trialModal = document.getElementById('trial-modal');
   if (trialModal) trialModal.style.display = 'none';
 
-  // Tutup Duitku modal setelah 1.5 detik
+  // Tutup Duitku modal setelah 3.5 detik
   setTimeout(function() {
     var overlay = document.getElementById('dk-modal-overlay');
     if (overlay) overlay.remove();
-  }, 1500);
+  }, 3500);
 }
 
 function _startDkPolling(userId, plan) {
