@@ -121,9 +121,9 @@ var CAPTION_TEMPLATES = {
       "{greeting} 📅\n\nSlot sesi foto bulan ini hampir penuh!\n\nHanya tersisa beberapa jadwal di {loc}. {usp}. Jangan tunda — momen yang terlewat tidak bisa diulang.\n\n{cta}\n\n#BookingFoto #SlotTerbatas #FotoSekarang"
     ],
     "JasaProfesional": [
-      "{greeting} 💼\n\nUrusan hukum, pajak, atau bisnis yang rumit? Serahkan ke ahlinya.\n\nTim profesional kami di {loc} siap membantu dengan solusi yang tepat, jelas, dan bisa diandalkan. Konsultasi pertama gratis. {usp}.\n\n{cta}\n\n#JasaProfesional #KonsultasiGratis #SolusiTepat",
-      "{greeting} 🤝\n\nKeputusan bisnis yang salah bisa merugikan bertahun-tahun — konsultasi dulu sebelum melangkah.\n\nKami di {loc} membantu kamu memahami risiko, hak, dan pilihan terbaik dengan bahasa yang mudah dimengerti. Bukan jargon — tapi solusi nyata. {usp}.\n\n{cta}\n\n#KonsultanTerpercaya #JasaHukum #BisnisAman",
-      "{greeting} 📋\n\nJadwal konsultasi awal GRATIS — terbatas untuk minggu ini!\n\nDi {loc}, kami membuka slot khusus konsultasi tanpa biaya untuk masalah hukum, pajak, dan perizinan usaha. {usp}. Amankan jadwalmu sekarang.\n\n{cta}\n\n#KonsultasiGratis #JasaProfesional #SlotTerbatas"
+      "{greeting} 💼\n\nButuh bantuan profesional yang bisa benar-benar diandalkan? Serahkan ke ahlinya.\n\nTim profesional kami di {loc} siap membantu dengan solusi yang tepat, jelas, dan tidak berbelit. Konsultasi pertama gratis. {usp}.\n\n{cta}\n\n#JasaProfesional #KonsultasiGratis #SolusiTepat",
+      "{greeting} 🤝\n\nKeputusan yang salah bisa merugikan bertahun-tahun — konsultasi dulu sebelum melangkah.\n\nKami di {loc} membantu kamu memahami risiko dan pilihan terbaik dengan bahasa yang mudah dimengerti. Bukan jargon — tapi solusi nyata. {usp}.\n\n{cta}\n\n#KonsultanTerpercaya #JasaProfesional #SolusiNyata",
+      "{greeting} 📋\n\nJadwal konsultasi awal GRATIS — terbatas untuk minggu ini!\n\nDi {loc}, kami membuka slot khusus konsultasi tanpa biaya. {usp}. Amankan jadwalmu sekarang.\n\n{cta}\n\n#KonsultasiGratis #JasaProfesional #SlotTerbatas"
     ],
     "EventCatering": [
       "{greeting} 🎉\n\nAcara impianmu layak ditangani oleh tim yang benar-benar profesional!\n\nDari konsep hingga eksekusi, kami di {loc} pastikan setiap detail terjaga. Catering lezat, dekorasi memukau, dan koordinasi yang mulus. {usp}.\n\n{cta}\n\n#EventOrganizer #CateringLokal #AcaraBerkesan",
@@ -258,9 +258,9 @@ var CAPTION_TEMPLATES = {
       "Slot foto hampir penuh bulan ini 📅\n\n{greeting}! Tersisa beberapa jadwal di {loc}. Jangan tunda — momen tidak bisa diulang.\n\n{cta}"
     ],
     "JasaProfesional": [
-      "POV: Akhirnya nemu konsultan di {loc} yang jelasinnya pakai bahasa manusia, bukan jargon 💼\n\n{greeting}! Konsultasi gratis untuk pertama kali. {usp}.\n\n{cta}",
-      "Urusan hukum dan bisnis yang rumit sebenarnya bisa diselesaikan — kalau sama ahlinya 🤝\n\n{greeting}! Tim profesional kami di {loc}. {usp}.\n\n{cta}",
-      "Konsultasi awal GRATIS minggu ini — slot terbatas! 📋\n\n{greeting}! Hukum, pajak, perizinan — semua ada di {loc}.\n\n{cta}"
+      "POV: Akhirnya nemu profesional di {loc} yang jelasinnya pakai bahasa manusia, bukan jargon 💼\n\n{greeting}! Konsultasi gratis untuk pertama kali. {usp}.\n\n{cta}",
+      "Masalah yang kompleks sebenarnya bisa diselesaikan — kalau sama ahlinya 🤝\n\n{greeting}! Tim profesional kami di {loc}. {usp}.\n\n{cta}",
+      "Konsultasi awal GRATIS minggu ini — slot terbatas! 📋\n\n{greeting}! {usp}. Di {loc}, solusi profesional ada untuk kamu.\n\n{cta}"
     ],
     "EventCatering": [
       "POV: Semua detail acaramu ditangani tim profesional dan hasilnya melebihi ekspektasi 🎉\n\n{greeting}! Event & catering terpercaya di {loc}. {usp}.\n\n{cta}",
@@ -395,9 +395,9 @@ var CAPTION_TEMPLATES = {
       "{greeting}! Slot sesi foto di {loc} hampir penuh untuk bulan ini. Tersisa beberapa jadwal — {usp}. Booking sekarang sebelum momen yang kamu rencanakan tidak kebagian jadwal. {cta}"
     ],
     "JasaProfesional": [
-      "{greeting}! Masalah hukum, pajak, atau perizinan usaha yang tidak ditangani dengan benar bisa berujung kerugian besar. Di {loc}, tim konsultan profesional kami membantu kamu memahami hak, risiko, dan solusi terbaik — dengan bahasa yang mudah dimengerti, bukan jargon. Konsultasi pertama gratis. {usp}. {cta}",
-      "{greeting}! Keputusan bisnis yang baik dimulai dari informasi yang akurat. Tim profesional kami di {loc} sudah membantu ratusan individu dan usaha menyelesaikan urusan hukum, akuntansi, dan perizinan dengan tepat dan efisien. {usp}. {cta}",
-      "{greeting}! Jadwal konsultasi awal gratis masih tersedia minggu ini di {loc}. Kami bantu kamu navigasi urusan hukum, pajak, dan izin usaha — tanpa biaya di pertemuan pertama. Slot terbatas. {usp}. {cta}"
+      "{greeting}! Masalah yang tidak ditangani oleh ahlinya bisa berujung kerugian besar. Di {loc}, tim profesional kami membantu kamu memahami risiko dan solusi terbaik — dengan bahasa yang mudah dimengerti, bukan jargon. Konsultasi pertama gratis. {usp}. {cta}",
+      "{greeting}! Keputusan yang baik dimulai dari informasi yang akurat. Tim profesional kami di {loc} sudah membantu ratusan individu dan usaha menemukan solusi yang tepat dan efisien untuk kebutuhan mereka. {usp}. {cta}",
+      "{greeting}! Jadwal konsultasi awal gratis masih tersedia minggu ini di {loc}. Kami bantu kamu temukan solusi terbaik — tanpa biaya di pertemuan pertama. Slot terbatas. {usp}. {cta}"
     ],
     "EventCatering": [
       "{greeting}! Acara yang berkesan tidak terjadi begitu saja — butuh perencanaan matang dan eksekusi yang presisi. Tim event & catering kami di {loc} sudah menangani ratusan acara: dari pernikahan, gathering korporat, hingga ulang tahun. Kamu tinggal datang dan menikmati. {usp}. {cta}",
@@ -532,9 +532,9 @@ var CAPTION_TEMPLATES = {
       "{greeting} SLOT FOTO HAMPIR PENUH BULAN INI! 📅\n\nTersisa beberapa jadwal di {loc}. Booking sekarang. {usp}.\n\n{cta}"
     ],
     "JasaProfesional": [
-      "{greeting} Urusan hukum, pajak, atau izin usaha? Serahkan ke ahlinya! 💼\n\nKonsultasi pertama GRATIS di {loc}. {usp}.\n\n{cta}",
-      "{greeting} Keputusan bisnis yang tepat dimulai dari konsultan yang bisa dipercaya. 🤝\n\nTim profesional kami di {loc} bantu kamu dari A sampai Z. {usp}.\n\n{cta}",
-      "{greeting} KONSULTASI GRATIS — MINGGU INI SAJA! 📋\n\nSlot terbatas di {loc}. Hukum, pajak, perizinan — semua ada. {usp}.\n\n{cta}"
+      "{greeting} Butuh bantuan profesional yang tepat sasaran? Serahkan ke ahlinya! 💼\n\nKonsultasi pertama GRATIS di {loc}. {usp}.\n\n{cta}",
+      "{greeting} Keputusan yang tepat dimulai dari profesional yang bisa dipercaya. 🤝\n\nTim kami di {loc} bantu kamu dari A sampai Z. {usp}.\n\n{cta}",
+      "{greeting} KONSULTASI GRATIS — MINGGU INI SAJA! 📋\n\nSlot terbatas di {loc}. {usp}. Amankan sekarang.\n\n{cta}"
     ],
     "EventCatering": [
       "{greeting} Wujudkan acara impianmu bersama tim profesional kami! 🎉\n\nCatering lezat, dekorasi memukau, koordinasi mulus — di {loc}. {usp}.\n\n{cta}",

@@ -15,13 +15,12 @@ serve(async (req) => {
     const { plan, amount, email, name, phone, orderId } = await req.json()
 
     const merchantCode = Deno.env.get('DUITKU_MERCHANT_CODE') || 'DS30544'
-    const apiKey = Deno.env.get('DUITKU_API_KEY') || '01a6dcb08d58cbad3a2edd90253c89f5'
-    
+    const apiKey = Deno.env.get('DUITKU_API_KEY') || '805e1fde5e610871082eeae01db1140d'
+
     // Signature v2: merchantCode + merchantOrderId + paymentAmount + apiKey
     const signature = md5(merchantCode + orderId + String(amount) + apiKey)
 
-    // Gunakan URL v2 sesuai pengaturan di Dashboard Anda
-    const duitkuUrl = 'https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry'
+    const duitkuUrl = 'https://passport.duitku.com/webapi/api/merchant/v2/inquiry'
     
     const payload = {
       merchantCode,
