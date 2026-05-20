@@ -109,11 +109,15 @@ function _dkOnPaymentSuccess(plan) {
   profile.selected_plan = plan;
   localStorage.setItem('radar_user_profile', JSON.stringify(profile));
 
-  // Tutup modal setelah 2.5 detik
+  // Tutup trial modal jika masih terbuka
+  var trialModal = document.getElementById('trial-modal');
+  if (trialModal) trialModal.style.display = 'none';
+
+  // Tutup Duitku modal setelah 1.5 detik
   setTimeout(function() {
     var overlay = document.getElementById('dk-modal-overlay');
     if (overlay) overlay.remove();
-  }, 2500);
+  }, 1500);
 }
 
 function _startDkPolling(userId, plan) {
