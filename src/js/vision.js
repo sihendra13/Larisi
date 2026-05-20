@@ -8,7 +8,7 @@
 var _VISION_TO_PERSONA = {
   makanan:    'Kuliner',
   minuman:    'Kafe',      // foto minuman → konteks cafe lebih umum dari warung makan
-  pakaian:    'FashionWanita',  // default; bisa di-override oleh biz profile
+  pakaian:    null,  // ditentukan oleh biz profile via _visionCategoryToPersonaKey
   kendaraan:  'Otomotif',
   elektronik: 'Gadget',
   properti:   'Properti',
@@ -78,13 +78,12 @@ function _compressForVision(dataURL, maxPx) {
    ───────────────────────────────────────── */
 function _visionCategoryToPersonaKey(category, bizCategory) {
   if (category === 'pakaian') {
-    // Gunakan petunjuk dari profil bisnis bila ada
-    if (bizCategory === 'fashion') {
-      // _BIZ_CAT_TO_TILE['fashion'] = 'FashionWanita' (default)
-      // Ini akan di-resolve oleh persona.js via _BIZ_CAT_TO_TILE
-      return 'FashionWanita';
-    }
-    return 'FashionWanita'; // safe default
+    if (bizCategory === 'fashion_muslim')      return 'FashionMuslim';
+    if (bizCategory === 'fashion_muslim_pria') return 'FashionMuslimPria';
+    if (bizCategory === 'fashion_pria')        return 'FashionPria';
+    if (bizCategory === 'fashion' || bizCategory === 'fashion_wanita') return 'FashionWanita';
+    // Kategori non-fashion (jasa, fnb, dll) → tidak konklusif, fallback ke deteksi filename
+    return null;
   }
   return _VISION_TO_PERSONA[category] || null;
 }

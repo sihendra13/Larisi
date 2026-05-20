@@ -115,6 +115,26 @@ var CAPTION_TEMPLATES = {
       "{greeting} ♻\n\nSustainable living tidak harus mahal — harus tepat.\n\nProduk pilihan kami di {loc} sudah tersertifikasi ramah lingkungan. Setiap pembelian berkontribusi pada program penanaman pohon lokal. {usp}.\n\n{cta}\n\n#ZeroWaste #EcoConscious #SustainableChoice",
       "{greeting} 🌱\n\nGerakan eco-friendly {loc} dimulai dari komunitas kita sendiri!\n\nPromo spesial untuk pembelian produk sustainable hari ini — hemat 20% dan gratis tote bag daur ulang. Stok terbatas. {usp}.\n\n{cta}\n\n#EcoPromo #SustainableLifestyle #GoGreenLokal"
     ],
+    "Fotografi": [
+      "{greeting} 📸\n\nMomen terbaik hanya terjadi sekali — abadikan bersama fotografer profesional di {loc}!\n\nHasil foto yang tajam, natural, dan bercerita. Bukan sekadar gambar — ini kenangan yang akan kamu simpan seumur hidup. {usp}.\n\n{cta}\n\n#FotografiLokal #MomenBerharga #{loc}",
+      "{greeting} ✨\n\nFoto yang baik bukan soal kamera mahal — tapi soal siapa yang memegangnya.\n\nTim fotografer kami di {loc} berpengalaman dan paham cara menangkap cahaya, ekspresi, dan suasana yang paling pas. {usp}.\n\n{cta}\n\n#FotoProfesional #KualitasFoto #FotograferLokal",
+      "{greeting} 📅\n\nSlot sesi foto bulan ini hampir penuh!\n\nHanya tersisa beberapa jadwal di {loc}. {usp}. Jangan tunda — momen yang terlewat tidak bisa diulang.\n\n{cta}\n\n#BookingFoto #SlotTerbatas #FotoSekarang"
+    ],
+    "JasaProfesional": [
+      "{greeting} 💼\n\nUrusan hukum, pajak, atau bisnis yang rumit? Serahkan ke ahlinya.\n\nTim profesional kami di {loc} siap membantu dengan solusi yang tepat, jelas, dan bisa diandalkan. Konsultasi pertama gratis. {usp}.\n\n{cta}\n\n#JasaProfesional #KonsultasiGratis #SolusiTepat",
+      "{greeting} 🤝\n\nKeputusan bisnis yang salah bisa merugikan bertahun-tahun — konsultasi dulu sebelum melangkah.\n\nKami di {loc} membantu kamu memahami risiko, hak, dan pilihan terbaik dengan bahasa yang mudah dimengerti. Bukan jargon — tapi solusi nyata. {usp}.\n\n{cta}\n\n#KonsultanTerpercaya #JasaHukum #BisnisAman",
+      "{greeting} 📋\n\nJadwal konsultasi awal GRATIS — terbatas untuk minggu ini!\n\nDi {loc}, kami membuka slot khusus konsultasi tanpa biaya untuk masalah hukum, pajak, dan perizinan usaha. {usp}. Amankan jadwalmu sekarang.\n\n{cta}\n\n#KonsultasiGratis #JasaProfesional #SlotTerbatas"
+    ],
+    "EventCatering": [
+      "{greeting} 🎉\n\nAcara impianmu layak ditangani oleh tim yang benar-benar profesional!\n\nDari konsep hingga eksekusi, kami di {loc} pastikan setiap detail terjaga. Catering lezat, dekorasi memukau, dan koordinasi yang mulus. {usp}.\n\n{cta}\n\n#EventOrganizer #CateringLokal #AcaraBerkesan",
+      "{greeting} ✨\n\nAcara yang sempurna tidak terjadi begitu saja — butuh tim yang tepat.\n\nSudah ratusan acara sukses kami tangani di {loc}: pernikahan, ulang tahun, gathering perusahaan, dan lebih banyak lagi. {usp}. Kamu tinggal hadir dan menikmati.\n\n{cta}\n\n#WeddingOrganizer #EventProfesional #CateringEnak",
+      "{greeting} 📅\n\nSlot acara bulan depan sudah mulai terisi!\n\nSegera konsultasikan rencana acaramu dengan tim kami di {loc}. Konsultasi gratis, estimasi harga transparan. {usp}. Jangan sampai tanggal yang kamu inginkan sudah terpakai.\n\n{cta}\n\n#BookingEvent #CateringTerlengkap #AcaraImpian"
+    ],
+    "KebersihanLaundry": [
+      "{greeting} 🧺\n\nPakaian bersih, wangi, rapi — tanpa harus repot dan buang waktu!\n\nLayanan laundry profesional di {loc}: dicuci bersih, disetrika rapi, diantar tepat waktu. {usp}.\n\n{cta}\n\n#LaundryLokal #CuciBaju #PraktisHariIni",
+      "{greeting} ✅\n\nWaktu itu berharga — serahkan urusan laundry ke kami.\n\nProses cuci higienis, pewangi pilihan, hasil rapi yang tahan lama. Layanan antar-jemput tersedia di area {loc}. {usp}.\n\n{cta}\n\n#LaundryProfesional #AntarJemput #BersihWangi",
+      "{greeting} 🔔\n\nPromo laundry kilogram hari ini — harga spesial!\n\nLaundry bersih dan wangi di {loc}. {usp}. Antar sekarang, selesai besok pagi.\n\n{cta}\n\n#PromoLaundry #LaundryMurah #OrderSekarang"
+    ],
     "General": [
       "{greeting} 👋\n\nAda yang baru dan menarik di {loc} — dan kamu yang pertama tau!\n\nKami hadir khusus untuk komunitas lokal di sini, bukan korporat besar dari jauh. Tetangga sendiri yang usaha, yang benar-benar paham kebutuhanmu. {usp}.\n\n{cta}\n\n#UsahaLokal #UMKMLokal #BanggaBuatanIndonesia",
       "{greeting} 💪\n\nKonsisten dan terpercaya sejak hari pertama buka.\n\nKualitas yang tidak pernah kami kompromikan, pelayanan yang jujur, dan harga yang bersahabat. Sudah dipercaya warga {loc} selama ini. Tidak ada janji lebay — hanya hasil yang bisa kamu rasakan sendiri.\n\n{cta}\n\n#LokalTerpercaya #KualitasKonsisten #UMKMHebat",
@@ -231,6 +251,26 @@ var CAPTION_TEMPLATES = {
       "POV: Mulai ganti ke produk sustainable dan nggak mau balik ke yang lama 🌿\n\n{greeting}! Produk eco-friendly dari {loc} — ramah lingkungan, kualitas premium.\n\n{cta}",
       "Sustainable living itu bukan tren — ini keputusan 🌱\n\n{greeting}! Produk eco-certified dari {loc}. {usp}. Setiap beli = tanam pohon lokal.\n\n{cta}",
       "Promo eco-friendly HARI INI — hemat 20% + gratis tote daur ulang! ♻\n\n{greeting}! Stok terbatas di {loc}. Pilihan yang baik untuk kamu dan bumi.\n\n{cta}"
+    ],
+    "Fotografi": [
+      "POV: Terima hasil foto dari fotografer profesional dan langsung nangis terharu 📸\n\n{greeting}! Momen yang tidak bisa diulang — abadikan bersama kami di {loc}. {usp}.\n\n{cta}",
+      "Beda banget hasil foto asal vs foto profesional — ini buktinya ✨\n\n{greeting}! Tim fotografer kami di {loc} paham cahaya, ekspresi, dan angle terbaik. {usp}.\n\n{cta}",
+      "Slot foto hampir penuh bulan ini 📅\n\n{greeting}! Tersisa beberapa jadwal di {loc}. Jangan tunda — momen tidak bisa diulang.\n\n{cta}"
+    ],
+    "JasaProfesional": [
+      "POV: Akhirnya nemu konsultan di {loc} yang jelasinnya pakai bahasa manusia, bukan jargon 💼\n\n{greeting}! Konsultasi gratis untuk pertama kali. {usp}.\n\n{cta}",
+      "Urusan hukum dan bisnis yang rumit sebenarnya bisa diselesaikan — kalau sama ahlinya 🤝\n\n{greeting}! Tim profesional kami di {loc}. {usp}.\n\n{cta}",
+      "Konsultasi awal GRATIS minggu ini — slot terbatas! 📋\n\n{greeting}! Hukum, pajak, perizinan — semua ada di {loc}.\n\n{cta}"
+    ],
+    "EventCatering": [
+      "POV: Semua detail acaramu ditangani tim profesional dan hasilnya melebihi ekspektasi 🎉\n\n{greeting}! Event & catering terpercaya di {loc}. {usp}.\n\n{cta}",
+      "Acara berkesan itu bukan kebetulan — ini kerja keras tim yang tepat ✨\n\n{greeting}! Ratusan acara sukses di {loc}. {usp}.\n\n{cta}",
+      "Slot acara bulan depan mulai terisi! Konsultasi gratis sekarang 📅\n\n{greeting}! {usp}. Hubungi kami di {loc} sebelum tanggalmu diambil orang lain.\n\n{cta}"
+    ],
+    "KebersihanLaundry": [
+      "POV: Pertama kali nyoba laundry profesional di {loc} dan nggak mau balik nyuci sendiri lagi 🧺\n\n{greeting}! Bersih, wangi, rapi — antar tepat waktu. {usp}.\n\n{cta}",
+      "Waktu itu mahal — serahkan urusan laundry ke kami ✅\n\n{greeting}! Cuci higienis, setrika rapi, antar-jemput ada. {usp}.\n\n{cta}",
+      "Promo laundry kilogram HARI INI! 🔔\n\n{greeting}! Harga spesial di {loc}. {usp}. Antar sekarang, selesai besok pagi.\n\n{cta}"
     ],
     "General": [
       "POV: Nemu usaha lokal {loc} yang kualitasnya jauh di atas ekspektasi 💎\n\n{greeting}! {usp}.\n\n{cta}",
@@ -349,6 +389,26 @@ var CAPTION_TEMPLATES = {
       "{greeting}! Sustainable living bukan tren sesaat — ini perubahan cara pandang tentang konsumsi yang bertanggung jawab. Di {loc}, setiap produk yang kami jual sudah melewati seleksi ketat soal dampak lingkungan. Setiap pembelian berkontribusi pada program penanaman pohon lokal. {usp}. {cta}",
       "{greeting}! Promo eco-friendly spesial hari ini di {loc} — hemat 20% untuk semua produk sustainable pilihan, plus gratis tote bag dari bahan daur ulang. Stok promo terbatas. Pilihan yang baik untuk kamu, dan lebih baik lagi untuk bumi. {cta}"
     ],
+    "Fotografi": [
+      "{greeting}! Momen terbaik hanya terjadi sekali — dan kamu layak punya foto yang benar-benar mengabadikannya. Fotografer profesional kami di {loc} berpengalaman menangkap ekspresi, cahaya, dan suasana yang paling berkesan. Bukan sekadar foto — ini kenangan permanen. {usp}. {cta}",
+      "{greeting}! Ada perbedaan besar antara foto asal-asalan dan foto yang benar-benar bercerita. Di {loc}, tim fotografer kami memastikan setiap frame punya makna — komposisi tepat, cahaya natural, ekspresi otentik. Konsultasi konsep gratis. {usp}. {cta}",
+      "{greeting}! Slot sesi foto di {loc} hampir penuh untuk bulan ini. Tersisa beberapa jadwal — {usp}. Booking sekarang sebelum momen yang kamu rencanakan tidak kebagian jadwal. {cta}"
+    ],
+    "JasaProfesional": [
+      "{greeting}! Masalah hukum, pajak, atau perizinan usaha yang tidak ditangani dengan benar bisa berujung kerugian besar. Di {loc}, tim konsultan profesional kami membantu kamu memahami hak, risiko, dan solusi terbaik — dengan bahasa yang mudah dimengerti, bukan jargon. Konsultasi pertama gratis. {usp}. {cta}",
+      "{greeting}! Keputusan bisnis yang baik dimulai dari informasi yang akurat. Tim profesional kami di {loc} sudah membantu ratusan individu dan usaha menyelesaikan urusan hukum, akuntansi, dan perizinan dengan tepat dan efisien. {usp}. {cta}",
+      "{greeting}! Jadwal konsultasi awal gratis masih tersedia minggu ini di {loc}. Kami bantu kamu navigasi urusan hukum, pajak, dan izin usaha — tanpa biaya di pertemuan pertama. Slot terbatas. {usp}. {cta}"
+    ],
+    "EventCatering": [
+      "{greeting}! Acara yang berkesan tidak terjadi begitu saja — butuh perencanaan matang dan eksekusi yang presisi. Tim event & catering kami di {loc} sudah menangani ratusan acara: dari pernikahan, gathering korporat, hingga ulang tahun. Kamu tinggal datang dan menikmati. {usp}. {cta}",
+      "{greeting}! Dari konsep hingga selesai, kami yang handle semuanya di {loc}. Catering dengan bahan segar, dekorasi yang sesuai tema, dan koordinasi on-the-day yang mulus. Tidak ada detail yang terlewat. Konsultasi gratis dan estimasi harga transparan. {usp}. {cta}",
+      "{greeting}! Slot acara bulan depan sudah mulai terisi di {loc}. Jika kamu sedang merencanakan pernikahan, gathering, atau acara spesial — konsultasikan sekarang sebelum tanggal yang kamu inginkan sudah terpakai. {usp}. {cta}"
+    ],
+    "KebersihanLaundry": [
+      "{greeting}! Waktu itu terlalu berharga untuk dihabiskan mencuci dan menyetrika. Layanan laundry profesional kami di {loc} mengerjakan semuanya: dicuci bersih, disetrika rapi, dikemas, dan diantar tepat waktu. Kamu bisa fokus ke hal yang lebih penting. {usp}. {cta}",
+      "{greeting}! Laundry yang baik bukan sekadar bersih — tapi juga aman untuk pakaian kesayanganmu. Di {loc}, kami menggunakan deterjen berkualitas, proses higienis, dan penanganan khusus untuk bahan-bahan sensitif. Layanan antar-jemput tersedia. {usp}. {cta}",
+      "{greeting}! Promo laundry kilogram hari ini di {loc} — harga spesial untuk pelanggan baru. {usp}. Antar sekarang, selesai besok pagi, langsung diantar ke pintumu. {cta}"
+    ],
     "General": [
       "{greeting}! Usaha lokal {loc} yang sudah dipercaya warga sejak hari pertama buka. Bukan korporat besar — kami tetangga sendiri yang paham kebutuhan komunitas. {usp}. {cta}",
       "{greeting}! Kualitas konsisten dan pelayanan jujur — itu yang kami jaga setiap hari di {loc}. Tidak ada janji berlebihan. Yang ada: produk yang bisa diandalkan. {usp}. {cta}",
@@ -465,6 +525,26 @@ var CAPTION_TEMPLATES = {
       "{greeting} Pilihan konsumsi yang lebih baik, mulai dari {loc}! 🌿\n\nProduk eco-friendly bersertifikat, ramah lingkungan, packaging minimal waste. {usp}.\n\n{cta}",
       "{greeting} Sustainable living yang praktis dan terjangkau. ♻\n\nProduk eco-certified di {loc} — setiap pembelian = tanam pohon lokal. {usp}.\n\n{cta}",
       "{greeting} PROMO ECO-FRIENDLY — HEMAT 20% + TOTE GRATIS! 🌱\n\nStok terbatas di {loc}. Pilihan baik untuk kamu dan bumi. {usp}.\n\n{cta}"
+    ],
+    "Fotografi": [
+      "{greeting} Abadikan momenmu bersama fotografer profesional di {loc}! 📸\n\nHasil tajam, natural, dan bercerita. Bukan sekadar foto — ini kenangan seumur hidup. {usp}.\n\n{cta}",
+      "{greeting} Foto yang baik bukan soal kamera — tapi siapa yang memegangnya. ✨\n\nTim fotografer kami di {loc} paham cahaya, ekspresi, dan komposisi. {usp}.\n\n{cta}",
+      "{greeting} SLOT FOTO HAMPIR PENUH BULAN INI! 📅\n\nTersisa beberapa jadwal di {loc}. Booking sekarang. {usp}.\n\n{cta}"
+    ],
+    "JasaProfesional": [
+      "{greeting} Urusan hukum, pajak, atau izin usaha? Serahkan ke ahlinya! 💼\n\nKonsultasi pertama GRATIS di {loc}. {usp}.\n\n{cta}",
+      "{greeting} Keputusan bisnis yang tepat dimulai dari konsultan yang bisa dipercaya. 🤝\n\nTim profesional kami di {loc} bantu kamu dari A sampai Z. {usp}.\n\n{cta}",
+      "{greeting} KONSULTASI GRATIS — MINGGU INI SAJA! 📋\n\nSlot terbatas di {loc}. Hukum, pajak, perizinan — semua ada. {usp}.\n\n{cta}"
+    ],
+    "EventCatering": [
+      "{greeting} Wujudkan acara impianmu bersama tim profesional kami! 🎉\n\nCatering lezat, dekorasi memukau, koordinasi mulus — di {loc}. {usp}.\n\n{cta}",
+      "{greeting} Ratusan acara sukses, satu tim yang bisa kamu percaya. ✨\n\nEvent & catering terpercaya di {loc}. Konsultasi gratis. {usp}.\n\n{cta}",
+      "{greeting} SLOT ACARA BULAN DEPAN MULAI TERISI! 📅\n\nKonsultasi gratis sekarang di {loc} sebelum tanggalmu diambil. {usp}.\n\n{cta}"
+    ],
+    "KebersihanLaundry": [
+      "{greeting} Pakaian bersih, wangi, rapi — tanpa repot! 🧺\n\nLayanan laundry profesional di {loc}. Antar-jemput tersedia. {usp}.\n\n{cta}",
+      "{greeting} Serahkan urusan laundry ke kami — kamu fokus ke hal yang lebih penting. ✅\n\nCuci higienis, setrika rapi, tepat waktu. {usp}.\n\n{cta}",
+      "{greeting} PROMO LAUNDRY HARI INI! 🔔\n\nHarga spesial di {loc}. {usp}. Antar sekarang, selesai besok pagi.\n\n{cta}"
     ],
     "General": [
       "{greeting} Ada yang baru dan menarik di {loc}! 👋\n\nUsaha lokal yang dipercaya komunitas sekitar. {usp}.\n\n{cta}",

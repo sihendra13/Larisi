@@ -67,6 +67,10 @@ function getPersonaKey() {
   if (p.indexOf('beauty') !== -1 || p.indexOf('skincare') !== -1 || p.indexOf('self-care') !== -1) return 'Beauty/Self-care';
   if (p.indexOf('tourism') !== -1 || p.indexOf('wisata') !== -1 || p.indexOf('travel') !== -1) return 'Tourism';
   if (p.indexOf('automotive') !== -1 || p.indexOf('vespa') !== -1 || p.indexOf('motor') !== -1) return 'Retro Automotive';
+  if (p.indexOf('fotografi') !== -1 || p.indexOf('photography') !== -1) return 'Fotografi';
+  if (p.indexOf('jasaprofesional') !== -1 || p.indexOf('jasa profesional') !== -1) return 'JasaProfesional';
+  if (p.indexOf('eventcatering') !== -1 || p.indexOf('event & catering') !== -1 || p.indexOf('event catering') !== -1) return 'EventCatering';
+  if (p.indexOf('kebersihanlaundry') !== -1 || p.indexOf('kebersihan & laundry') !== -1 || p.indexOf('laundry') !== -1) return 'KebersihanLaundry';
   if (p.indexOf('general') !== -1) {
     // Even for 'General' persona, try to improve with biz profile category
     var bizFallback = window.userBizProfile && window.userBizProfile.category;

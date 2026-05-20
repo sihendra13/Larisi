@@ -17,17 +17,21 @@ var personaDB = {
   Otomotif:   {name:'Otomotif',           target:'Car & Motorcycle Enthusiasts',  tags:['Usia 20–45','Otomotif','Kendaraan'], age:'20–45', gender:'Mixed',   conf:83, stitch:'{greeting} — {usp} di {loc}. {cta}'},
   Pendidikan: {name:'Pendidikan',         target:'Students, Parents & Learners',  tags:['Usia 15–45','Pelajar','Orang tua'],  age:'15–45', gender:'Mixed',   conf:81, stitch:'{greeting} — {usp} di {loc}. {cta}'},
   Kerajinan:  {name:'Kerajinan / Craft',  target:'Craft Lovers & Handmade Fans',  tags:['Usia 20–45','Kreator','Handmade'],   age:'20–45', gender:'Mixed',   conf:82, stitch:'{greeting} — {usp} di {loc}. {cta}'},
-  Olahraga:   {name:'Olahraga & Fitness', target:'Fitness Enthusiasts & Athletes', tags:['Usia 16–45','Aktif','Sporty'],        age:'16–45', gender:'Mixed',   conf:83, stitch:'{greeting} — {usp} di {loc}. {cta}'},
-  General:    {name:'General Content',    target:'Broad Local Awareness',         tags:['Semua usia','Lokal','Umum'],          conf:62,                        stitch:'{greeting} — {usp} di {loc}. {cta}'}
+  Olahraga:          {name:'Olahraga & Fitness',    target:'Fitness Enthusiasts & Athletes',        tags:['Usia 16–45','Aktif','Sporty'],         age:'16–45', gender:'Mixed',   conf:83, stitch:'{greeting} — {usp} di {loc}. {cta}'},
+  Fotografi:         {name:'Fotografi',             target:'Clients Seeking Professional Photos',   tags:['Usia 20–45','Kreatif','Momen'],         age:'20–45', gender:'Mixed',   conf:84, stitch:'{greeting} — {usp} di {loc}. {cta}'},
+  JasaProfesional:   {name:'Jasa Profesional',      target:'Individuals & Businesses Seeking Help', tags:['Usia 25–50','Profesional','Pengusaha'],  age:'25–50', gender:'Mixed',   conf:80, stitch:'{greeting} — {usp} di {loc}. {cta}'},
+  EventCatering:     {name:'Event & Catering',      target:'Couples, Families & Event Organizers',  tags:['Usia 22–45','Acara','Keluarga'],         age:'22–45', gender:'Mixed',   conf:82, stitch:'{greeting} — {usp} di {loc}. {cta}'},
+  KebersihanLaundry: {name:'Kebersihan & Laundry',  target:'Busy Households & Professionals',       tags:['Usia 20–45','Sibuk','Praktis'],          age:'20–45', gender:'Mixed',   conf:79, stitch:'{greeting} — {usp} di {loc}. {cta}'},
+  General:           {name:'General Content',        target:'Broad Local Awareness',                 tags:['Semua usia','Lokal','Umum'],             conf:62,                        stitch:'{greeting} — {usp} di {loc}. {cta}'}
 };
 
-var personaKeys = ['Kuliner','Kafe','FashionWanita','FashionPria','FashionMuslim','FashionMuslimPria','Properti','Beauty','Salon','Barber','Bayi','Gadget','Wisata','Pet','Seni','Otomotif','Pendidikan','Kerajinan','Olahraga'];
+var personaKeys = ['Kuliner','Kafe','FashionWanita','FashionPria','FashionMuslim','FashionMuslimPria','Properti','Beauty','Salon','Barber','Bayi','Gadget','Wisata','Pet','Seni','Otomotif','Pendidikan','Kerajinan','Olahraga','Fotografi','JasaProfesional','EventCatering','KebersihanLaundry'];
 
 /* ── Filename-based persona detection ── */
 var filenamePersonaMap = [
   {keys:['craft','kerajinan','handmade','anyaman','batik tulis','tenun','ukir','rajut','bordir','souvenir'], p:{name:'Kerajinan / Craft', target:'Craft Lovers & Handmade Fans', age:'Usia 20–45', gender:'Mixed'}},
   {keys:['batik','kain batik','batik tulis'],                   p:{name:'Heritage & Cultural Fashion',target:'Batik Enthusiasts & Professionals',         age:'Usia 20–45', gender:'Mixed'}},
-  {keys:['gamis','hijab','muslimah','syari','kerudung','abaya','jilbab'], p:{name:'Fashion Muslim',       target:'Muslimah & Hijab Enthusiasts',  age:'Usia 18–40', gender:'Perempuan'}},
+  {keys:['baju muslim','busana muslim','pakaian muslim','gamis','hijab','muslimah','syari','kerudung','abaya','jilbab'], p:{name:'Fashion Muslim', target:'Muslimah & Hijab Enthusiasts', age:'Usia 18–40', gender:'Perempuan'}},
   {keys:['koko','baju koko','sarung','gamis pria','muslim pria'],        p:{name:'Busana Muslim Pria',   target:'Muslim Men & Modest Fashion',   age:'Usia 18–45', gender:'Laki-laki'}},
   {keys:['kopi','cafe','coffee','latte','espresso','cappuccino','ngopi','barista'], p:{name:'Kafe / Coffee Shop', target:'Young Urban Coffee Lovers', age:'Usia 18–35', gender:'Mixed'}},
   {keys:['baju','dress','fashion','style','pakaian'],           p:{name:'Fashion Wanita',             target:'Modern Women & Style Enthusiasts',            age:'Usia 18–35', gender:'Perempuan'}},
@@ -49,7 +53,11 @@ var filenamePersonaMap = [
   {keys:['bank','saham','investasi'],                           p:{name:'Banking/Finance',            target:'Financial Literacy & Investors',             age:'Usia 22–45', gender:'Mixed'}},
   {keys:['konser','musik','event'],                             p:{name:'Music/Events',               target:'Concert Goers',                              age:'Usia 18–35', gender:'Mixed'}},
   {keys:['lukisan','seni','art'],                               p:{name:'Creative/Arts',              target:'Artists & Art Lovers',                       age:'Usia 20–40', gender:'Mixed'}},
-  {keys:['hijau','eco','sustainable'],                          p:{name:'Sustainability',             target:'Go Green Advocates',                         age:'Usia 20–40', gender:'Mixed'}},
+  {keys:['hijau','eco','sustainable'],                          p:{name:'Sustainability',             target:'Go Green Advocates',                          age:'Usia 20–40', gender:'Mixed'}},
+  {keys:['foto studio','fotografi','photography','fotografer','prewedding','pre wedding','photo booth'], p:{name:'Fotografi',            target:'Clients Seeking Professional Photos',    age:'Usia 20–45', gender:'Mixed'}},
+  {keys:['konsultan','konsultasi','notaris','pengacara','advokat','akuntan','law firm','firma hukum'],   p:{name:'Jasa Profesional',     target:'Individuals & Businesses Seeking Help',  age:'Usia 25–50', gender:'Mixed'}},
+  {keys:['catering','event organizer','wedding organizer','dekorasi acara','eo wedding'],                p:{name:'Event & Catering',     target:'Couples, Families & Event Organizers',   age:'Usia 22–45', gender:'Mixed'}},
+  {keys:['laundry','cuci baju','cuci pakaian','cleaning service','jasa bersih'],                         p:{name:'Kebersihan & Laundry', target:'Busy Households & Professionals',        age:'Usia 20–45', gender:'Mixed'}},
 ];
 
 function detectPersona(filename) {
