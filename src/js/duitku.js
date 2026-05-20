@@ -19,6 +19,37 @@ function _copyVA(text, btn) {
   });
 }
 
+function _showPendingBanner(orderId, plan) {
+  var existing = document.getElementById('dk-pending-banner');
+  if (existing) return;
+
+  var banner = document.createElement('div');
+  banner.id = 'dk-pending-banner';
+  banner.style.cssText = [
+    'position:fixed;top:0;left:0;right:0;z-index:9999;',
+    'background:#fffbeb;border-bottom:2px solid #f59e0b;',
+    'padding:10px 16px;display:flex;align-items:center;gap:12px;',
+    'font-family:sans-serif;font-size:13px;'
+  ].join('');
+
+  banner.innerHTML = [
+    '<span style="font-size:18px;flex-shrink:0;">💳</span>',
+    '<div style="flex:1;line-height:1.4;">',
+      '<strong style="color:#92400e;">Pembayaran sedang diproses</strong>',
+      '<div style="color:#78350f;">Invoice <code style="background:#fef3c7;padding:1px 4px;border-radius:3px;">' + orderId + '</code> — Paket ' + plan.toUpperCase() + '. Akun akan otomatis aktif setelah transfer dikonfirmasi.</div>',
+    '</div>',
+    '<button id="dk-banner-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:#92400e;flex-shrink:0;padding:4px;">&#215;</button>',
+  ].join('');
+
+  document.body.appendChild(banner);
+  document.getElementById('dk-banner-close').onclick = function() { banner.remove(); };
+}
+
+function _dismissPendingBanner() {
+  var b = document.getElementById('dk-pending-banner');
+  if (b) b.remove();
+}
+
 function _addDkNotification(message) {
   // Toast
   if (typeof window.showAnToast === 'function') {
@@ -55,6 +86,9 @@ function _dkOnPaymentSuccess(plan) {
     pill.style.background = '#d1fae5';
     pill.style.color = '#065f46';
   }
+
+  // Dismiss banner pending jika ada
+  _dismissPendingBanner();
 
   // Notification ke bell
   _addDkNotification('Pembayaran berhasil! Akun diupgrade ke Paket ' + plan.toUpperCase() + '.');
@@ -123,9 +157,7 @@ function _showDkDetailPopup(orderId, totalAmount, originalAmount) {
 
       // Identity
       '<div style="padding:20px;text-align:center;background:#f0ecf8;">',
-        '<div style="width:56px;height:56px;border-radius:50%;background:#7c3aed;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;">',
-          '<span style="color:#fff;font-weight:900;font-size:22px;">L</span>',
-        '</div>',
+        '<img src="Assets/logo_duitku.png" alt="Larisi" style="width:56px;height:56px;border-radius:50%;object-fit:cover;margin:0 auto 8px;display:block;">',
         '<div style="font-weight:700;font-size:14px;margin-bottom:16px;">LARISI</div>',
         '<div style="display:flex;justify-content:space-between;text-align:left;gap:8px;">',
           '<div>',
@@ -233,9 +265,8 @@ function _showDuitkuModal(result, plan, originalAmount, orderId, userId) {
       '</div>',
 
       // Footer buttons
-      '<div style="padding:16px 24px;display:flex;gap:10px;">',
-        '<button id="dk-detail-btn" style="flex:1;padding:12px;border:1.5px solid #1a1a1a;border-radius:10px;color:#1a1a1a;background:#fff;font-weight:600;font-size:14px;cursor:pointer;">Detail</button>',
-        '<button id="dk-done" style="flex:2;background:#1a1a1a;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">Tutup</button>',
+      '<div style="padding:16px 24px;">',
+        '<button id="dk-detail-btn" style="width:100%;padding:12px;border:1.5px solid #1a1a1a;border-radius:10px;color:#1a1a1a;background:#fff;font-weight:600;font-size:14px;cursor:pointer;">Lihat Detail Transaksi</button>',
       '</div>',
 
     '</div>'
@@ -258,16 +289,23 @@ function _showDuitkuModal(result, plan, originalAmount, orderId, userId) {
   }
   _hoverBlackPurple(document.getElementById('dk-copy'), false);
   _hoverBlackPurple(document.getElementById('dk-detail-btn'), true);
-  _hoverBlackPurple(document.getElementById('dk-done'), false);
 
   // ── Event handlers ───────────────────────────────────────────
+  function _isPaid() {
+    var pill = document.getElementById('dk-status-pill');
+    return pill && pill.textContent.indexOf('Berhasil') !== -1;
+  }
   function _closeModal() {
-    if (_dkPollTimer)     { clearInterval(_dkPollTimer);      _dkPollTimer = null; }
     if (_dkCountdownTimer){ clearInterval(_dkCountdownTimer); _dkCountdownTimer = null; }
+    // Jika masih PENDING saat ditutup: tampilkan banner + lanjutkan polling
+    if (!_isPaid()) {
+      _showPendingBanner(orderId, plan);
+    } else {
+      if (_dkPollTimer) { clearInterval(_dkPollTimer); _dkPollTimer = null; }
+    }
     overlay.remove();
   }
-  document.getElementById('dk-close').onclick    = _closeModal;
-  document.getElementById('dk-done').onclick     = _closeModal;
+  document.getElementById('dk-close').onclick = _closeModal;
   overlay.addEventListener('click', function(e) { if (e.target === overlay) _closeModal(); });
 
   document.getElementById('dk-copy').onclick = function() { _copyVA(vaNumber, this); };
