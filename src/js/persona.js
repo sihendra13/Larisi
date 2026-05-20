@@ -241,11 +241,16 @@ async function startScanWithFile(filename, fileCount) {
         : (bizCategory || 'Konten Umum');
 
       /* Ada konflik hanya jika biz key TERDEFINISI dan berbeda dari vision key.
-         bizTileKey null = kategori bisnis tidak punya preferensi persona → pakai AI */
+         bizTileKey null = kategori bisnis terlalu luas (jasa, retail, dll) → catNudge */
       var hasConflict = bizTileKey !== null && bizTileKey !== visionKey;
 
       if (hasConflict) {
         _showVisionConflict(visionKey, visionLabel, bizTileKey, bizLabelForUI);
+      } else if (bizTileKey === null) {
+        /* Biz kategori terlalu luas → tampilkan catNudge, jangan auto-apply */
+        var _vp = personaDB[visionKey] || personaDB.General;
+        showPersonaDirect({ name: _vp.name, target: _vp.target, age: _vp.age || '18–45', gender: _vp.gender || 'Mixed' }, false);
+        masterPersonaLocked = true;
       } else {
         _applyVisionPersona(visionKey);
       }
@@ -275,6 +280,12 @@ async function startScanWithFile(filename, fileCount) {
           if (_conflict2) {
             _showVisionConflict(filenameKey, p.name, _bizKey2, _bizLbl2);
             return; /* Tunggu pilihan user — jangan langsung apply */
+          }
+          if (_bizKey2 === null) {
+            /* Biz kategori terlalu luas (jasa, retail, dll) → catNudge */
+            showPersonaDirect(p, false);
+            masterPersonaLocked = true;
+            return;
           }
         }
       }
