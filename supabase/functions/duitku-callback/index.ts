@@ -4,14 +4,25 @@ import md5 from "npm:md5"
 
 serve(async (req) => {
   try {
-    const body = await req.json()
+    // Duitku may send JSON or application/x-www-form-urlencoded
+    let body: Record<string, string> = {}
+    const contentType = req.headers.get('content-type') || ''
+    if (contentType.includes('application/x-www-form-urlencoded')) {
+      const text = await req.text()
+      for (const pair of text.split('&')) {
+        const [k, v] = pair.split('=')
+        if (k) body[decodeURIComponent(k)] = decodeURIComponent(v || '')
+      }
+    } else {
+      body = await req.json()
+    }
+
     const {
       merchantCode,
       amount,
       merchantOrderId,
       additionalParam,
       resultCode,
-      reference,
       signature: incomingSignature,
     } = body
 
@@ -20,7 +31,7 @@ serve(async (req) => {
     // Verifikasi signature: md5(merchantCode + amount + merchantOrderId + apiKey)
     const expectedSignature = md5(merchantCode + amount + merchantOrderId + apiKey)
     if (incomingSignature !== expectedSignature) {
-      console.error('[Callback] Signature tidak valid')
+      console.error('[Callback] Signature tidak valid. Got:', incomingSignature, 'Expected:', expectedSignature)
       return new Response('Bad signature', { status: 403 })
     }
 
@@ -52,7 +63,6 @@ serve(async (req) => {
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 30)
 
-    // Update selected_plan di tabel profiles
     const { error: updateErr } = await supabase
       .from('profiles')
       .update({
