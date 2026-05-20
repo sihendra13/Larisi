@@ -15,6 +15,8 @@ serve(async (req) => {
     const { plan, amount, email, name, phone, orderId, userId } = await req.json()
 
     const merchantCode = Deno.env.get('DUITKU_MERCHANT_CODE') || 'D22755'
+    // Guard: pastikan name tidak null/undefined/"null" agar email Duitku tidak tampil "Hi null,"
+    const safeName = (name && name !== 'null' && String(name).trim()) ? String(name).trim() : 'Pelanggan Larisi'
     const apiKey = Deno.env.get('DUITKU_API_KEY') || ''
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 
@@ -35,7 +37,7 @@ serve(async (req) => {
       productDetails: `Langganan Paket ${plan.toUpperCase()}`,
       email: email,
       phoneNumber: phone || '081234567890',
-      customerVaName: name,
+      customerVaName: safeName,
       callbackUrl,
       returnUrl: 'https://app.larisi.id',
       expiryPeriod: 60,
