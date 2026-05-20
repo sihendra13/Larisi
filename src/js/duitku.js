@@ -74,9 +74,7 @@ function _showDuitkuModal(result, plan) {
       // Footer
       '<div style="padding:16px 24px;display:flex;gap:10px;">',
         paymentUrl
-          ? '<a href="' + paymentUrl + '" target="_blank" style="flex:1;text-align:center;padding:12px;',
-              'border:1.5px solid #7c3aed;border-radius:10px;color:#7c3aed;font-weight:600;font-size:14px;',
-              'text-decoration:none;display:block;">Lihat Detail</a>'
+          ? '<a href="' + paymentUrl + '" target="_blank" style="flex:1;text-align:center;padding:12px;border:1.5px solid #7c3aed;border-radius:10px;color:#7c3aed;font-weight:600;font-size:14px;text-decoration:none;display:block;">Lihat Detail</a>'
           : '',
         '<button id="dk-done" style="flex:2;background:#7c3aed;color:#fff;border:none;border-radius:10px;',
           'padding:12px;font-size:14px;font-weight:600;cursor:pointer;">Sudah Transfer</button>',
