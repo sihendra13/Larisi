@@ -14,8 +14,8 @@ serve(async (req) => {
   try {
     const { plan, amount, email, name, phone, orderId } = await req.json()
 
-    const merchantCode = Deno.env.get('DUITKU_MERCHANT_CODE') || 'DS30544'
-    const apiKey = Deno.env.get('DUITKU_API_KEY') || '805e1fde5e610871082eeae01db1140d'
+    const merchantCode = Deno.env.get('DUITKU_MERCHANT_CODE') || 'D22755'
+    const apiKey = Deno.env.get('DUITKU_API_KEY') || ''
 
     // Signature v2: merchantCode + merchantOrderId + paymentAmount + apiKey
     const signature = md5(merchantCode + orderId + String(amount) + apiKey)
