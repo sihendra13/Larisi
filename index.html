@@ -724,7 +724,14 @@
   <script src="src/js/monitor.js"></script>
   <script src="src/js/analytics.js"></script>
   <script src="src/js/duitku.js"></script>
-  <script src="https://app.duitku.com/lib/js/duitku.js"></script>
+  <script>
+    (function() {
+      var s = document.createElement('script');
+      s.src = 'https://app.duitku.com/lib/js/duitku.js';
+      s.onerror = function() { console.warn('[Duitku] SDK popup tidak tersedia, fallback ke redirect.'); };
+      document.head.appendChild(s);
+    })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <!-- Launch Sequence Modal (Loading → Success) -->

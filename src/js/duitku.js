@@ -33,12 +33,15 @@ window.startDuitkuPayment = async function(plan, amount) {
         const result = await response.json();
         console.log('[Duitku] Data dari server:', result);
 
-        if (result.reference) {
-            console.log('[Duitku] Menampilkan popup dengan reference:', result.reference);
-            window.checkout.process(result.reference);
-        } else if (result.paymentUrl) {
-            console.log('[Duitku] Menampilkan popup dengan paymentUrl:', result.paymentUrl);
-            window.checkout.process(result.paymentUrl);
+        if (result.reference || result.paymentUrl) {
+            const ref = result.reference || result.paymentUrl;
+            console.log('[Duitku] Membuka pembayaran:', ref);
+            if (window.checkout && typeof window.checkout.process === 'function') {
+                window.checkout.process(ref);
+            } else {
+                // Fallback: buka langsung jika SDK popup tidak berhasil dimuat
+                window.open(result.paymentUrl || ref, '_blank');
+            }
         } else {
             console.error('[Duitku] Gagal: Tidak ada reference/paymentUrl', result);
             throw new Error(result.error || 'Duitku menolak permintaan pembayaran');
