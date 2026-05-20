@@ -12,16 +12,22 @@ serve(async (req) => {
   }
 
   try {
-    const { plan, amount, email, name, phone, orderId } = await req.json()
+    const { plan, amount, email, name, phone, orderId, userId } = await req.json()
 
     const merchantCode = Deno.env.get('DUITKU_MERCHANT_CODE') || 'D22755'
     const apiKey = Deno.env.get('DUITKU_API_KEY') || ''
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 
     // Signature v2: merchantCode + merchantOrderId + paymentAmount + apiKey
     const signature = md5(merchantCode + orderId + String(amount) + apiKey)
 
+    // Callback ke Supabase Edge Function agar subscription ter-upgrade otomatis
+    const callbackUrl = supabaseUrl
+      ? supabaseUrl.replace('/rest/v1', '') + '/functions/v1/duitku-callback'
+      : 'https://larisi.id/callback'
+
     const duitkuUrl = 'https://passport.duitku.com/webapi/api/merchant/v2/inquiry'
-    
+
     const payload = {
       merchantCode,
       paymentAmount: parseInt(amount),
@@ -30,11 +36,13 @@ serve(async (req) => {
       email: email,
       phoneNumber: phone || '081234567890',
       customerVaName: name,
-      callbackUrl: 'https://larisi.id/callback',
+      callbackUrl,
       returnUrl: 'https://app.larisi.id',
       expiryPeriod: 60,
       signature: signature,
       paymentMethod: "VA",
+      // Embed userId dan plan agar callback bisa upgrade subscription
+      additionalParam: JSON.stringify({ userId: userId || '', plan }),
       itemDetails: [{
           name: `Paket ${plan.toUpperCase()}`,
           price: parseInt(amount),
@@ -57,9 +65,9 @@ serve(async (req) => {
         })
     } else {
         const errorMsg = result.resultMessage || result.responseMessage || JSON.stringify(result)
-        return new Response(JSON.stringify({ 
+        return new Response(JSON.stringify({
             error: `Duitku: ${errorMsg}`,
-            details: result 
+            details: result
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,

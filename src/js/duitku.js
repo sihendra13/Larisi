@@ -1,35 +1,14 @@
-// Tampilkan halaman Duitku dalam iframe modal di dalam halaman Larisi
-function _openDuitkuIframe(paymentUrl) {
-    var existing = document.getElementById('duitku-iframe-overlay');
-    if (existing) existing.remove();
-
-    var overlay = document.createElement('div');
-    overlay.id = 'duitku-iframe-overlay';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;';
-
-    var modal = document.createElement('div');
-    modal.style.cssText = 'background:#fff;border-radius:12px;overflow:hidden;width:460px;max-width:95vw;height:85vh;max-height:720px;position:relative;display:flex;flex-direction:column;';
-
-    var header = document.createElement('div');
-    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#fff;border-bottom:1px solid #eee;flex-shrink:0;';
-    header.innerHTML = '<span style="font-weight:600;font-size:15px;color:#1a1a1a;">Pembayaran Larisi</span>';
-
-    var closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '&times;';
-    closeBtn.style.cssText = 'background:none;border:none;font-size:24px;line-height:1;cursor:pointer;color:#666;padding:0 4px;';
-    closeBtn.onclick = function() { overlay.remove(); };
-    header.appendChild(closeBtn);
-
-    var iframe = document.createElement('iframe');
-    iframe.src = paymentUrl;
-    iframe.style.cssText = 'width:100%;flex:1;border:none;';
-
-    modal.appendChild(header);
-    modal.appendChild(iframe);
-    overlay.appendChild(modal);
-    // Tutup jika klik di luar modal
-    overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
-    document.body.appendChild(overlay);
+// Buka halaman Duitku sebagai popup window centered (passport.duitku.com blokir iframe)
+function _openDuitkuPopup(paymentUrl) {
+    var w = 480, h = 720;
+    var left = Math.round((screen.width - w) / 2);
+    var top = Math.round((screen.height - h) / 2);
+    var win = window.open(paymentUrl, 'duitku_payment',
+        'width=' + w + ',height=' + h + ',top=' + top + ',left=' + left + ',resizable=yes,scrollbars=yes,toolbar=no,menubar=no');
+    if (!win) {
+        // Popup blocker aktif — fallback ke tab baru
+        window.open(paymentUrl, '_blank');
+    }
 }
 
 // Fungsi utama untuk memulai pembayaran Duitku
@@ -60,7 +39,8 @@ window.startDuitkuPayment = async function(plan, amount) {
                 email: userEmail,
                 name: userName,
                 phone: userPhone,
-                orderId: orderId
+                orderId: orderId,
+                userId: user ? user.id : ''
             })
         });
 
@@ -75,7 +55,7 @@ window.startDuitkuPayment = async function(plan, amount) {
             if (window.checkout && typeof window.checkout.process === 'function') {
                 window.checkout.process(ref);
             } else {
-                _openDuitkuIframe(url);
+                _openDuitkuPopup(url);
             }
         } else {
             console.error('[Duitku] Gagal: Tidak ada reference/paymentUrl', result);
