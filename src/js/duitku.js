@@ -71,6 +71,12 @@ function _showDuitkuModal(result, plan) {
         '</div>',
       '</div>',
 
+      // BCA warning
+      '<div style="margin:12px 24px 0;padding:10px 12px;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;display:flex;gap:8px;align-items:flex-start;">',
+        '<span style="font-size:15px;flex-shrink:0;">⚠️</span>',
+        '<span style="font-size:12px;color:#7a5c00;line-height:1.5;">Pengguna <strong>Bank BCA</strong> belum dapat melakukan transfer ke Virtual Account ini. Gunakan bank lain seperti Mandiri, BNI, BRI, CIMB, atau mobile banking selain BCA.</span>',
+      '</div>',
+
       // Footer
       '<div style="padding:16px 24px;display:flex;gap:10px;">',
         paymentUrl
