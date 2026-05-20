@@ -338,6 +338,130 @@ function _showDuitkuModal(result, plan, originalAmount, orderId, userId) {
   if (userId) _startDkPolling(userId, plan);
 }
 
+// ── Notification Panel ────────────────────────────────────────────────────────
+function _dkFormatRelTime(ts) {
+  var diff = Date.now() - ts;
+  var m = Math.floor(diff / 60000);
+  if (m < 1)  return 'Baru saja';
+  if (m < 60) return m + ' menit lalu';
+  var h = Math.floor(m / 60);
+  if (h < 24) return h + ' jam lalu';
+  return Math.floor(h / 24) + ' hari lalu';
+}
+
+function _dkRenderNotifPanel(panel) {
+  var notifs = JSON.parse(localStorage.getItem('larisi_notifs') || '[]');
+
+  var header = [
+    '<div style="padding:14px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;">',
+      '<span style="font-weight:700;font-size:14px;color:#1a0533;">Notifikasi</span>',
+      notifs.length ? '<button id="dk-notif-clear" style="background:none;border:none;font-size:12px;color:#7c3aed;cursor:pointer;font-weight:600;padding:0;">Hapus semua</button>' : '',
+    '</div>',
+  ].join('');
+
+  var body;
+  if (notifs.length === 0) {
+    body = '<div style="padding:32px 16px;text-align:center;color:#aaa;font-size:13px;">Tidak ada notifikasi</div>';
+  } else {
+    body = '<div style="max-height:340px;overflow-y:auto;">' +
+      notifs.map(function(n) {
+        return [
+          '<div style="padding:12px 16px;border-bottom:1px solid #f7f7f7;',
+            n.read ? '' : 'background:#faf5ff;',
+          '">',
+            '<div style="font-size:13px;color:#1a1a1a;line-height:1.5;margin-bottom:3px;">' + n.msg + '</div>',
+            '<div style="font-size:11px;color:#aaa;">' + _dkFormatRelTime(n.time) + '</div>',
+          '</div>',
+        ].join('');
+      }).join('') +
+    '</div>';
+  }
+
+  panel.innerHTML = header + body;
+
+  var clearBtn = document.getElementById('dk-notif-clear');
+  if (clearBtn) {
+    clearBtn.onclick = function(e) {
+      e.stopPropagation();
+      localStorage.removeItem('larisi_notifs');
+      var badge = document.getElementById('dk-notif-badge');
+      if (badge) badge.remove();
+      _dkRenderNotifPanel(panel);
+    };
+  }
+}
+
+function _dkOpenNotifPanel() {
+  var bell = document.querySelector('.notif-btn');
+  if (!bell) return;
+
+  var rect = bell.getBoundingClientRect();
+
+  var panel = document.createElement('div');
+  panel.id = 'dk-notif-panel';
+  panel.style.cssText = [
+    'position:fixed;',
+    'top:' + (rect.bottom + 8) + 'px;',
+    'right:' + (window.innerWidth - rect.right) + 'px;',
+    'background:#fff;border:1px solid #e5e7eb;border-radius:12px;',
+    'box-shadow:0 8px 28px rgba(0,0,0,0.14);width:300px;z-index:10000;',
+    'font-family:sans-serif;overflow:hidden;',
+    'animation:dkFadeIn 0.15s ease;',
+  ].join('');
+
+  // Inject keyframe once
+  if (!document.getElementById('dk-notif-style')) {
+    var s = document.createElement('style');
+    s.id = 'dk-notif-style';
+    s.textContent = '@keyframes dkFadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}';
+    document.head.appendChild(s);
+  }
+
+  _dkRenderNotifPanel(panel);
+  document.body.appendChild(panel);
+
+  // Close on outside click
+  setTimeout(function() {
+    function _outside(e) {
+      var p = document.getElementById('dk-notif-panel');
+      var b = document.querySelector('.notif-btn');
+      if (p && !p.contains(e.target) && b && !b.contains(e.target)) {
+        p.remove();
+        document.removeEventListener('click', _outside);
+      }
+    }
+    document.addEventListener('click', _outside);
+  }, 0);
+}
+
+function _initNotifPanel() {
+  var bell = document.querySelector('.notif-btn');
+  if (!bell) return;
+  bell.style.cursor = 'pointer';
+  bell.onclick = function() {
+    var existing = document.getElementById('dk-notif-panel');
+    if (existing) { existing.remove(); return; }
+
+    // Mark all as read and clear badge
+    var notifs = JSON.parse(localStorage.getItem('larisi_notifs') || '[]');
+    if (notifs.some(function(n) { return !n.read; })) {
+      localStorage.setItem('larisi_notifs', JSON.stringify(
+        notifs.map(function(n) { return Object.assign({}, n, { read: true }); })
+      ));
+      var badge = document.getElementById('dk-notif-badge');
+      if (badge) badge.remove();
+    }
+
+    _dkOpenNotifPanel();
+  };
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _initNotifPanel);
+} else {
+  _initNotifPanel();
+}
+
 // ── Entry point ───────────────────────────────────────────────────────────────
 window.startDuitkuPayment = async function(plan, amount) {
   try {
