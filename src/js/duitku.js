@@ -468,7 +468,7 @@ window.startDuitkuPayment = async function(plan, amount) {
     var user = (typeof window.getCurrentUser === 'function') ? await window.getCurrentUser() : null;
     var profile = window.userBizProfile || JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
     var email   = (user && user.email ? user.email : (profile.email || '')).toLowerCase().trim();
-    var name    = profile.full_name || profile.name || (user && user.user_metadata && user.user_metadata.full_name) || 'Pelanggan Larisi';
+    var name    = profile.business_name || profile.full_name || (user && user.user_metadata && user.user_metadata.full_name) || 'Pelanggan Larisi';
     var phone   = profile.phone || profile.phone_number || '081234567890';
     var orderId = 'LARISI-' + Date.now();
 
