@@ -182,8 +182,11 @@ function _showDkDetailPopup(orderId, totalAmount, originalAmount) {
           '<span style="font-weight:600;font-size:14px;">' + _formatRupiah(originalAmount) + '</span>',
         '</div>',
         svc > 0 ? [
-          '<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0f0f0;">',
-            '<span style="color:#555;font-size:14px;">Service Cost</span>',
+          '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #f0f0f0;">',
+            '<div>',
+              '<div style="color:#555;font-size:14px;">Biaya Layanan</div>',
+              '<div style="color:#aaa;font-size:11px;">Biaya Virtual Account Duitku</div>',
+            '</div>',
             '<span style="font-weight:600;font-size:14px;">' + _formatRupiah(svc) + '</span>',
           '</div>',
         ].join('') : '',
@@ -275,7 +278,7 @@ function _showDuitkuModal(result, plan, originalAmount, orderId, userId) {
 
       // Duitku info
       '<div style="padding:0 24px 16px;text-align:center;">',
-        '<span style="font-size:11px;color:#bbb;">Pembayaran diproses oleh Duitku payment gateway resmi mitra Larisi</span>',
+        '<span style="font-size:11px;color:#888;">Pembayaran diproses oleh Duitku payment gateway resmi mitra Larisi</span>',
       '</div>',
 
     '</div>'
