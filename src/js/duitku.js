@@ -269,8 +269,13 @@ function _showDuitkuModal(result, plan, originalAmount, orderId, userId) {
       '</div>',
 
       // Footer buttons
-      '<div style="padding:16px 24px;">',
+      '<div style="padding:16px 24px 12px;">',
         '<button id="dk-detail-btn" style="width:100%;padding:12px;border:1.5px solid #1a1a1a;border-radius:10px;color:#1a1a1a;background:#fff;font-weight:600;font-size:14px;cursor:pointer;">Lihat Detail Transaksi</button>',
+      '</div>',
+
+      // Duitku info
+      '<div style="padding:0 24px 16px;text-align:center;">',
+        '<span style="font-size:11px;color:#bbb;">Pembayaran diproses oleh Duitku payment gateway resmi mitra Larisi</span>',
       '</div>',
 
     '</div>'
