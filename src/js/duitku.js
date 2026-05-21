@@ -25,8 +25,10 @@ function _showPendingBanner(orderId, plan) {
 
   var banner = document.createElement('div');
   banner.id = 'dk-pending-banner';
+  var _headerEl = document.querySelector('.header');
+  var _headerH  = _headerEl ? _headerEl.offsetHeight : 56;
   banner.style.cssText = [
-    'position:fixed;top:0;left:0;right:0;z-index:9999;',
+    'position:fixed;top:' + _headerH + 'px;left:0;right:0;z-index:9998;',
     'background:#fffbeb;border-bottom:2px solid #f59e0b;',
     'padding:10px 16px;display:flex;align-items:center;gap:12px;',
     'font-family:sans-serif;font-size:13px;'
@@ -220,7 +222,7 @@ function _showDuitkuModal(result, plan, originalAmount, orderId, userId) {
 
   var overlay = document.createElement('div');
   overlay.id = 'dk-modal-overlay';
-  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.38);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.25);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;';
 
   overlay.innerHTML = [
     '<div style="background:#fff;border-radius:16px;width:100%;max-width:420px;overflow:hidden;font-family:sans-serif;">',
@@ -309,6 +311,9 @@ function _showDuitkuModal(result, plan, originalAmount, orderId, userId) {
   }
   function _closeModal() {
     if (_dkCountdownTimer){ clearInterval(_dkCountdownTimer); _dkCountdownTimer = null; }
+    // Tutup trial modal agar tidak muncul lagi setelah Duitku modal ditutup
+    var trialModal = document.getElementById('trial-modal');
+    if (trialModal) trialModal.style.display = 'none';
     // Jika masih PENDING saat ditutup: tampilkan banner + lanjutkan polling
     if (!_isPaid()) {
       _showPendingBanner(orderId, plan);
