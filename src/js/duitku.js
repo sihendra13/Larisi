@@ -25,10 +25,8 @@ function _showPendingBanner(orderId, plan) {
 
   var banner = document.createElement('div');
   banner.id = 'dk-pending-banner';
-  var _headerEl = document.querySelector('.header');
-  var _headerH  = _headerEl ? _headerEl.offsetHeight : 56;
   banner.style.cssText = [
-    'position:fixed;top:' + _headerH + 'px;left:0;right:0;z-index:9998;',
+    'position:fixed;top:0;left:0;right:0;z-index:99998;',
     'background:#fffbeb;border-bottom:2px solid #f59e0b;',
     'padding:10px 16px;display:flex;align-items:center;gap:12px;',
     'font-family:sans-serif;font-size:13px;'
