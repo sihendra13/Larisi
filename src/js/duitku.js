@@ -42,12 +42,27 @@ function _showPendingBanner(orderId, plan) {
   ].join('');
 
   document.body.appendChild(banner);
-  document.getElementById('dk-banner-close').onclick = function() { banner.remove(); };
+
+  // Geser .main ke bawah agar header tidak tertimpa banner
+  requestAnimationFrame(function() {
+    var mainEl = document.querySelector('.main');
+    if (mainEl) mainEl.style.paddingTop = banner.offsetHeight + 'px';
+  });
+
+  document.getElementById('dk-banner-close').onclick = function() {
+    banner.remove();
+    var mainEl = document.querySelector('.main');
+    if (mainEl) mainEl.style.paddingTop = '';
+  };
 }
 
 function _dismissPendingBanner() {
   var b = document.getElementById('dk-pending-banner');
-  if (b) b.remove();
+  if (b) {
+    b.remove();
+    var mainEl = document.querySelector('.main');
+    if (mainEl) mainEl.style.paddingTop = '';
+  }
 }
 
 function _addDkNotification(message) {
