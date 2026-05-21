@@ -217,10 +217,10 @@ function _showDuitkuModal(result, plan, originalAmount, orderId, userId) {
 
   var overlay = document.createElement('div');
   overlay.id = 'dk-modal-overlay';
-  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.38);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;';
 
   overlay.innerHTML = [
-    '<div style="background:#fff;border-radius:16px;width:100%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.18);overflow:hidden;font-family:sans-serif;">',
+    '<div style="background:#fff;border-radius:16px;width:100%;max-width:420px;overflow:hidden;font-family:sans-serif;">',
 
       // Header
       '<div style="background:#1a0533;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;">',
