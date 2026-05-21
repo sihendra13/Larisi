@@ -278,7 +278,7 @@ function _showDuitkuModal(result, plan, originalAmount, orderId, userId) {
 
       // Duitku info
       '<div style="padding:0 24px 16px;text-align:center;">',
-        '<span style="font-size:11px;color:#888;">Pembayaran diproses oleh Duitku payment gateway resmi mitra Larisi</span>',
+        '<span style="font-size:11px;color:#555;">Pembayaran diproses oleh Duitku payment gateway resmi mitra Larisi</span>',
       '</div>',
 
     '</div>'
