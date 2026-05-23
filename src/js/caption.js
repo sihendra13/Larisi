@@ -114,14 +114,28 @@ function getUsp() {
   return fallbacks[category] || 'Pilihan terbaik untuk kamu';
 }
 
+function _getBizLoc() {
+  /* Lokasi BISNIS dari profil onboarding — bukan dari peta target */
+  var profile = {};
+  try { profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}'); } catch(e) {}
+  var kec = (profile.kecamatan || '').trim();
+  var kab = (profile.kabupaten || profile.city || '').trim();
+  if (kec && kab) return kec + ', ' + kab;
+  return kec || kab || 'lokasi kami';
+}
+
+function _getTargetArea() {
+  /* Area TARGET IKLAN dari peta — bukan lokasi bisnis */
+  var popupLoc = document.querySelector('.popup-loc');
+  return popupLoc ? popupLoc.textContent.split(',')[0].trim() : _getBizLoc();
+}
+
 function getDistText(format) {
   var profile = {};
   try { profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}'); } catch(e) {}
   var hasDelivery = profile.delivery_service || false;
   var category    = profile.category || '';
-  var loc = document.querySelector('.popup-loc')
-    ? document.querySelector('.popup-loc').textContent.split(',')[0].trim()
-    : 'lokasi kami';
+  var loc = _getBizLoc(); /* selalu lokasi BISNIS, bukan target map */
   var jasaCategories = ['jasa', 'salon', 'barber', 'pendidikan'];
   var isJasa = jasaCategories.indexOf(category) !== -1;
   if (format === 'short') {
@@ -140,7 +154,8 @@ function getDistText(format) {
 }
 
 function fillCaptionVars(text) {
-  var loc  = document.querySelector('.popup-loc') ? document.querySelector('.popup-loc').textContent.split(',')[0] : 'lokasi kamu';
+  var loc  = _getBizLoc();     /* {loc}  = lokasi BISNIS (dari profil) */
+  var area = _getTargetArea(); /* {area} = area TARGET IKLAN (dari peta) */
   var dist = getDistText('long');
   var usp  = getUsp();
   var d    = getDialek();
@@ -162,6 +177,7 @@ function fillCaptionVars(text) {
 
   return text
     .replace(/\{loc\}/g,      loc)
+    .replace(/\{area\}/g,     area)
     .replace(/\{dist\}/g,     dist)
     .replace(/\{usp\}/g,      uspOut)
     .replace(/\{greeting\}/g, d.greeting)

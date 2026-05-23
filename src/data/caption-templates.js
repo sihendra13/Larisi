@@ -1,12 +1,12 @@
 /*
  * Caption Templates — 3 alternatif per persona × per platform
  * Tone & style disesuaikan dengan kultur konten masing-masing platform
- * Variabel: {loc} = nama lokasi, {usp} = keunggulan bisnis
+ * Variabel: {loc} = lokasi BISNIS (dari profil), {area} = area TARGET IKLAN (dari peta), {usp} = keunggulan bisnis
  */
 var CAPTION_TEMPLATES = {
   "ig-story": {
     "Kuliner": [
-      "{greeting} 👋\n\nAda tempat makan baru yang lagi ramai dibicarakan warga {loc}!\n\nSetiap menu dibuat dari bahan segar pilihan — aroma dari dapurnya aja udah bikin lapar dari parkiran. Konsisten enak setiap hari, bukan cuma pas buka doang. {usp}.\n\n{cta}\n\n#KulinerLokal #MakanEnak #{loc}",
+      "{greeting} 👋\n\nAda tempat makan baru yang lagi ramai dibicarakan warga {area}!\n\nSetiap menu dibuat dari bahan segar pilihan — aroma dari dapurnya aja udah bikin lapar dari parkiran. Konsisten enak setiap hari, bukan cuma pas buka doang. {usp}.\n\n{cta}\n\n#KulinerLokal #MakanEnak #{loc}",
       "{greeting} 🍽\n\nSoal rasa, kami tidak kompromi.\n\nBahan segar dari supplier terpilih, resep yang tidak berubah sejak hari pertama buka, dan porsi yang bikin kenyang tanpa harus merogoh kocek terlalu dalam. Terbukti dari pelanggan setia yang balik lagi setiap minggu.\n\n{usp}.\n\n{cta}\n\n#KulinerJujur #MakanEnak #FoodLokal",
       "{greeting} ⚡\n\nHari ini stok menu spesial kami TERBATAS!\n\nKemarin habis dalam 2 jam. Hari ini stok lebih sedikit — dan antrian sudah mulai. {usp}.\n\nJangan sampai kehabisan.\n\n{cta}\n\n#PromoHariIni #KulinerLokal #TerbatasStok"
     ],
@@ -36,14 +36,14 @@ var CAPTION_TEMPLATES = {
       "{greeting} ⚠\n\nUnit tersisa tinggal 3 dengan harga pre-launch!\n\nBegitu terjual, harga naik signifikan. Jangan tunda keputusan yang bisa mengubah masa depan keluargamu. Survei gratis tersedia hari ini di {loc}.\n\n{cta}\n\n#UnitTerbatas #PropertiLokal #JanganTerlambat"
     ],
     "Beauty/Self-care": [
-      "{greeting} 🌸\n\nRahasia kulit glowing warga {loc} akhirnya terbongkar!\n\nBukan filter, bukan editan — ini hasil nyata dari rangkaian perawatan yang tepat. Ribuan pelanggan sudah merasakan perubahan dalam 2 minggu pertama. Kini giliranmu. {usp}.\n\n{cta}\n\n#BeautyLokal #GlowUpAsli #SkincareJujur",
+      "{greeting} 🌸\n\nRahasia kulit glowing warga {area} akhirnya terbongkar!\n\nBukan filter, bukan editan — ini hasil nyata dari rangkaian perawatan yang tepat. Ribuan pelanggan sudah merasakan perubahan dalam 2 minggu pertama. Kini giliranmu. {usp}.\n\n{cta}\n\n#BeautyLokal #GlowUpAsli #SkincareJujur",
       "{greeting} ✨\n\nTransparan soal kandungan, jujur soal hasil.\n\nFormula kami mengandung Niacinamide 10%, Tranexamic Acid, dan ekstrak herbal lokal. Telah diuji dermatologi, bebas paraben, fragrance-free — cocok untuk kulit sensitif dan berminyak. {usp}.\n\n{cta}\n\n#SkincareTransparan #FormulaTeruji #BeautyLokal",
       "{greeting} 💥\n\nFlash sale skincare HARI INI SAJA!\n\nHemat hingga 40% untuk paket pilihan di {loc}. Stok promo hanya 15 set — kemarin habis dalam 4 jam. Masih mau scroll dulu?\n\n{cta}\n\n#PromoSkincare #FlashSale #GlowUpSekarang"
     ],
     "Tourism": [
       "{greeting} 🗺\n\n{usp}!\n\nBelum banyak yang tau, tapi yang sudah ke sana selalu ingin kembali. Spot yang indah, fasilitas yang memadai, dan pengalaman lokal yang autentik menunggu kamu di sana.\n\n{cta}\n\n#WisataLokal #HiddenGem #ExploreIndonesia",
       "{greeting} 🌟\n\nRating 4.8/5 dari 500+ ulasan nyata.\n\nBukan sekadar bagus di foto — pengalaman sesungguhnya bahkan lebih berkesan. Pemandu bersertifikat, fasilitas lengkap, dan momen tak terlupakan yang menanti di sekitar {loc}, {usp}.\n\n{cta}\n\n#WisataFasilitas #TravelJujur #DestinasiLokal",
-      "{greeting} 🎯\n\nPromo paket wisata weekend ini — diskon 35%!\n\nBooking hari ini untuk perjalanan ke destinasi terbaik di area {loc}. Slot sangat terbatas, promo berakhir malam ini. {usp}.\n\n{cta}\n\n#PromoWisata #WeekendTrip #BookingSekarang"
+      "{greeting} 🎯\n\nPromo paket wisata weekend ini — diskon 35%!\n\nBooking hari ini untuk perjalanan ke destinasi terbaik di area {area}. Slot sangat terbatas, promo berakhir malam ini. {usp}.\n\n{cta}\n\n#PromoWisata #WeekendTrip #BookingSekarang"
     ],
     "Retro Automotive": [
       "{greeting} 🏍\n\nKomunitas otomotif klasik terbaik di {loc} — bukan kaleng-kaleng!\n\nMekanik berpengalaman, spare part original dari importir resmi, dan brotherhood yang solid. Tempat yang tepat untuk motor klasik kesayanganmu. {usp}.\n\n{cta}\n\n#OtomotifKlasik #MotorKlasik #KomunitasRider",
@@ -132,12 +132,12 @@ var CAPTION_TEMPLATES = {
     ],
     "KebersihanLaundry": [
       "{greeting} 🧺\n\nPakaian bersih, wangi, rapi — tanpa harus repot dan buang waktu!\n\nLayanan laundry profesional di {loc}: dicuci bersih, disetrika rapi, diantar tepat waktu. {usp}.\n\n{cta}\n\n#LaundryLokal #CuciBaju #PraktisHariIni",
-      "{greeting} ✅\n\nWaktu itu berharga — serahkan urusan laundry ke kami.\n\nProses cuci higienis, pewangi pilihan, hasil rapi yang tahan lama. Layanan antar-jemput tersedia di area {loc}. {usp}.\n\n{cta}\n\n#LaundryProfesional #AntarJemput #BersihWangi",
+      "{greeting} ✅\n\nWaktu itu berharga — serahkan urusan laundry ke kami.\n\nProses cuci higienis, pewangi pilihan, hasil rapi yang tahan lama. Layanan antar-jemput tersedia di area {area}. {usp}.\n\n{cta}\n\n#LaundryProfesional #AntarJemput #BersihWangi",
       "{greeting} 🔔\n\nPromo laundry kilogram hari ini — harga spesial!\n\nLaundry bersih dan wangi di {loc}. {usp}. Antar sekarang, selesai besok pagi.\n\n{cta}\n\n#PromoLaundry #LaundryMurah #OrderSekarang"
     ],
     "General": [
       "{greeting} 👋\n\nAda yang baru dan menarik di {loc} — dan kamu yang pertama tau!\n\nKami hadir khusus untuk komunitas lokal di sini, bukan korporat besar dari jauh. Tetangga sendiri yang usaha, yang benar-benar paham kebutuhanmu. {usp}.\n\n{cta}\n\n#UsahaLokal #UMKMLokal #BanggaBuatanIndonesia",
-      "{greeting} 💪\n\nKonsisten dan terpercaya sejak hari pertama buka.\n\nKualitas yang tidak pernah kami kompromikan, pelayanan yang jujur, dan harga yang bersahabat. Sudah dipercaya warga {loc} selama ini. Tidak ada janji lebay — hanya hasil yang bisa kamu rasakan sendiri.\n\n{cta}\n\n#LokalTerpercaya #KualitasKonsisten #UMKMHebat",
+      "{greeting} 💪\n\nKonsisten dan terpercaya sejak hari pertama buka.\n\nKualitas yang tidak pernah kami kompromikan, pelayanan yang jujur, dan harga yang bersahabat. Sudah dipercaya warga {area} selama ini. Tidak ada janji lebay — hanya hasil yang bisa kamu rasakan sendiri.\n\n{cta}\n\n#LokalTerpercaya #KualitasKonsisten #UMKMHebat",
       "{greeting} 🔔\n\nPenawaran khusus untuk pelanggan baru hari ini!\n\nPromo spesial di {loc}, {usp}. Stok sangat terbatas — sudah ratusan yang memanfaatkan sejak pagi. Jangan sampai ketinggalan.\n\n{cta}\n\n#PromoLokal #PenawaranKhusus #TerbatasHariIni"
     ]
   },
@@ -179,8 +179,8 @@ var CAPTION_TEMPLATES = {
     ],
     "Tourism": [
       "Hidden gem {usp}.\n\n{cta}",
-      "Rating 4.8/5 dari 500+ ulasan nyata — bukan bot 🌟\n\n{greeting}! Pengalaman nyatanya lebih keren dari kontennya. Destinasi area {loc}.\n\n{cta}",
-      "Promo paket wisata weekend — diskon 35%! ✈\n\n{greeting}! Booking hari ini untuk trip area {loc}. Slot sangat terbatas.\n\n{cta}"
+      "Rating 4.8/5 dari 500+ ulasan nyata — bukan bot 🌟\n\n{greeting}! Pengalaman nyatanya lebih keren dari kontennya. Destinasi area {area}.\n\n{cta}",
+      "Promo paket wisata weekend — diskon 35%! ✈\n\n{greeting}! Booking hari ini untuk trip area {area}. Slot sangat terbatas.\n\n{cta}"
     ],
     "Retro Automotive": [
       "POV: Bawa motor klasik ke bengkel spesialis di {loc} vs bengkel biasa 🏍\n\n{greeting}! Beda banget hasilnya — ini standar yang kamu deserves.\n\n{cta}",
@@ -274,13 +274,13 @@ var CAPTION_TEMPLATES = {
     ],
     "General": [
       "POV: Nemu usaha lokal {loc} yang kualitasnya jauh di atas ekspektasi 💎\n\n{greeting}! {usp}.\n\n{cta}",
-      "Dipercaya warga {loc} sejak hari pertama buka 💪\n\n{greeting}! Kualitas konsisten, pelayanan jujur, harga bersahabat.\n\n{cta}",
+      "Dipercaya warga {area} sejak hari pertama buka 💪\n\n{greeting}! Kualitas konsisten, pelayanan jujur, harga bersahabat.\n\n{cta}",
       "Promo khusus hari ini — hanya untuk kamu! 🔔\n\n{greeting}! {usp}. Stok terbatas.\n\n{cta}"
     ]
   },
   "youtube": {
     "Kuliner": [
-      "Kalau kamu warga {loc} dan belum pernah coba tempat makan ini, kamu beneran rugi. {greeting}! Bahan segar setiap hari, resep yang tidak pernah kompromi, dan konsistensi rasa yang bisa kamu buktikan sendiri. {usp}. {cta}",
+      "Kalau kamu warga {area} dan belum pernah coba tempat makan ini, kamu beneran rugi. {greeting}! Bahan segar setiap hari, resep yang tidak pernah kompromi, dan konsistensi rasa yang bisa kamu buktikan sendiri. {usp}. {cta}",
       "{greeting}! Di {loc} ini, kami percaya makanan yang baik dimulai dari bahan yang baik. Tidak ada bumbu instan, tidak ada MSG berlebih. Setiap menu punya cerita dari dapur yang sama sejak hari pertama buka. Datang dan rasakan bedanya — {usp}. {cta}",
       "{greeting}! Menu spesial hari ini terbatas — kemarin sold out dalam 2 jam. Kami di {loc}, {usp}. Buka setiap hari dari pagi. Datang lebih awal supaya tidak kehabisan. {cta}"
     ],
@@ -317,7 +317,7 @@ var CAPTION_TEMPLATES = {
     "Tourism": [
       "{greeting}! Ada destinasi {usp}. Fasilitas lengkap, pemandu bersertifikat, rating 4.8/5 dari 500+ ulasan nyata. Pengalaman sesungguhnya lebih dari sekadar foto. {cta}",
       "{greeting}! Liburan tidak harus jauh dan mahal. Di {loc}, kami kurasi destinasi lokal terbaik yang sering terlewatkan. Alam, budaya, kuliner lokal dalam satu paket terencana. Booking sekarang untuk weekend ini. {cta}",
-      "{greeting}! Promo paket wisata area {loc} akhir pekan ini — diskon 35% untuk booking hari ini. Slot sangat terbatas. Semua sudah disiapkan — kamu tinggal datang dan menikmati. {cta}"
+      "{greeting}! Promo paket wisata area {area} akhir pekan ini — diskon 35% untuk booking hari ini. Slot sangat terbatas. Semua sudah disiapkan — kamu tinggal datang dan menikmati. {cta}"
     ],
     "Retro Automotive": [
       "{greeting}! Motor klasik yang terawat benar itu berbeda kelas — dan di {loc}, kami punya standarnya. Mekanik bersertifikat, spare part original importir resmi, garansi 30 hari. Bukan bengkel asal-asalan. {usp}. {cta}",
@@ -447,14 +447,14 @@ var CAPTION_TEMPLATES = {
       "{greeting} UNIT TERSISA TINGGAL 3! ⚠\n\nHarga pre-launch masih berlaku. Survei gratis hari ini juga.\n\n{cta}"
     ],
     "Beauty/Self-care": [
-      "{greeting} Rahasia glowing warga {loc} akhirnya terbongkar! ✨\n\nFormula transparan, dermatologi tested, bebas paraben.\n\n{cta}",
+      "{greeting} Rahasia glowing warga {area} akhirnya terbongkar! ✨\n\nFormula transparan, dermatologi tested, bebas paraben.\n\n{cta}",
       "{greeting} Self-care yang efektif itu ada — dan ada di {loc}. 🌸\n\nNiacinamide 10%, herbal lokal, fragrance-free. {usp}.\n\n{cta}",
       "{greeting} FLASH SALE — HARI INI SAJA! 💥\n\nHemat 40% paket skincare di {loc}. Stok 15 set, kemarin habis 4 jam.\n\n{cta}"
     ],
     "Tourism": [
       "{greeting} Destinasi terbaik {usp}.8/5, fasilitas lengkap, pengalaman nyata tak terlupakan.\n\n{cta}",
-      "{greeting} Liburan berkesan tidak harus jauh dan mahal. 🌟\n\nDestinansi terbaik area {loc} — alam, budaya, kuliner dalam satu paket.\n\n{cta}",
-      "{greeting} PROMO WEEKEND — DISKON 35%! 🎯\n\nBooking hari ini untuk trip area {loc}. Slot sangat terbatas.\n\n{cta}"
+      "{greeting} Liburan berkesan tidak harus jauh dan mahal. 🌟\n\nDestinansi terbaik area {area} — alam, budaya, kuliner dalam satu paket.\n\n{cta}",
+      "{greeting} PROMO WEEKEND — DISKON 35%! 🎯\n\nBooking hari ini untuk trip area {area}. Slot sangat terbatas.\n\n{cta}"
     ],
     "Retro Automotive": [
       "{greeting} Bengkel spesialis motor klasik di {loc}! 🏍\n\nSpare part original, mekanik bersertifikat, garansi 30 hari.\n\n{cta}",
