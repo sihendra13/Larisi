@@ -104,6 +104,10 @@
             const plan  = urlParams.get('plan')  || 'freemium';
             const trial = urlParams.get('trial') || '0';
 
+            // Reset data trial lama dari sesi/browser sebelumnya
+            // Mencegah modal "trial habis" muncul untuk user baru
+            localStorage.removeItem('larisi_trial_start');
+
             localStorage.setItem('larisi_selected_plan', plan);
             localStorage.setItem('larisi_trial_days', trial);
 
