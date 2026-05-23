@@ -203,8 +203,10 @@ function generateCaption(cycle) {
 }
 
 // ── AI Caption Generator ──────────────────────────────────────────────────────
+var _aiCallCount = 0; /* Counter naik setiap generateCaptionAI() dipanggil — untuk rotasi hook style */
 async function generateCaptionAI() {
   if (!currentPersona) return;
+  _aiCallCount++;
 
   var profile = {};
   try { profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}'); } catch(e) {}
@@ -255,14 +257,30 @@ async function generateCaptionAI() {
   var _dialek   = getDialek();
   var _greeting = _dialek.greeting || 'Halo';
 
-  /* Variasi gaya hook — rotasi berdasarkan captionAltIndex supaya tiap Generate ulang beda */
-  var _hookStyles = [
-    'Pertanyaan langsung ke audiens — contoh: "Belum coba [nama bisnis] di [lokasi]?"',
-    'Pernyataan bold tentang USP — langsung sebut keunggulan tanpa basa-basi, baru sebut nama bisnis',
-    'Cerita singkat atau situasi relatable — bayangkan situasi audiens sebelum mengenal produk ini',
-    'Social proof atau fakta menarik — angka, reaksi pelanggan, atau keunikan yang bikin penasaran',
+  /* Variasi gaya hook — rotasi berdasarkan _aiCallCount supaya tiap panggil AI beda gaya */
+  var _n = _aiCallCount % 4;
+  var _biz  = bizName || 'kami';
+  var _loc  = bizLocDisplay || 'lokasi kami';
+  var _area = targetArea || 'sekitar';
+  var _u    = usp || 'kualitas terbaik';
+  var _hookInstructions = [
+    /* 0 — Pertanyaan langsung */
+    'Gunakan PERTANYAAN LANGSUNG ke audiens sebagai hook.\n' +
+    'Contoh baris hook: "Warga ' + _area + ', belum cobain ' + _biz + ' di ' + _loc + '? Sayang banget kalau dilewatkan!"',
+
+    /* 1 — Pernyataan bold USP */
+    'Mulai dengan PERNYATAAN BOLD tentang USP — sebut keunggulan dulu, baru nama bisnis dan lokasi.\n' +
+    'Contoh baris hook: "' + _u + ' — itulah yang bikin ' + _biz + ' di ' + _loc + ' jadi pilihan warga ' + _area + '."',
+
+    /* 2 — Cerita/situasi relatable */
+    'Mulai dengan CERITA SINGKAT atau situasi yang relate — bayangkan kondisi audiens sebelum tahu bisnis ini.\n' +
+    'Contoh baris hook: "Lagi cari kuliner yang beda dari biasanya, ' + _area + '? ' + _biz + ' di ' + _loc + ' jawabannya."',
+
+    /* 3 — Social proof */
+    'Mulai dengan SOCIAL PROOF atau fakta menarik — sebut pelanggan setia, reaksi nyata, atau keunikan bisnis.\n' +
+    'Contoh baris hook: "Sudah ribuan orang buktikan — ' + _biz + ' di ' + _loc + ' memang beda. Warga ' + _area + ', kapan giliranmu?"',
   ];
-  var _hookStyle = _hookStyles[captionAltIndex % _hookStyles.length];
+  var _hookStyle = _hookInstructions[_n];
 
   var platformLabel = {
     'ig-post'  : 'Instagram Post — caption bisa 3–5 baris, padat dan engaging',
@@ -297,14 +315,10 @@ async function generateCaptionAI() {
     'FORMAT SAPAAN:',
     '- Baris pertama: sapaan saja → "' + _greeting + '"',
     '- Baris kedua: kosong',
-    '- Baris ketiga: langsung hook caption',
-    '- Contoh format yang BENAR:',
-    '  "' + _greeting + '"',
-    '  ""',
-    '  "Warga ' + (targetArea || 'sekitar') + ', [hook caption di sini]"',
+    '- Baris ketiga: langsung hook (JANGAN selalu mulai dengan "Warga [area]..." — sesuaikan dengan gaya hook di bawah)',
     '',
-    'GAYA HOOK (gunakan pendekatan ini untuk variasi):',
-    '- ' + _hookStyle,
+    'GAYA HOOK — WAJIB ikuti instruksi berikut:',
+    _hookStyle,
     '',
     'ATURAN WAJIB:',
     '- Bahasa Indonesia natural, tidak kaku, tidak terkesan iklan murahan',
@@ -338,7 +352,7 @@ async function generateCaptionAI() {
       },
       body: JSON.stringify({
         systemPrompt: systemPrompt,
-        messages: [{ role: 'user', content: 'Tulis captionnya sekarang.' }]
+        messages: [{ role: 'user', content: 'Tulis captionnya sekarang. Pastikan gaya hook sesuai instruksi — jangan gunakan pola yang sama dengan caption sebelumnya.' }]
       })
     });
 
