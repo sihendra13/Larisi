@@ -110,14 +110,34 @@ window._resolveConflict = _resolveConflict;
 
 /**
  * _changePhotoConflict()
- * User memilih "Ganti foto" — tutup panel konflik dan buka file picker.
- * masterPersonaLocked di-reset agar upload baru bisa re-detect dari awal.
+ * User memilih "Ganti foto" — hapus foto konflik, reset state upload,
+ * lalu buka file picker. Upload berikutnya diperlakukan sebagai first upload
+ * sehingga AI scan berjalan lagi dan conflict card bisa muncul ulang bila perlu.
  */
 function _changePhotoConflict() {
+  /* Tutup conflict panel */
   var vc = document.getElementById('visionConflict');
   if (vc) vc.classList.remove('visible');
   _visionConflictData = null;
   masterPersonaLocked = false;
+
+  /* Hapus semua thumbnail dan reset state upload —
+     supaya upload berikutnya dianggap first upload (isFirstUpload = true)
+     dan startScanWithFile() terpanggil dengan benar */
+  var thumbs = document.getElementById('thumbs');
+  var uz     = document.getElementById('uploadZone');
+  if (thumbs) { thumbs.innerHTML = ''; thumbs.style.display = 'none'; }
+  if (uz)     uz.style.display = '';
+  if (typeof uploadedDataURLs !== 'undefined') uploadedDataURLs = [];
+  if (typeof uploadMode       !== 'undefined') uploadMode       = null;
+
+  /* Sembunyikan persona card & catNudge */
+  var pcEl = document.getElementById('personaCard');
+  if (pcEl) pcEl.classList.remove('visible');
+  var cnEl = document.getElementById('catNudge');
+  if (cnEl) cnEl.classList.remove('visible');
+
+  /* Buka file picker */
   var fi = document.getElementById('fileInput');
   if (fi) fi.click();
 }
