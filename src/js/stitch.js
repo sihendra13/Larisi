@@ -16,6 +16,24 @@ function updateStitch() {
   /* {loc} di stitch = lokasi BISNIS (bukan target area)
      Supaya tidak misleading: "di Kotagede" padahal bisnis ada di Moyudan */
   var loc = (typeof _getBizLoc === 'function') ? _getBizLoc() : 'lokasi kami';
+
+  /* Jika target iklan di luar region bisnis → tambah nama kota/provinsi
+     Contoh: "Moyudan, Sleman" → "Moyudan, Sleman, Yogyakarta" saat target ke Surabaya */
+  var _stitchProfile = {};
+  try { _stitchProfile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}'); } catch(e) {}
+  var _sBizKab     = _stitchProfile.kabupaten || _stitchProfile.city || '';
+  var _sBizKec     = _stitchProfile.kecamatan || '';
+  var _sPopupFull  = document.querySelector('.popup-loc') ? document.querySelector('.popup-loc').textContent.trim() : '';
+  var _sBizRegion  = (typeof _kabupatenToRegion === 'function') ? _kabupatenToRegion(_sBizKab || _sBizKec) : null;
+  var _sTgtRegion  = (typeof _kabupatenToRegion === 'function') ? _kabupatenToRegion(_sPopupFull) : null;
+  var _sRegionCity = { jogja:'Yogyakarta', solo:'Solo', semarang:'Semarang', jakarta:'Jakarta',
+    bandung:'Bandung', surabaya:'Surabaya', malang:'Malang', medan:'Medan',
+    makassar:'Makassar', bali:'Bali', manado:'Manado', palembang:'Palembang',
+    pontianak:'Pontianak', banjarmasin:'Banjarmasin', lampung:'Lampung' };
+  if (_sBizRegion && _sTgtRegion && (_sBizRegion !== _sTgtRegion) && _sRegionCity[_sBizRegion]) {
+    loc = loc + ', ' + _sRegionCity[_sBizRegion];
+  }
+
   var d   = getDialek();
   var usp = (typeof getUsp === 'function') ? getUsp() : '';
   var txt = p.stitch
