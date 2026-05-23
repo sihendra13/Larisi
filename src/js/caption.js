@@ -33,17 +33,39 @@ function getCurrentPlatformKey() {
 
 /* Mapping: onboarding category → caption template key */
 var _BIZ_CAT_TO_CAPTION = {
-  fnb:        'Kuliner',
-  fashion:    'Fashion',
-  jasa:       'General',
-  retail:     'General',
-  kesehatan:  'Beauty/Self-care',
-  elektronik: 'General',
-  otomotif:   'General',
-  properti:   'Real Estate',
-  pendidikan: 'General',
-  wisata:     'Tourism',
-  lainnya:    'General'
+  /* ── Kuliner ── */
+  fnb:                 'Kuliner',
+  kafe:                'Kuliner/Cafe',
+  /* ── Fashion ── */
+  fashion:             'Fashion',          /* legacy fallback */
+  fashion_wanita:      'Fashion',
+  fashion_pria:        'FashionPria',
+  fashion_muslim:      'FashionMuslim',
+  fashion_muslim_pria: 'FashionMuslim',
+  /* ── Kecantikan & Perawatan ── */
+  kesehatan:           'Beauty/Self-care',
+  salon:               'Beauty/Self-care',
+  barber:              'General',
+  /* ── Properti & Pendidikan ── */
+  properti:            'Real Estate',
+  pendidikan:          'Literature & Education',
+  /* ── Gaya Hidup & Hobi ── */
+  wisata:              'Tourism',
+  olahraga:            'Sports Apparel',
+  kerajinan:           'Creative/Arts',
+  pet:                 'Pet Supplies',
+  /* ── Jasa & Layanan ── */
+  jasa:                'JasaProfesional',
+  jasa_profesional:    'JasaProfesional',
+  catering:            'EventCatering',
+  laundry:             'KebersihanLaundry',
+  fotografi:           'Fotografi',
+  /* ── Produk & Retail ── */
+  retail:              'General',
+  elektronik:          'Tech/Electronics',
+  otomotif:            'Retro Automotive',
+  /* ── Fallback ── */
+  lainnya:             'General'
 };
 
 function getPersonaKey() {
@@ -109,6 +131,12 @@ function getUsp() {
     wisata:              'Pengalaman wisata tak terlupakan',
     kerajinan:           'Kerajinan tangan otentik lokal',
     retail:              'Kebutuhan sehari-hari lengkap',
+    olahraga:            'Peralatan & komunitas olahraga terlengkap',
+    laundry:             'Bersih sempurna, antar-jemput tersedia',
+    fotografi:           'Foto profesional hasil berkualitas studio',
+    catering:            'Masakan lezat, pelayanan bintang lima',
+    jasa_profesional:    'Solusi profesional cepat dan terpercaya',
+    pet:                 'Perawatan hewan penuh kasih dan profesional',
     lainnya:             'Pilihan terbaik untuk kamu'
   };
   return fallbacks[category] || 'Pilihan terbaik untuk kamu';

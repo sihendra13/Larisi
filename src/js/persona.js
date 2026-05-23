@@ -383,7 +383,13 @@ var _BIZ_CAT_TO_TILE = {
   otomotif:         'Otomotif',
   pendidikan:       'Pendidikan',
   kerajinan:        'Kerajinan',
-  olahraga:         'Olahraga'
+  olahraga:         'Olahraga',
+  /* ── Kategori baru (Opsi A) ── */
+  laundry:          'KebersihanLaundry',
+  fotografi:        'Fotografi',
+  catering:         'EventCatering',
+  jasa_profesional: 'JasaProfesional',
+  pet:              'Pet'
   // jasa, retail, lainnya → terlalu luas → catNudge manual (user pilih sendiri)
 };
 
