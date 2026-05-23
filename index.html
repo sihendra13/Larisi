@@ -898,10 +898,12 @@
       planBadge.textContent = 'Paket saat ini: ' + currentPlan.toUpperCase();
 
       // --- SKENARIO 1: PAID EXPIRED (30 HARI) ---
+      let _scenarioMatched = false;
       if (paymentStatus === 'paid' && diffDays >= 30) {
+        _scenarioMatched = true;
         titleEl.textContent = "Masa Langganan Habis!";
         descEl.innerHTML = `Masa aktif paket <b>${currentPlan.toUpperCase()}</b> Anda telah berakhir. Perpanjang sekarang agar tetap tayang.`;
-        
+
         if (currentPlan === 'pro') {
           if (btnPro) btnPro.textContent = 'Perpanjang Paket Pro — Rp 199rb/bln';
           if (btnStarter) btnStarter.textContent = 'Lanjut ke Paket Starter — Rp 99rb/bln';
@@ -913,32 +915,38 @@
       }
       // --- SKENARIO 2: TRIAL EXPIRED (7 HARI) ---
       else if (paymentStatus === 'trial' && diffDays >= 7) {
+        _scenarioMatched = true;
         titleEl.textContent = "Masa Trial Selesai!";
         descEl.textContent = "7 hari gratis Anda telah berakhir. Pilih paket untuk mulai berlangganan:";
-        
+
         if (btnPro) btnPro.textContent = 'Mulai Berlangganan Pro — Rp 199rb/bln';
         if (btnStarter) btnStarter.textContent = 'Mulai Berlangganan Starter — Rp 99rb/bln';
         if (btnFree) btnFree.textContent = 'Lanjut ke Freemium (Gratis Selamanya)';
       }
       // --- SKENARIO 3: FREEMIUM QUOTA EXPIRED (10 IKLAN) ---
       else if (currentPlan !== 'pro' && currentPlan !== 'starter') {
+        _scenarioMatched = true;
         titleEl.textContent = "Jatah Iklan Gratis Habis!";
         const resetDate = (typeof getNextResetDate === 'function') ? getNextResetDate() : 'Bulan Depan';
         descEl.innerHTML = `Jatah 10 iklan gratis Anda sudah habis.<br>Akan diisi kembali otomatis pada <b>${resetDate}</b>.`;
-        
+
         if (btnPro) btnPro.textContent = 'Mulai Berlangganan Pro — Rp 199rb/bln';
         if (btnStarter) btnStarter.textContent = 'Mulai Berlangganan Starter — Rp 99rb/bln';
         if (btnFree) {
           btnFree.textContent = 'Tetap di Paket Freemium (Gratis Selamanya)';
           // Tombol ini hanya menutup modal agar banner merah di atas terlihat
-          btnFree.onclick = () => { 
-            modal.style.display = 'none'; 
+          btnFree.onclick = () => {
+            modal.style.display = 'none';
             if(typeof initQuotaBanner === 'function') initQuotaBanner();
           };
         }
       }
-      
-      modal.style.display = 'flex';
+
+      // Hanya tampilkan modal jika ada skenario yang benar-benar match
+      // Mencegah modal muncul untuk user yang masih aktif/baru daftar
+      if (_scenarioMatched) {
+        modal.style.display = 'flex';
+      }
     };
 
     // Fungsi untuk mendapatkan tanggal 1 bulan berikutnya secara otomatis (Scope Global)
