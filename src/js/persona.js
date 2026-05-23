@@ -62,9 +62,9 @@ function _showVisionConflict(visionKey, visionLabel, bizKey, bizLabel) {
   var qEl = document.getElementById('conflictQuestion');
   if (qEl) {
     qEl.innerHTML =
-      'SiLaris mendeteksi <strong>' + visionLabel + '</strong> ' +
-      'sementara bisnismu bergerak di <strong>' + bizPersonaName + '</strong>. ' +
-      'Mau promosi yang mana?';
+      'SiLaris mendeteksi foto ini sebagai <strong>' + visionLabel + '</strong>, ' +
+      'bisnismu terdaftar sebagai <strong>' + bizPersonaName + '</strong>. ' +
+      'Apakah foto ini sudah benar?';
   }
 
   vc.classList.add('visible');
@@ -107,6 +107,21 @@ function _resolveConflict(useVision) {
   _applyVisionPersona(key);
 }
 window._resolveConflict = _resolveConflict;
+
+/**
+ * _changePhotoConflict()
+ * User memilih "Ganti foto" — tutup panel konflik dan buka file picker.
+ * masterPersonaLocked di-reset agar upload baru bisa re-detect dari awal.
+ */
+function _changePhotoConflict() {
+  var vc = document.getElementById('visionConflict');
+  if (vc) vc.classList.remove('visible');
+  _visionConflictData = null;
+  masterPersonaLocked = false;
+  var fi = document.getElementById('fileInput');
+  if (fi) fi.click();
+}
+window._changePhotoConflict = _changePhotoConflict;
 
 /**
  * startScanWithFile(filename, fileCount)
