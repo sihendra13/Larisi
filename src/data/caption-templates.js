@@ -6,27 +6,27 @@
 var CAPTION_TEMPLATES = {
   "ig-story": {
     "Kuliner": [
-      "{greeting} 👋\n\nAda tempat makan baru yang lagi ramai dibicarakan warga {area}!\n\nSetiap menu dibuat dari bahan segar pilihan — aroma dari dapurnya aja udah bikin lapar dari parkiran. Konsisten enak setiap hari, bukan cuma pas buka doang. {usp}.\n\n{cta}\n\n#KulinerLokal #MakanEnak #{loc}",
+      "{greeting} 👋\n\nWarga {area}, sudah tau belum? Ada kuliner hits dari {loc} yang sayang banget untuk dilewatkan!\n\nSetiap menu dibuat dari bahan segar pilihan — aroma dari dapurnya aja udah bikin lapar dari parkiran. Konsisten enak setiap hari, bukan cuma pas buka doang. {usp}.\n\n{cta}\n\n#KulinerLokal #MakanEnak #{area}",
       "{greeting} 🍽\n\nSoal rasa, kami tidak kompromi.\n\nBahan segar dari supplier terpilih, resep yang tidak berubah sejak hari pertama buka, dan porsi yang bikin kenyang tanpa harus merogoh kocek terlalu dalam. Terbukti dari pelanggan setia yang balik lagi setiap minggu.\n\n{usp}.\n\n{cta}\n\n#KulinerJujur #MakanEnak #FoodLokal",
       "{greeting} ⚡\n\nHari ini stok menu spesial kami TERBATAS!\n\nKemarin habis dalam 2 jam. Hari ini stok lebih sedikit — dan antrian sudah mulai. {usp}.\n\nJangan sampai kehabisan.\n\n{cta}\n\n#PromoHariIni #KulinerLokal #TerbatasStok"
     ],
     "Kuliner/Cafe": [
-      "{greeting} ☕\n\nCafe baru di {loc} yang benar-benar worth it untuk dikunjungi!\n\nKopi specialty diseduh manual, makanan yang tidak asal jadi, suasana yang bikin betah berlama-lama — cocok untuk WFH, meeting, atau sekadar me-time. {usp}.\n\n{cta}\n\n#CafeLokal #KopiVibes #{loc}",
+      "{greeting} ☕\n\nCafe baru di {loc} yang benar-benar worth it untuk dikunjungi!\n\nKopi specialty diseduh manual, makanan yang tidak asal jadi, suasana yang bikin betah berlama-lama — cocok untuk WFH, meeting, atau sekadar me-time. {usp}.\n\n{cta}\n\n#CafeLokal #KopiVibes #{area}",
       "{greeting} ✨\n\nBukan sekadar tempat minum kopi.\n\nSetiap cangkir diseduh dari biji single origin pilihan dengan grind size dan suhu air yang dikontrol ketat. Hasilnya: kopi yang balance, tidak pahit, dan aftertaste-nya bersih. Untuk kamu yang serius soal kopi.\n\n{usp}.\n\n{cta}\n\n#SpecialtyCoffee #KopiSerius #CafeLokal",
       "{greeting} 🎉\n\nPromo hari ini: beli minuman apa saja, gratis slice cake pilihan!\n\nBerlaku hanya hari ini di {loc}. Stok cake terbatas, sudah 40+ transaksi dari pagi tadi. {usp}.\n\n{cta}\n\n#FlashDeal #CafePromo #PromoHariIni"
     ],
     "FashionPria": [
-      "{greeting} 👔\n\nTampil percaya diri itu dimulai dari pilihan yang tepat.\n\nKoleksi pria terbaru di {loc} — casual, formal, dan smart casual semua ada. Bahan premium, potongan yang flattering. Bukan sekadar pakaian — ini identitas.\n\n{cta}\n\n#FashionPria #MenStyle #{loc}",
+      "{greeting} 👔\n\nTampil percaya diri itu dimulai dari pilihan yang tepat.\n\nKoleksi pria terbaru di {loc} — casual, formal, dan smart casual semua ada. Bahan premium, potongan yang flattering. Bukan sekadar pakaian — ini identitas.\n\n{cta}\n\n#FashionPria #MenStyle #{area}",
       "{greeting} 💼\n\nStyle pria yang baik tidak berteriak — tapi selalu diperhatikan.\n\nKoleksi kami di {loc} dirancang untuk pria urban yang mengerti kualitas. Pilihan warna yang timeless, bahan yang breathable, jahitan yang presisi. {usp}.\n\n{cta}\n\n#MenFashion #StylePria #KoleksiLokal",
       "{greeting} ⚡\n\nNew arrival pria — stok terbatas!\n\nVarian terlaris kemarin sold out dalam 2 jam. Restock hari ini di {loc}. {usp}. Jangan sampai kehabisan lagi.\n\n{cta}\n\n#MenNewArrival #FashionAlert #StylePria"
     ],
     "Fashion": [
-      "{greeting} 🌸\n\nKoleksi baru sudah hadir di {loc} — dan penampilanmu langsung naik level!\n\nDesain yang tidak ketinggalan zaman, ukuran yang inklusif, dan kualitas bahan yang bikin nyaman dipakai seharian. Bukan fast fashion — ini investasi penampilan yang sesungguhnya.\n\n{cta}\n\n#FashionLokal #OOTD #{loc}",
+      "{greeting} 🌸\n\nKoleksi baru sudah hadir di {loc} — dan penampilanmu langsung naik level!\n\nDesain yang tidak ketinggalan zaman, ukuran yang inklusif, dan kualitas bahan yang bikin nyaman dipakai seharian. Bukan fast fashion — ini investasi penampilan yang sesungguhnya.\n\n{cta}\n\n#FashionLokal #OOTD #{area}",
       "{greeting} 💜\n\nSetiap jahitan dikerjakan dengan standar yang ketat.\n\nBahan kami lolos uji kenyamanan — tidak gerah, tidak luntur setelah puluhan kali cuci. Koleksi terbaru sudah tersedia di {loc}, {usp}. Temukan gaya terbaik versimu.\n\n{cta}\n\n#FashionBerkualitas #MadeToLast #StyleLokal",
       "{greeting} 🛍\n\nPeringatan: koleksi limited edition ini hampir habis!\n\nTiga varian sold out dalam 90 menit kemarin. Hari ini restock terakhir di {loc}, {usp}. Jangan sampai menyesal karena terlambat.\n\n{cta}\n\n#NewArrival #LimitedStock #FashionAlert"
     ],
     "FashionMuslim": [
-      "{greeting} 🧕\n\nKoleksi busana muslim terbaru sudah hadir di {loc} — dan tampilanmu langsung makin anggun!\n\nDesain mengikuti tren terkini namun tetap syar'i, bahan yang adem dan nyaman dipakai seharian. Dari gamis casual hingga formal, semua lengkap. {usp}.\n\n{cta}\n\n#FashionMuslim #BusanaMuslim #{loc}",
+      "{greeting} 🧕\n\nKoleksi busana muslim terbaru sudah hadir di {loc} — dan tampilanmu langsung makin anggun!\n\nDesain mengikuti tren terkini namun tetap syar'i, bahan yang adem dan nyaman dipakai seharian. Dari gamis casual hingga formal, semua lengkap. {usp}.\n\n{cta}\n\n#FashionMuslim #BusanaMuslim #{area}",
       "{greeting} 💜\n\nTampil muslimah itu tidak harus kaku — bisa tetap stylish dan percaya diri!\n\nKoleksi kami di {loc} dirancang khusus untuk perempuan berhijab yang ingin tampil modern tanpa meninggalkan nilai kesopanan. Bahan berkualitas, jahitan rapi, ukuran lengkap. {usp}.\n\n{cta}\n\n#HijabFashion #MuslimahModern #FashionLokal",
       "{greeting} ⏰\n\nKoleksi busana muslim edisi terbatas hampir habis di {loc}!\n\n3 varian sudah sold out kemarin. {usp}.\n\n{cta}\n\n#BusanaMuslimLimited #FashionHijab #StokTerbatas"
     ],
@@ -116,7 +116,7 @@ var CAPTION_TEMPLATES = {
       "{greeting} 🌱\n\nGerakan eco-friendly {loc} dimulai dari komunitas kita sendiri!\n\nPromo spesial untuk pembelian produk sustainable hari ini — hemat 20% dan gratis tote bag daur ulang. Stok terbatas. {usp}.\n\n{cta}\n\n#EcoPromo #SustainableLifestyle #GoGreenLokal"
     ],
     "Fotografi": [
-      "{greeting} 📸\n\nMomen terbaik hanya terjadi sekali — abadikan bersama fotografer profesional di {loc}!\n\nHasil foto yang tajam, natural, dan bercerita. Bukan sekadar gambar — ini kenangan yang akan kamu simpan seumur hidup. {usp}.\n\n{cta}\n\n#FotografiLokal #MomenBerharga #{loc}",
+      "{greeting} 📸\n\nMomen terbaik hanya terjadi sekali — abadikan bersama fotografer profesional di {loc}!\n\nHasil foto yang tajam, natural, dan bercerita. Bukan sekadar gambar — ini kenangan yang akan kamu simpan seumur hidup. {usp}.\n\n{cta}\n\n#FotografiLokal #MomenBerharga #{area}",
       "{greeting} ✨\n\nFoto yang baik bukan soal kamera mahal — tapi soal siapa yang memegangnya.\n\nTim fotografer kami di {loc} berpengalaman dan paham cara menangkap cahaya, ekspresi, dan suasana yang paling pas. {usp}.\n\n{cta}\n\n#FotoProfesional #KualitasFoto #FotograferLokal",
       "{greeting} 📅\n\nSlot sesi foto bulan ini hampir penuh!\n\nHanya tersisa beberapa jadwal di {loc}. {usp}. Jangan tunda — momen yang terlewat tidak bisa diulang.\n\n{cta}\n\n#BookingFoto #SlotTerbatas #FotoSekarang"
     ],
