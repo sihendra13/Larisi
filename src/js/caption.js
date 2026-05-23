@@ -175,7 +175,6 @@ function generateCaption(cycle) {
   var templates  = CAPTION_TEMPLATES[platKey] || CAPTION_TEMPLATES['ig-story'];
   var alts       = templates[personaKey] || templates['General'];
 
-  /* cycle = true means user clicked "Generate Ulang" → advance index */
   if (cycle) {
     captionAltIndex = (captionAltIndex + 1) % alts.length;
   } else {
@@ -185,6 +184,104 @@ function generateCaption(cycle) {
   var raw  = alts[captionAltIndex];
   var text = fillCaptionVars(raw);
   typewriterEffect(text);
+}
+
+// ── AI Caption Generator ──────────────────────────────────────────────────────
+async function generateCaptionAI() {
+  if (!currentPersona) return;
+
+  var profile = {};
+  try { profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}'); } catch(e) {}
+
+  var personaName   = currentPersona || 'General';
+  var personaTarget = (document.getElementById('personaTarget') || {}).textContent || '';
+  personaTarget = personaTarget.replace('Targeting: ', '').trim();
+  var personaAge    = (document.getElementById('personaAge') || {}).textContent || '';
+  personaAge = personaAge.replace('Age range: ', '').trim();
+
+  var usp          = getUsp();
+  var loc          = document.querySelector('.popup-loc')
+                       ? document.querySelector('.popup-loc').textContent.split(',')[0].trim()
+                       : 'lokasi kami';
+  var bizName      = profile.business_name || '';
+  var category     = profile.category || '';
+  var hasDelivery  = profile.delivery_service || false;
+
+  var platformLabel = {
+    'ig-post'  : 'Instagram Post — caption bisa 3–5 baris, padat dan engaging',
+    'ig-reel'  : 'Instagram Reel — hook kuat di baris pertama, energetik, maks 3 baris',
+    'ig-story' : 'Instagram Story — sangat singkat, 1–2 kalimat + CTA',
+    'tiktok'   : 'TikTok — casual, fun, relevan dengan tren, maks 3 baris',
+    'meta'     : 'Facebook/Meta Ad — informatif, langsung ke poin, ada CTA jelas',
+  }[activePlatform] || 'Instagram Post';
+
+  var systemPrompt = [
+    'Kamu adalah copywriter profesional spesialis UMKM lokal Indonesia.',
+    'Buat 1 caption media sosial yang segar, autentik, dan efektif untuk bisnis berikut.',
+    '',
+    'DATA BISNIS:',
+    '- Nama: ' + (bizName || 'UMKM'),
+    '- Kategori: ' + category,
+    '- Keunggulan utama (USP): ' + usp,
+    '- Lokasi: ' + loc,
+    '- Layanan antar: ' + (hasDelivery ? 'ada' : 'tidak ada'),
+    '',
+    'MASTER PERSONA (target audiens):',
+    '- Persona: ' + personaName,
+    '- Target: ' + personaTarget,
+    '- Usia: ' + personaAge,
+    '',
+    'PLATFORM: ' + platformLabel,
+    '',
+    'ATURAN WAJIB:',
+    '- Bahasa Indonesia natural, tidak kaku, tidak terkesan iklan murahan',
+    '- Sesuaikan gaya bahasa dengan persona — foodie/anak muda = santai & seru, profesional = informatif & hangat',
+    '- USP harus jadi kekuatan utama caption, bukan sekadar disebut',
+    '- Gunakan "' + loc + '" sebagai anchor lokasi agar terasa personal',
+    '- Struktur: hook menarik → nilai/cerita → CTA',
+    '- Akhiri dengan 3–5 hashtag (mix populer + lokal + niche)',
+    '- JANGAN mulai dengan "Halo", "Hai", "Yuk", atau sapaan klise',
+    '- JANGAN mengarang fakta bisnis yang tidak ada di data',
+    '- Output HANYA caption, tanpa penjelasan atau label tambahan',
+  ].join('\n');
+
+  // Loading state
+  var area   = document.getElementById('captionArea');
+  var genBtn = document.getElementById('genBtn');
+  if (area)   { area.value = ''; area.placeholder = 'AI sedang menulis caption...'; }
+  if (genBtn) { genBtn.disabled = true; genBtn.textContent = 'Menulis...'; }
+
+  var supabaseUrl = (typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.SUPABASE_URL) || '';
+  var supabaseKey = (typeof RADAR_CONFIG !== 'undefined' && RADAR_CONFIG.SUPABASE_ANON_KEY) || '';
+
+  try {
+    var resp = await fetch(supabaseUrl + '/functions/v1/silaris-chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + supabaseKey
+      },
+      body: JSON.stringify({
+        systemPrompt: systemPrompt,
+        messages: [{ role: 'user', content: 'Tulis captionnya sekarang.' }]
+      })
+    });
+
+    var data = await resp.json();
+    if (data && data.reply && data.reply.trim()) {
+      if (genBtn) { genBtn.disabled = false; genBtn.textContent = 'Generate ulang'; }
+      if (area)   area.placeholder = '';
+      typewriterEffect(data.reply.trim());
+      return;
+    }
+  } catch(e) {
+    console.warn('[caption] AI gagal, fallback ke template:', e);
+  }
+
+  // Fallback ke template jika AI gagal
+  if (genBtn) { genBtn.disabled = false; genBtn.textContent = 'Generate ulang'; }
+  if (area)   area.placeholder = '';
+  generateCaption(true);
 }
 
 function setTone(el, tone) {
