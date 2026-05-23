@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Caption Test — Semua Kategori</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f7; padding: 24px; }
+    h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; color: #111; }
+    .subtitle { font-size: 13px; color: #666; margin-bottom: 24px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(480px, 1fr)); gap: 16px; }
+    .card { background: #fff; border-radius: 12px; padding: 16px; border: 1px solid #e5e5ea; }
+    .card.general { border-left: 4px solid #ff9500; }
+    .card.specific { border-left: 4px solid #34c759; }
+    .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .cat-badge { font-size: 11px; font-weight: 600; font-family: monospace; background: #f0f0f5; padding: 3px 8px; border-radius: 6px; color: #444; }
+    .arrow { color: #aaa; font-size: 12px; }
+    .template-badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; }
+    .template-badge.specific { background: #e8f5e9; color: #2e7d32; }
+    .template-badge.general { background: #fff3e0; color: #e65100; }
+    .row { margin-bottom: 8px; }
+    .label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: #999; margin-bottom: 2px; }
+    .value { font-size: 12px; color: #333; line-height: 1.5; }
+    .stitch-box { background: #1a1a2e; color: #fff; border-radius: 8px; padding: 8px 12px; font-size: 12px; margin-bottom: 8px; }
+    .caption-box { background: #f9f9fb; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #222; white-space: pre-wrap; line-height: 1.6; max-height: 180px; overflow-y: auto; }
+    .summary { display: flex; gap: 16px; margin-bottom: 20px; }
+    .stat { background: #fff; border-radius: 10px; padding: 12px 18px; border: 1px solid #e5e5ea; }
+    .stat-num { font-size: 24px; font-weight: 700; }
+    .stat-label { font-size: 12px; color: #666; }
+    .stat-num.green { color: #34c759; }
+    .stat-num.orange { color: #ff9500; }
+    .filter { margin-bottom: 16px; display: flex; gap: 8px; }
+    .filter button { padding: 6px 14px; border-radius: 20px; border: 1px solid #ddd; background: #fff; font-size: 12px; cursor: pointer; }
+    .filter button.active { background: #111; color: #fff; border-color: #111; }
+    .platform-select { padding: 6px 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 12px; background: #fff; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Caption Test — Semua Kategori Bisnis</h1>
+  <p class="subtitle">Render otomatis caption &amp; stitch text untuk setiap kategori. Tidak perlu test manual satu-satu.</p>
+
+  <div class="summary" id="summary"></div>
+
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+    <div class="filter" id="filter">
+      <button class="active" data-filter="all" onclick="setFilter('all',this)">Semua</button>
+      <button data-filter="specific" onclick="setFilter('specific',this)">Spesifik ✅</button>
+      <button data-filter="general" onclick="setFilter('general',this)">General ⚠️</button>
+    </div>
+    <select class="platform-select" id="platformSelect" onchange="renderAll()">
+      <option value="ig-story">Instagram Story</option>
+      <option value="tiktok">TikTok</option>
+      <option value="youtube">YouTube</option>
+      <option value="meta">Meta / Facebook</option>
+    </select>
+    <select class="platform-select" id="templateIndex" onchange="renderAll()">
+      <option value="0">Template ke-1</option>
+      <option value="1">Template ke-2</option>
+      <option value="2">Template ke-3</option>
+    </select>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <!-- Hidden popup-loc for getDialek() / _getTargetArea() -->
+  <div class="popup-loc" style="display:none">Sumbersari</div>
+
+  <!-- Dependencies -->
+  <script src="src/data/region-dialek.js"></script>
+  <script src="src/data/personas.js"></script>
+  <script src="src/data/caption-templates.js"></script>
+
+  <!-- Mock globals required by caption.js -->
+  <script>
+    var currentPersona   = null;
+    var currentRegion    = 'jogja';
+    var activePlatform   = 'ig-story';
+    var captionAltIndex  = 0;
+    var typewriterTimer  = null;
+    var isTyping         = false;
+    var activeTone       = 'friendly';
+
+    /* Mock localStorage profile */
+    var MOCK_PROFILE = {
+      business_name: 'Toko Demo',
+      kecamatan:     'Moyudan',
+      kabupaten:     'Sleman',
+      usp:           ''   /* kosong → supaya test fallback USP per kategori */
+    };
+    localStorage.setItem('radar_user_profile', JSON.stringify(MOCK_PROFILE));
+  </script>
+
+  <script src="src/js/caption.js"></script>
+
+  <script>
+    /* ── Semua kategori bisnis ── */
+    var ALL_CATS = [
+      { val:'fnb',               label:'Kuliner (F&B)'                        },
+      { val:'kafe',              label:'Kafe & Coffee Shop'                    },
+      { val:'fashion_wanita',    label:'Fashion Wanita'                        },
+      { val:'fashion_pria',      label:'Fashion Pria'                          },
+      { val:'fashion_muslim',    label:'Fashion Muslim Wanita'                 },
+      { val:'fashion_muslim_pria',label:'Busana Muslim Pria'                   },
+      { val:'kesehatan',         label:'Skincare & Kecantikan'                 },
+      { val:'salon',             label:'Salon & Perawatan Wajah'               },
+      { val:'barber',            label:'Barber Shop & Grooming'                },
+      { val:'elektronik',        label:'Elektronik & Gadget'                   },
+      { val:'otomotif',          label:'Otomotif & Bengkel'                    },
+      { val:'properti',          label:'Properti & Konstruksi'                 },
+      { val:'pendidikan',        label:'Pendidikan & Kursus'                   },
+      { val:'wisata',            label:'Pariwisata & Travel'                   },
+      { val:'kerajinan',         label:'Kerajinan & Handmade'                  },
+      { val:'olahraga',          label:'Olahraga & Fitness'                    },
+      { val:'jasa',              label:'Layanan / Jasa'                        },
+      { val:'retail',            label:'Retail / Toko Kelontong'               },
+      { val:'laundry',           label:'Laundry & Kebersihan'                  },
+      { val:'fotografi',         label:'Studio Foto & Fotografi'               },
+      { val:'catering',          label:'Katering & Event'                      },
+      { val:'jasa_profesional',  label:'Jasa Profesional'                      },
+      { val:'pet',               label:'Toko & Perawatan Hewan'                },
+      { val:'lainnya',           label:'Lainnya...'                            }
+    ];
+
+    var currentFilter = 'all';
+
+    function setFilter(f, btn) {
+      currentFilter = f;
+      document.querySelectorAll('#filter button').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      renderAll();
+    }
+
+    function renderAll() {
+      activePlatform = document.getElementById('platformSelect').value;
+      var tplIdx = parseInt(document.getElementById('templateIndex').value, 10);
+
+      var grid    = document.getElementById('grid');
+      var summary = document.getElementById('summary');
+      grid.innerHTML = '';
+
+      var countSpecific = 0, countGeneral = 0;
+
+      ALL_CATS.forEach(function(cat) {
+        /* Set category in mock profile */
+        var profile = JSON.parse(localStorage.getItem('radar_user_profile'));
+        profile.category = cat.val;
+        localStorage.setItem('radar_user_profile', JSON.stringify(profile));
+
+        /* Caption template key */
+        var templateKey = _BIZ_CAT_TO_CAPTION[cat.val] || 'General';
+        var isGeneral   = templateKey === 'General';
+        isGeneral ? countGeneral++ : countSpecific++;
+
+        if (currentFilter === 'specific' && isGeneral) return;
+        if (currentFilter === 'general' && !isGeneral) return;
+
+        /* Persona tile & name */
+        var tileKey     = (typeof _BIZ_CAT_TO_TILE !== 'undefined') ? (_BIZ_CAT_TO_TILE[cat.val] || null) : null;
+        var personaName = (tileKey && personaDB && personaDB[tileKey]) ? personaDB[tileKey].name : '(manual)';
+
+        /* USP fallback */
+        var usp = getUsp();
+
+        /* Caption text */
+        var templates  = CAPTION_TEMPLATES[activePlatform] || CAPTION_TEMPLATES['ig-story'];
+        var alts       = templates[templateKey] || templates['General'];
+        var safeIdx    = Math.min(tplIdx, alts.length - 1);
+        var raw        = alts[safeIdx];
+        var captionTxt = fillCaptionVars(raw);
+
+        /* Stitch text */
+        var pd        = (tileKey && personaDB && personaDB[tileKey]) ? personaDB[tileKey] : personaDB.General;
+        var dialek    = getDialek();
+        var bizLoc    = _getBizLoc();
+        var stitchTxt = pd.stitch
+          .replace(/\{greeting\}/g, dialek.greeting)
+          .replace(/\{usp\}/g,      usp)
+          .replace(/\{loc\}/g,      bizLoc)
+          .replace(/\{cta\}/g,      dialek.cta);
+
+        /* Build card */
+        var card = document.createElement('div');
+        card.className = 'card ' + (isGeneral ? 'general' : 'specific');
+        card.dataset.type = isGeneral ? 'general' : 'specific';
+
+        card.innerHTML =
+          '<div class="card-header">' +
+            '<span class="cat-badge">' + cat.val + '</span>' +
+            '<span class="arrow">→</span>' +
+            '<span class="template-badge ' + (isGeneral ? 'general' : 'specific') + '">' + templateKey + '</span>' +
+          '</div>' +
+          '<div class="row"><div class="label">Persona Tile</div><div class="value">' + personaName + '</div></div>' +
+          '<div class="row"><div class="label">USP Fallback</div><div class="value">' + usp + '</div></div>' +
+          '<div class="row"><div class="label">Stitch Text</div><div class="stitch-box">' + stitchTxt + '</div></div>' +
+          '<div class="row"><div class="label">Caption (' + activePlatform + ' · template ' + (safeIdx+1) + ')</div><div class="caption-box">' + captionTxt + '</div></div>';
+
+        grid.appendChild(card);
+      });
+
+      /* Summary */
+      summary.innerHTML =
+        '<div class="stat"><div class="stat-num green">' + countSpecific + '</div><div class="stat-label">Spesifik ✅</div></div>' +
+        '<div class="stat"><div class="stat-num orange">' + countGeneral + '</div><div class="stat-label">General ⚠️</div></div>' +
+        '<div class="stat"><div class="stat-num">' + ALL_CATS.length + '</div><div class="stat-label">Total kategori</div></div>';
+    }
+
+    /* Initial render */
+    renderAll();
+  </script>
+</body>
+</html>
