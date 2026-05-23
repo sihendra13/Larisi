@@ -227,17 +227,10 @@ async function generateCaptionAI() {
   var category     = profile.category || '';
   var hasDelivery  = profile.delivery_service || false;
 
-  /* Lokasi bisnis — dari profil onboarding (kecamatan + kabupaten) */
-  var bizKecamatan = profile.kecamatan || '';
+  /* Lokasi bisnis — dari profil onboarding, sudah di-capitalize */
+  var bizLoc = _getBizLoc();
   var bizKabupaten = profile.kabupaten || profile.city || '';
-  var bizLoc = '';
-  if (bizKecamatan && bizKabupaten) {
-    bizLoc = bizKecamatan + ', ' + bizKabupaten;
-  } else if (bizKabupaten) {
-    bizLoc = bizKabupaten;
-  } else if (bizKecamatan) {
-    bizLoc = bizKecamatan;
-  }
+  var bizKecamatan = profile.kecamatan || '';
 
   /* Area target iklan — dari peta (bukan lokasi bisnis!) */
   var targetArea = document.querySelector('.popup-loc')
@@ -366,7 +359,12 @@ async function generateCaptionAI() {
     if (data && data.reply && data.reply.trim()) {
       if (genBtn) { genBtn.disabled = false; genBtn.textContent = 'Generate ulang'; }
       if (area)   area.placeholder = '';
-      typewriterEffect(data.reply.trim());
+      /* Strip markdown — AI kadang tetap pakai **bold** meski dilarang */
+      var cleanReply = data.reply.trim()
+        .replace(/\*\*(.*?)\*\*/g, '$1')   /* **bold** → bold */
+        .replace(/\*(.*?)\*/g,     '$1')   /* *italic* → italic */
+        .replace(/_(.*?)_/g,       '$1'); /* _underline_ → underline */
+      typewriterEffect(cleanReply);
       return;
     }
   } catch(e) {
