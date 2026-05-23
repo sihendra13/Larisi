@@ -50,23 +50,23 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="ownerName">Nama Pemilik *</label>
+                    <label for="ownerName">Nama Pemilik <span class="req">*</span></label>
                     <input type="text" id="ownerName" placeholder="Budi Santoso">
                 </div>
                 <div class="form-group">
-                    <label for="whatsapp">Nomor WhatsApp *</label>
+                    <label for="whatsapp">Nomor WhatsApp <span class="req">*</span></label>
                     <input type="tel" id="whatsapp" placeholder="+62 812 3456 7890">
                 </div>
             </div>
 
             <div class="form-group">
-                <label for="businessName">Nama Bisnis *</label>
+                <label for="businessName">Nama Bisnis <span class="req">*</span></label>
                 <input type="text" id="businessName" placeholder="Warung Makan Berkah">
             </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="category">Kategori Bisnis *</label>
+            <div class="form-row" style="align-items:flex-start;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label for="category">Kategori Bisnis <span class="req">*</span></label>
                     <select id="category">
                         <option value="">Pilih Kategori...</option>
                         <option value="fnb">Kuliner (F&B)</option>
@@ -90,17 +90,21 @@
                         <option value="lainnya">Lainnya...</option>
                     </select>
                 </div>
-                <div class="form-group" style="position:relative;">
-                    <label for="kecamatanInput">Kecamatan Lokasi Bisnis *</label>
+                <div class="form-group" style="position:relative;margin-bottom:0;">
+                    <label for="kecamatanInput">Kecamatan Lokasi Bisnis <span class="req">*</span></label>
                     <input type="text" id="kecamatanInput" placeholder="Ketik nama kecamatan..." autocomplete="off"
-                           oninput="_kecOnInput(this.value)" onblur="_kecOnBlur()" style="margin-bottom:0;">
+                           oninput="_kecOnInput(this.value)" onblur="_kecOnBlur()">
                     <div id="kecDropdown" style="display:none;position:absolute;left:0;right:0;background:#fff;border:1px solid #d1d5db;border-top:none;border-radius:0 0 10px 10px;z-index:300;max-height:220px;overflow-y:auto;box-shadow:0 8px 20px rgba(0,0,0,0.1);"></div>
-                    <input type="text" id="kabupatenDisplay" placeholder="Kabupaten/Kota (terisi otomatis)" readonly
-                           style="margin-top:8px;background:#f9fafb;color:#6b7280;font-size:13px;cursor:default;">
-                    <input type="hidden" id="kecamatanHidden">
-                    <input type="hidden" id="kabupatenHidden">
-                    <input type="hidden" id="provinsiHidden">
                 </div>
+            </div>
+
+            <!-- Kabupaten full-width — di bawah kedua kolom -->
+            <div class="form-group" style="margin-top:8px;">
+                <input type="text" id="kabupatenDisplay" placeholder="Kabupaten/Kota (terisi otomatis setelah pilih kecamatan)" readonly
+                       style="background:#f9fafb;color:#6b7280;font-size:13px;cursor:default;">
+                <input type="hidden" id="kecamatanHidden">
+                <input type="hidden" id="kabupatenHidden">
+                <input type="hidden" id="provinsiHidden">
             </div>
 
             <div class="form-group" style="margin-top: 16px;">

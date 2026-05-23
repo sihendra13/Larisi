@@ -204,6 +204,20 @@ input, select, textarea {
     transition: border-color 0.2s;
 }
 
+/* Select: ruang cukup untuk chevron, teks panjang dipotong */
+select {
+    padding-right: 2.5rem;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+/* Tanda wajib (*) merah */
+.req {
+    color: #dc2626;
+    margin-left: 1px;
+}
+
 input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: var(--rausch);
