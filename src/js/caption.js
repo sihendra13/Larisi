@@ -283,6 +283,38 @@ async function generateCaptionAI() {
   var _dialek   = getDialek();
   var _greeting = _dialek.greeting || 'Halo';
 
+  /* Tone guide per persona — instruksi konkret untuk AI supaya gaya penulisan
+     benar-benar mencerminkan persona, bukan sekadar menambahkan hashtag */
+  var _pLow = (currentPersona || '').toLowerCase();
+  var _personaTone =
+    (_pLow.indexOf('fashion muslim') !== -1 || _pLow.indexOf('busana muslim') !== -1)
+      ? 'Tulis DARI sudut pandang muslimah modern. Angle wajib: halal lifestyle, modest tapi stylish, cocok untuk acara keluarga/pengajian/buka puasa bersama. Gunakan bahasa yang hangat dan syar\'i. JANGAN hanya tambahkan hashtag hijab di akhir — seluruh tone dan angle caption harus mencerminkan kehidupan muslimah.'
+    : (_pLow.indexOf('fashion pria') !== -1 || _pLow.indexOf('men') !== -1)
+      ? 'Tulis untuk pria urban yang peduli penampilan. Angle: percaya diri, maskulin, on point setiap hari. Gunakan bahasa yang to the point dan impactful, tidak bertele-tele.'
+    : (_pLow.indexOf('fashion') !== -1)
+      ? 'Tulis dengan gaya lifestyle fashion modern. Angle: self-expression, OOTD, naik level penampilan, investasi style. Tone percaya diri dan inspiratif.'
+    : (_pLow.indexOf('culinary') !== -1 || _pLow.indexOf('kuliner') !== -1 || _pLow.indexOf('cafe') !== -1 || _pLow.indexOf('kafe') !== -1)
+      ? 'Bangkitkan selera makan dengan deskripsi sensori yang vivid: aroma, rasa, tekstur. Tone harus bikin orang langsung lapar dan penasaran.'
+    : (_pLow.indexOf('beauty') !== -1 || _pLow.indexOf('skincare') !== -1 || _pLow.indexOf('salon') !== -1)
+      ? 'Tulis dari sudut pandang self-care dan percaya diri. Angle: glowing, merawat diri, transformasi nyata. Tone hangat dan encouraging.'
+    : (_pLow.indexOf('real estate') !== -1 || _pLow.indexOf('properti') !== -1)
+      ? 'Tulis dari sudut pandang investasi keluarga dan masa depan. Angle: keamanan, stabilitas, mimpi punya rumah sendiri. Tone informatif dan meyakinkan.'
+    : (_pLow.indexOf('tourism') !== -1 || _pLow.indexOf('wisata') !== -1)
+      ? 'Bangkitkan rasa ingin menjelajah. Angle: pengalaman tak terlupakan, hidden gem lokal, kenangan bersama. Tone petualangan dan inspiratif.'
+    : (_pLow.indexOf('barber') !== -1)
+      ? 'Tulis untuk pria yang ingin tampil rapi dan stylish. Angle: grooming serius, hasil presisi, transformasi penampilan. Tone maskulin dan confident.'
+    : (_pLow.indexOf('laundry') !== -1 || _pLow.indexOf('kebersihan') !== -1)
+      ? 'Tulis dari sudut pandang kepraktisan dan kenyamanan. Angle: hemat waktu, bebas repot, bersih sempurna tanpa usaha. Tone ringan dan relatable.'
+    : (_pLow.indexOf('fotografi') !== -1 || _pLow.indexOf('photography') !== -1)
+      ? 'Tulis tentang mengabadikan momen berharga. Angle: profesional, kualitas tidak bohong, kenangan seumur hidup. Tone kreatif dan emosional.'
+    : (_pLow.indexOf('catering') !== -1 || _pLow.indexOf('event') !== -1)
+      ? 'Tulis dari sudut pandang momen spesial dan kebersamaan. Angle: acara berkesan, masakan lezat, tidak ribet. Tone hangat dan celebratory.'
+    : (_pLow.indexOf('olahraga') !== -1 || _pLow.indexOf('fitness') !== -1 || _pLow.indexOf('sports') !== -1)
+      ? 'Tulis dengan energi tinggi untuk audiens aktif. Angle: capai target, hidup sehat, komunitas supportif. Tone motivatif dan penuh semangat.'
+    : (_pLow.indexOf('jasa') !== -1 || _pLow.indexOf('profesional') !== -1)
+      ? 'Tulis dengan tone yang membangun kepercayaan. Angle: keahlian terbukti, solusi tepat, hasil yang bisa diandalkan. Tone profesional tapi tidak kaku.'
+    : 'Sesuaikan gaya bahasa dengan persona yang diberikan — tone harus benar-benar mencerminkan kehidupan dan nilai target audiens.';
+
   /* Variasi gaya hook — rotasi berdasarkan _aiCallCount supaya tiap panggil AI beda gaya */
   var _n = _aiCallCount % 4;
   var _biz  = bizName || 'kami';
@@ -346,9 +378,12 @@ async function generateCaptionAI() {
     'GAYA HOOK — WAJIB ikuti instruksi berikut:',
     _hookStyle,
     '',
+    'TONE PERSONA — WAJIB diterapkan ke seluruh caption:',
+    _personaTone,
+    '',
     'ATURAN WAJIB:',
     '- Bahasa Indonesia natural, tidak kaku, tidak terkesan iklan murahan',
-    '- Sesuaikan gaya bahasa dengan persona — foodie/anak muda = santai & seru, profesional = informatif & hangat',
+    '- Tone persona di atas HARUS tercermin di seluruh caption — bukan hanya di hashtag',
     '- USP harus jadi kekuatan utama caption, bukan sekadar disebut',
     '- KRITIS — Lokasi bisnis (' + (bizLocDisplay || 'tidak diketahui') + ') dan area target iklan (' + (targetArea || 'sekitar lokasi') + ') adalah DUA HAL BERBEDA.',
     '- DILARANG KERAS: menulis seolah bisnis berada di area target. Bisnis SELALU di lokasi aslinya (' + (bizLocDisplay || 'lokasi bisnis') + ').',
