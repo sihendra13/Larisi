@@ -322,6 +322,12 @@
             submitBtn.disabled = true;
             submitBtn.textContent = 'Menyimpan...';
 
+            /* Tentukan quota awal berdasarkan plan yang dipilih dari landing page */
+            const selectedPlan = localStorage.getItem('larisi_selected_plan') || 'freemium';
+            const initQuota = selectedPlan === 'pro' ? 999
+                            : selectedPlan === 'starter' ? 50
+                            : 10; /* freemium */
+
             const { error } = await window.updateUserProfile({
                 full_name: ownerName,
                 business_name: businessName,
@@ -333,8 +339,8 @@
                 city: kabupaten || kecamatan, /* backward compat untuk user lama */
                 delivery_service: delivery,
                 usp: usp,
-                ai_launch_count: 10,  /* inisialisasi quota freemium untuk user baru */
-                selected_plan: 'freemium'
+                ai_launch_count: initQuota,
+                selected_plan: selectedPlan
             });
 
             if (error) {
