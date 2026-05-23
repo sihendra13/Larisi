@@ -641,10 +641,6 @@
                 document.getElementById('display-user-name').textContent = profile.full_name;
                 document.getElementById('user-info-text').style.display = 'block';
 
-                // Ambil email dari auth
-                const user = await window.getCurrentUser();
-                const userEmail = (user && user.email ? user.email : '').toLowerCase().trim();
-
                 // Tampilkan Badge Paket untuk semua user
                 const badge = document.getElementById('plan-badge');
                 if (badge) {
@@ -967,7 +963,6 @@
     async function initQuotaBanner() {
       try {
         const profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
-        const userEmail = (profile && profile.email) ? profile.email.toLowerCase().trim() : '';
         const plan = (profile.selected_plan || 'freemium').toLowerCase();
         
         // --- LOGIKA SEMBUNYIKAN BADGE GRATIS DI BAWAH ---
@@ -976,10 +971,7 @@
           badge.style.display = (plan === 'freemium' || plan === 'free') ? 'flex' : 'none';
         }
         
-        // 1. Safety Guard: Jangan ganggu akun tester
-        if (userEmail === 'halo@larisi.id') return;
-
-        // 2. Cek jatah iklan (Ambil dari variabel global atau langsung dari profile)
+        // 1. Cek jatah iklan (Ambil dari variabel global atau langsung dari profile)
         let quota = (typeof window.freeCount !== 'undefined') ? window.freeCount : 10;
         if (profile && typeof profile.ai_launch_count !== 'undefined' && profile.ai_launch_count !== null) {
           quota = profile.ai_launch_count;
