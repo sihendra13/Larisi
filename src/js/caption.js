@@ -114,12 +114,17 @@ function getUsp() {
   return fallbacks[category] || 'Pilihan terbaik untuk kamu';
 }
 
+function _capitalizeLoc(str) {
+  /* Kapitalisasi huruf pertama tiap kata: "moyudan, sleman" → "Moyudan, Sleman" */
+  return str.replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+}
+
 function _getBizLoc() {
   /* Lokasi BISNIS dari profil onboarding — bukan dari peta target */
   var profile = {};
   try { profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}'); } catch(e) {}
-  var kec = (profile.kecamatan || '').trim();
-  var kab = (profile.kabupaten || profile.city || '').trim();
+  var kec = _capitalizeLoc((profile.kecamatan || '').trim());
+  var kab = _capitalizeLoc((profile.kabupaten || profile.city || '').trim());
   if (kec && kab) return kec + ', ' + kab;
   return kec || kab || 'lokasi kami';
 }
@@ -331,6 +336,7 @@ async function generateCaptionAI() {
     '- Struktur: hook menarik → nilai/cerita → CTA',
     '- Akhiri dengan 3–5 hashtag (mix populer + lokal + niche, termasuk hashtag area target)',
     '- JANGAN mengarang fakta bisnis yang tidak ada di data',
+    '- JANGAN gunakan simbol markdown (**bold**, *italic*, _underline_) — Instagram tidak render ini, tulis plain text saja',
     '- Output HANYA caption, tanpa penjelasan atau label tambahan',
   ].join('\n');
 
