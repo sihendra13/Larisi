@@ -365,13 +365,20 @@ function _kabupatenToRegion(kab) {
 }
 
 function getDialek() {
-  /* Priority 1: kabupaten dari profil bisnis (onboarding) — paling akurat */
+  /* Priority 1: area TARGET IKLAN dari peta — dialek harus cocok dengan audiens */
+  var targetAreaText = _getTargetArea();
+  var regionFromTarget = _kabupatenToRegion(targetAreaText);
+  if (regionFromTarget) return REGION_DIALEK[regionFromTarget] || REGION_DIALEK['default'];
+
+  /* Priority 2: currentRegion dari GPS/map (fallback jika popup-loc belum ada) */
+  if (currentRegion && REGION_DIALEK[currentRegion]) return REGION_DIALEK[currentRegion];
+
+  /* Priority 3: kabupaten dari profil bisnis (fallback terakhir) */
   var profile = {};
   try { profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}'); } catch(e) {}
   var kab = profile.kabupaten || profile.city || '';
   var regionFromProfile = _kabupatenToRegion(kab);
   if (regionFromProfile) return REGION_DIALEK[regionFromProfile] || REGION_DIALEK['default'];
 
-  /* Priority 2: GPS/map currentRegion (dari peta target area) */
-  return REGION_DIALEK[currentRegion] || REGION_DIALEK['default'];
+  return REGION_DIALEK['default'];
 }
