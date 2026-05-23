@@ -645,39 +645,25 @@
                 const user = await window.getCurrentUser();
                 const userEmail = (user && user.email ? user.email : '').toLowerCase().trim();
 
-                // Tampilkan menu Upgrade KHUSUS untuk akun verifikasi Duitku
-                if (userEmail === 'halo@larisi.id') {
-                    document.getElementById('upgrade-menu-item').style.display = 'flex';
-                    document.getElementById('upgrade-divider').style.display = 'block';
+                // Tampilkan Badge Paket untuk semua user
+                const badge = document.getElementById('plan-badge');
+                if (badge) {
+                    const plan = (profile && profile.selected_plan) ? profile.selected_plan : 'freemium';
+                    badge.style.display = 'inline-block';
 
-                    // AUTO-SHOW MODAL INSTAN (1 Detik) agar tim Duitku langsung bisa tes
-                    console.log('[verifikasi] Menampilkan modal otomatis untuk tester...');
-                    setTimeout(() => {
-                        if (typeof window.showTrialModalManual === 'function') {
-                            window.showTrialModalManual();
-                        }
-                    }, 1000);
-                } else {
-                    // Tampilkan Badge Paket untuk USER UMUM (Bukan Tester)
-                    const badge = document.getElementById('plan-badge');
-                    if (badge) {
-                        const plan = (profile && profile.selected_plan) ? profile.selected_plan : 'freemium';
-                        badge.style.display = 'inline-block';
-                        
-                        if (plan === 'pro') {
-                            badge.textContent = 'PRO';
-                            badge.style.background = '#791ADB';
-                            badge.style.color = 'white';
-                        } else if (plan === 'starter') {
-                            badge.textContent = 'STARTER';
-                            badge.style.background = '#10b981';
-                            badge.style.color = 'white';
-                        } else {
-                            badge.textContent = 'FREE';
-                            badge.style.background = '#f3f4f6';
-                            badge.style.color = '#6b7280';
-                            badge.style.border = '1px solid var(--border)';
-                        }
+                    if (plan === 'pro') {
+                        badge.textContent = 'PRO';
+                        badge.style.background = '#791ADB';
+                        badge.style.color = 'white';
+                    } else if (plan === 'starter') {
+                        badge.textContent = 'STARTER';
+                        badge.style.background = '#10b981';
+                        badge.style.color = 'white';
+                    } else {
+                        badge.textContent = 'FREE';
+                        badge.style.background = '#f3f4f6';
+                        badge.style.color = '#6b7280';
+                        badge.style.border = '1px solid var(--border)';
                     }
                 }
 
