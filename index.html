@@ -46,6 +46,28 @@
                 window.getUserProfile(session.user.id).then(function(result) {
                     if (result.data) {
                         window.userBizProfile = result.data;
+
+                        // Sync larisi_trial_start dari DB — cegah stale localStorage
+                        // dari sesi/browser lama yang bisa salah trigger modal trial habis
+                        var p = result.data;
+                        if (p.trial_start) {
+                            localStorage.setItem('larisi_trial_start', p.trial_start);
+                            // Hitung ulang: jika ternyata masih dalam trial, tutup modal
+                            var diffDays = Math.floor((new Date() - new Date(p.trial_start)) / 86400000);
+                            if (diffDays < 7) {
+                                var m = document.getElementById('trial-modal');
+                                if (m) m.style.display = 'none';
+                            }
+                        } else {
+                            // Profil tidak punya trial_start → freemium, hapus stale value
+                            localStorage.removeItem('larisi_trial_start');
+                            var m = document.getElementById('trial-modal');
+                            if (m) m.style.display = 'none';
+                        }
+                        // Sync selected_plan juga
+                        if (p.selected_plan) {
+                            localStorage.setItem('larisi_selected_plan', p.selected_plan);
+                        }
                     }
                 }).catch(function() {});
 
