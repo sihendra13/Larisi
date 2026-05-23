@@ -13,7 +13,9 @@ function updateStitch() {
     }
   }
   if (!p) p = personaDB.General;
-  var loc = document.querySelector('.popup-loc') ? document.querySelector('.popup-loc').textContent.split(',')[0] : 'Lokasi kamu';
+  /* {loc} di stitch = lokasi BISNIS (bukan target area)
+     Supaya tidak misleading: "di Kotagede" padahal bisnis ada di Moyudan */
+  var loc = (typeof _getBizLoc === 'function') ? _getBizLoc() : 'lokasi kami';
   var d   = getDialek();
   var usp = (typeof getUsp === 'function') ? getUsp() : '';
   var txt = p.stitch
