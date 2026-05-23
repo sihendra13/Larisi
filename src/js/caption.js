@@ -252,8 +252,17 @@ async function generateCaptionAI() {
   }
 
   /* Sapaan dialek sesuai area target */
-  var _dialek  = getDialek();
+  var _dialek   = getDialek();
   var _greeting = _dialek.greeting || 'Halo';
+
+  /* Variasi gaya hook — rotasi berdasarkan captionAltIndex supaya tiap Generate ulang beda */
+  var _hookStyles = [
+    'Pertanyaan langsung ke audiens — contoh: "Belum coba [nama bisnis] di [lokasi]?"',
+    'Pernyataan bold tentang USP — langsung sebut keunggulan tanpa basa-basi, baru sebut nama bisnis',
+    'Cerita singkat atau situasi relatable — bayangkan situasi audiens sebelum mengenal produk ini',
+    'Social proof atau fakta menarik — angka, reaksi pelanggan, atau keunikan yang bikin penasaran',
+  ];
+  var _hookStyle = _hookStyles[captionAltIndex % _hookStyles.length];
 
   var platformLabel = {
     'ig-post'  : 'Instagram Post — caption bisa 3–5 baris, padat dan engaging',
@@ -285,9 +294,17 @@ async function generateCaptionAI() {
     '',
     'PLATFORM: ' + platformLabel,
     '',
-    'SAPAAN LOKAL:',
-    '- Buka caption dengan sapaan dialek area target: "' + _greeting + '"',
-    '- Setelah sapaan, langsung masuk ke hook — jangan tambah kalimat basa-basi',
+    'FORMAT SAPAAN:',
+    '- Baris pertama: sapaan saja → "' + _greeting + '"',
+    '- Baris kedua: kosong',
+    '- Baris ketiga: langsung hook caption',
+    '- Contoh format yang BENAR:',
+    '  "' + _greeting + '"',
+    '  ""',
+    '  "Warga ' + (targetArea || 'sekitar') + ', [hook caption di sini]"',
+    '',
+    'GAYA HOOK (gunakan pendekatan ini untuk variasi):',
+    '- ' + _hookStyle,
     '',
     'ATURAN WAJIB:',
     '- Bahasa Indonesia natural, tidak kaku, tidak terkesan iklan murahan',
@@ -296,7 +313,6 @@ async function generateCaptionAI() {
     '- KRITIS — Lokasi bisnis (' + (bizLocDisplay || 'tidak diketahui') + ') dan area target iklan (' + (targetArea || 'sekitar lokasi') + ') adalah DUA HAL BERBEDA.',
     '- DILARANG KERAS: menulis seolah bisnis berada di area target. Bisnis SELALU di lokasi aslinya (' + (bizLocDisplay || 'lokasi bisnis') + ').',
     '- Yang benar: ajak audiens di area target (' + (targetArea || 'sekitar') + ') untuk datang/memesan ke ' + (bizName || 'bisnis ini') + ' di ' + (bizLocDisplay || 'lokasi kami') + '.',
-    '- Contoh hook yang BENAR: "' + _greeting + ' Warga ' + (targetArea || 'sekitar') + ', udah coba belum ' + (bizName || 'kami') + ' di ' + (bizLocDisplay || 'lokasi kami') + '?"',
     '- Contoh hook yang SALAH: "Ada tempat makan baru di ' + (targetArea || 'area target') + '!" — ini SALAH karena bisnis tidak ada di sana.',
     '- Struktur: hook menarik → nilai/cerita → CTA',
     '- Akhiri dengan 3–5 hashtag (mix populer + lokal + niche, termasuk hashtag area target)',
