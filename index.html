@@ -925,6 +925,11 @@
       }
       // --- SKENARIO 3: FREEMIUM QUOTA EXPIRED (10 IKLAN) ---
       else if (currentPlan !== 'pro' && currentPlan !== 'starter') {
+        const _currentQuota = typeof window.freeCount !== 'undefined'
+          ? window.freeCount
+          : (profile.ai_launch_count != null ? profile.ai_launch_count : 10);
+        if (_currentQuota > 0) { /* quota masih ada, jangan tampilkan */ }
+        else {
         _scenarioMatched = true;
         titleEl.textContent = "Jatah Iklan Gratis Habis!";
         const resetDate = (typeof getNextResetDate === 'function') ? getNextResetDate() : 'Bulan Depan';
@@ -940,6 +945,7 @@
             if(typeof initQuotaBanner === 'function') initQuotaBanner();
           };
         }
+        } // end else quota <= 0
       }
 
       // Hanya tampilkan modal jika ada skenario yang benar-benar match
