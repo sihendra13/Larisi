@@ -332,7 +332,9 @@
                 provinsi:  provinsi,
                 city: kabupaten || kecamatan, /* backward compat untuk user lama */
                 delivery_service: delivery,
-                usp: usp
+                usp: usp,
+                ai_launch_count: 10,  /* inisialisasi quota freemium untuk user baru */
+                selected_plan: 'freemium'
             });
 
             if (error) {
