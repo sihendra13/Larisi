@@ -366,8 +366,11 @@ function _kabupatenToRegion(kab) {
 
 function getDialek() {
   /* Priority 1: area TARGET IKLAN dari peta — dialek harus cocok dengan audiens */
-  var targetAreaText = _getTargetArea();
-  var regionFromTarget = _kabupatenToRegion(targetAreaText);
+  /* Pakai FULL text popup-loc ("Kotagede, Yogyakarta") bukan hanya kecamatan ("Kotagede")
+     supaya _kabupatenToRegion bisa deteksi kabupaten/kota dengan benar */
+  var popupEl = document.querySelector('.popup-loc');
+  var fullTargetText = popupEl ? popupEl.textContent.trim() : '';
+  var regionFromTarget = fullTargetText ? _kabupatenToRegion(fullTargetText) : null;
   if (regionFromTarget) return REGION_DIALEK[regionFromTarget] || REGION_DIALEK['default'];
 
   /* Priority 2: currentRegion dari GPS/map (fallback jika popup-loc belum ada) */
