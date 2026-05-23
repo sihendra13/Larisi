@@ -32,7 +32,7 @@ function showPersonaDirect(p, detected) {
   captionAltIndex = 0;
   document.getElementById('stitchCard').style.display = 'block';
   updateStitch();
-  generateCaption(false);
+  generateCaptionAI();
 }
 
 /* ── Vision conflict state ── */
@@ -312,10 +312,10 @@ function selectCat(el, cat) {
   document.getElementById('catNudge').classList.remove('visible');
   setTimeout(function(){
     var p = personaDB[cat] || personaDB.General;
-    currentPersona = cat; /* set FIRST so updateStitch() and generateCaption() have it */
+    currentPersona = cat; /* set FIRST so updateStitch() and generateCaptionAI() have it */
     captionAltIndex = 0;
     showPersonaFromCat({name:p.name, target:p.target, age:p.tags?p.tags[0]:'Usia 18–45', gender:p.gender||'Mixed'});
-    generateCaption(false);
+    generateCaptionAI();
   }, 300);
 }
 
@@ -352,7 +352,7 @@ function showPersona(key, boosted) {
   if (ageEl) ageEl.textContent = 'Age range: ' + (p.age || p.tags[0] || '18–45') + ' · ' + (p.gender || 'Mixed');
   document.getElementById('personaCard').classList.add('visible');
   document.getElementById('genBtn').style.display = 'block';
-  generateCaption(); updateStitch();
+  generateCaptionAI(); updateStitch();
   document.getElementById('stitchCard').style.display = 'block';
 }
 

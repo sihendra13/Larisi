@@ -200,12 +200,26 @@ async function generateCaptionAI() {
   personaAge = personaAge.replace('Age range: ', '').trim();
 
   var usp          = getUsp();
-  var loc          = document.querySelector('.popup-loc')
-                       ? document.querySelector('.popup-loc').textContent.split(',')[0].trim()
-                       : 'lokasi kami';
   var bizName      = profile.business_name || '';
   var category     = profile.category || '';
   var hasDelivery  = profile.delivery_service || false;
+
+  /* Lokasi bisnis — dari profil onboarding (kecamatan + kabupaten) */
+  var bizKecamatan = profile.kecamatan || '';
+  var bizKabupaten = profile.kabupaten || profile.city || '';
+  var bizLoc = '';
+  if (bizKecamatan && bizKabupaten) {
+    bizLoc = bizKecamatan + ', ' + bizKabupaten;
+  } else if (bizKabupaten) {
+    bizLoc = bizKabupaten;
+  } else if (bizKecamatan) {
+    bizLoc = bizKecamatan;
+  }
+
+  /* Area target iklan — dari peta (bukan lokasi bisnis!) */
+  var targetArea = document.querySelector('.popup-loc')
+    ? document.querySelector('.popup-loc').textContent.split(',')[0].trim()
+    : '';
 
   var platformLabel = {
     'ig-post'  : 'Instagram Post — caption bisa 3–5 baris, padat dan engaging',
@@ -215,6 +229,9 @@ async function generateCaptionAI() {
     'meta'     : 'Facebook/Meta Ad — informatif, langsung ke poin, ada CTA jelas',
   }[activePlatform] || 'Instagram Post';
 
+  /* Bangun anchor lokasi yang tepat untuk rules */
+  var locAnchor = targetArea || bizLoc || 'sekitar sini';
+
   var systemPrompt = [
     'Kamu adalah copywriter profesional spesialis UMKM lokal Indonesia.',
     'Buat 1 caption media sosial yang segar, autentik, dan efektif untuk bisnis berikut.',
@@ -223,7 +240,8 @@ async function generateCaptionAI() {
     '- Nama: ' + (bizName || 'UMKM'),
     '- Kategori: ' + category,
     '- Keunggulan utama (USP): ' + usp,
-    '- Lokasi: ' + loc,
+    '- Lokasi bisnis: ' + (bizLoc || 'tidak disebutkan'),
+    '- Area target iklan: ' + (targetArea || bizLoc || 'sekitar lokasi bisnis'),
     '- Layanan antar: ' + (hasDelivery ? 'ada' : 'tidak ada'),
     '',
     'MASTER PERSONA (target audiens):',
@@ -237,7 +255,8 @@ async function generateCaptionAI() {
     '- Bahasa Indonesia natural, tidak kaku, tidak terkesan iklan murahan',
     '- Sesuaikan gaya bahasa dengan persona — foodie/anak muda = santai & seru, profesional = informatif & hangat',
     '- USP harus jadi kekuatan utama caption, bukan sekadar disebut',
-    '- Gunakan "' + loc + '" sebagai anchor lokasi agar terasa personal',
+    '- Area target = siapa yang perlu dijangkau. Bisnis boleh ada di mana saja — jangan klaim bisnis "ada di" area target jika berbeda dari lokasi bisnis',
+    '- Jika area target berbeda dari lokasi bisnis, buat caption yang menjangkau audiens di area target itu (misal: "Warga ' + locAnchor + '...")',
     '- Struktur: hook menarik → nilai/cerita → CTA',
     '- Akhiri dengan 3–5 hashtag (mix populer + lokal + niche)',
     '- JANGAN mulai dengan "Halo", "Hai", "Yuk", atau sapaan klise',
@@ -288,7 +307,7 @@ function setTone(el, tone) {
   activeTone = tone;
   document.querySelectorAll('.tone-btn').forEach(function(b){ b.classList.remove('active'); });
   el.classList.add('active');
-  generateCaption();
+  generateCaptionAI();
 }
 
 function updateCaptionPlatformLabel() {
@@ -298,6 +317,42 @@ function updateCaptionPlatformLabel() {
   el.innerHTML = plat.icon + '<span>' + plat.label + '</span>';
 }
 
+/* Map kabupaten/kota name → REGION_DIALEK key */
+function _kabupatenToRegion(kab) {
+  if (!kab) return null;
+  var k = kab.toLowerCase()
+    .replace(/^kabupaten\s+/i, '')
+    .replace(/^regency\s+/i, '')
+    .trim();
+  if (/sleman|bantul|kulon.?progo|gunungkidul|gunung.?kidul|yogyakarta/.test(k))         return 'jogja';
+  if (/surakarta|^solo$|sukoharjo|karanganyar|klaten|wonogiri|boyolali|sragen/.test(k)) return 'solo';
+  if (/semarang|kendal|demak|kudus|jepara|pati|rembang|blora|grobogan/.test(k))         return 'semarang';
+  if (/jakarta|tangerang|bekasi|depok|bogor/.test(k))                                    return 'jakarta';
+  if (/bandung|sumedang|garut|tasikmalaya|cianjur|sukabumi|cimahi|majalengka|kuningan|indramayu|subang|purwakarta|karawang|cirebon/.test(k)) return 'bandung';
+  if (/surabaya|sidoarjo|gresik|mojokerto|lamongan|tuban|bojonegoro/.test(k))            return 'surabaya';
+  if (/malang|pasuruan|probolinggo|lumajang|jember|banyuwangi/.test(k))                  return 'malang';
+  if (/medan|deli serdang|serdang bedagai|langkat|binjai|tebing tinggi/.test(k))         return 'medan';
+  if (/makassar|gowa|maros|pangkep|takalar|jeneponto/.test(k))                           return 'makassar';
+  if (/badung|gianyar|tabanan|buleleng|klungkung|karangasem|jembrana|bangli|denpasar|bali/.test(k)) return 'bali';
+  if (/manado|minahasa|bitung|tomohon|kotamobagu/.test(k))                               return 'manado';
+  if (/palembang|banyuasin|ogan komering|musi|prabumulih/.test(k))                       return 'palembang';
+  if (/pontianak|kubu raya|landak|mempawah|singkawang/.test(k))                          return 'pontianak';
+  if (/banjarmasin|banjarbaru|^banjar$|barito|hulu sungai|tapin|tabalong/.test(k))       return 'banjarmasin';
+  if (/lampung|bandar lampung|^metro$|pringsewu|pesawaran|tanggamus/.test(k))             return 'lampung';
+  if (/ambon|maluku/.test(k))                                                             return 'ambon';
+  if (/lombok|mataram|bima|dompu|sumbawa/.test(k))                                        return 'lombok';
+  if (/jayapura|sorong|manokwari|mimika|merauke|timika/.test(k))                          return 'papua';
+  return null;
+}
+
 function getDialek() {
+  /* Priority 1: kabupaten dari profil bisnis (onboarding) — paling akurat */
+  var profile = {};
+  try { profile = JSON.parse(localStorage.getItem('radar_user_profile') || '{}'); } catch(e) {}
+  var kab = profile.kabupaten || profile.city || '';
+  var regionFromProfile = _kabupatenToRegion(kab);
+  if (regionFromProfile) return REGION_DIALEK[regionFromProfile] || REGION_DIALEK['default'];
+
+  /* Priority 2: GPS/map currentRegion (dari peta target area) */
   return REGION_DIALEK[currentRegion] || REGION_DIALEK['default'];
 }

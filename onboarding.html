@@ -90,9 +90,16 @@
                         <option value="lainnya">Lainnya...</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="city">Kota / Kabupaten *</label>
-                    <input type="text" id="city" placeholder="Misal: Klaten, Jawa Tengah">
+                <div class="form-group" style="position:relative;">
+                    <label for="kecamatanInput">Kecamatan Lokasi Bisnis *</label>
+                    <input type="text" id="kecamatanInput" placeholder="Ketik nama kecamatan..." autocomplete="off"
+                           oninput="_kecOnInput(this.value)" onblur="_kecOnBlur()" style="margin-bottom:0;">
+                    <div id="kecDropdown" style="display:none;position:absolute;left:0;right:0;background:#fff;border:1px solid #d1d5db;border-top:none;border-radius:0 0 10px 10px;z-index:300;max-height:220px;overflow-y:auto;box-shadow:0 8px 20px rgba(0,0,0,0.1);"></div>
+                    <input type="text" id="kabupatenDisplay" placeholder="Kabupaten/Kota (terisi otomatis)" readonly
+                           style="margin-top:8px;background:#f9fafb;color:#6b7280;font-size:13px;cursor:default;">
+                    <input type="hidden" id="kecamatanHidden">
+                    <input type="hidden" id="kabupatenHidden">
+                    <input type="hidden" id="provinsiHidden">
                 </div>
             </div>
 
@@ -273,11 +280,15 @@
                 const ownerName = document.getElementById('ownerName').value;
                 const businessName = document.getElementById('businessName').value;
                 const category = document.getElementById('category').value;
-                const city = document.getElementById('city').value;
+                const kecamatan = document.getElementById('kecamatanHidden').value.trim();
                 const usp = document.getElementById('usp')?.value?.trim() || '';
 
-                if (!ownerName || !businessName || !category || !city) {
-                    alert('Mohon lengkapi semua data bertanda *');
+                if (!ownerName || !businessName || !category || !kecamatan) {
+                    if (!kecamatan) {
+                        document.getElementById('kecamatanInput').focus();
+                        document.getElementById('kecamatanInput').placeholder = 'Pilih kecamatan dari dropdown ⬆';
+                    }
+                    alert('Mohon lengkapi semua data bertanda *\n\nPastikan kecamatan dipilih dari dropdown.');
                     return;
                 }
 
@@ -298,7 +309,9 @@
             const businessName = document.getElementById('businessName').value;
             const whatsapp = document.getElementById('whatsapp').value;
             const category = document.getElementById('category').value;
-            const city = document.getElementById('city').value;
+            const kecamatan = document.getElementById('kecamatanHidden').value.trim();
+            const kabupaten = document.getElementById('kabupatenHidden').value.trim();
+            const provinsi  = document.getElementById('provinsiHidden').value.trim();
             const delivery = document.querySelector('input[name="delivery"]:checked')?.value === 'yes';
             const usp = document.getElementById('usp')?.value?.trim() || '';
 
@@ -310,7 +323,10 @@
                 business_name: businessName,
                 whatsapp: whatsapp,
                 category: category,
-                city: city,
+                kecamatan: kecamatan,
+                kabupaten: kabupaten,
+                provinsi:  provinsi,
+                city: kabupaten || kecamatan, /* backward compat untuk user lama */
                 delivery_service: delivery,
                 usp: usp
             });
@@ -325,6 +341,94 @@
             document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
             document.getElementById('step-3').classList.add('active');
         }
+
+        /* ── Kecamatan Autocomplete (Nominatim OpenStreetMap) ── */
+        var _kecTimer = null;
+
+        function _kecOnInput(val) {
+            /* Reset pilihan sebelumnya */
+            document.getElementById('kabupatenDisplay').value = '';
+            document.getElementById('kecamatanHidden').value  = '';
+            document.getElementById('kabupatenHidden').value  = '';
+            document.getElementById('provinsiHidden').value   = '';
+
+            var dd = document.getElementById('kecDropdown');
+            if (!val || val.length < 2) { dd.style.display = 'none'; return; }
+
+            if (_kecTimer) clearTimeout(_kecTimer);
+            _kecTimer = setTimeout(function() {
+                dd.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:#6b7280;">Mencari...</div>';
+                dd.style.display = 'block';
+
+                fetch(
+                    'https://nominatim.openstreetmap.org/search?q=' +
+                    encodeURIComponent(val + ' Indonesia') +
+                    '&format=json&addressdetails=1&limit=7&accept-language=id&countrycodes=ID',
+                    { headers: { 'Accept': 'application/json', 'User-Agent': 'Larisi-App/1.0' } }
+                )
+                .then(function(r) { return r.json(); })
+                .then(function(results) {
+                    dd.innerHTML = '';
+                    if (!results || !results.length) {
+                        dd.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:#6b7280;">Kecamatan tidak ditemukan, coba kata lain</div>';
+                        return;
+                    }
+                    /* Filter & deduplicate berdasarkan kecamatan+kabupaten */
+                    var seen = {};
+                    results.forEach(function(r) {
+                        var addr = r.address || {};
+                        /* Ambil kecamatan: prioritas suburb/village/quarter/town */
+                        var kec = addr.suburb || addr.village || addr.quarter || addr.town || addr.hamlet
+                                  || r.display_name.split(',')[0].trim();
+                        /* Ambil kabupaten: prioritas county, lalu city/state_district/municipality */
+                        var kab = addr.county || addr.city || addr.state_district || addr.municipality || '';
+                        /* Bersihkan prefix "Kabupaten" — tapi pertahankan "Kota" */
+                        var kabDisplay = kab.replace(/^Kabupaten\s+/i, '').replace(/^Regency\s+/i, '');
+                        var prov = addr.state || '';
+
+                        var key = (kec + '|' + kabDisplay).toLowerCase();
+                        if (seen[key]) return;
+                        seen[key] = true;
+
+                        var label = kec;
+                        if (kabDisplay) label += ', ' + kabDisplay;
+                        if (prov)       label += ' — ' + prov;
+
+                        var item = document.createElement('div');
+                        item.textContent = label;
+                        item.style.cssText = 'padding:10px 14px;cursor:pointer;font-size:13px;color:#1a1a1a;border-bottom:1px solid #f3f4f6;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+                        item.onmouseover = function() { this.style.background = '#f3ebff'; };
+                        item.onmouseout  = function() { this.style.background = ''; };
+                        item.onmousedown = function(e) { e.preventDefault(); }; /* prevent blur */
+                        (function(k, kd, kb, p) {
+                            item.onclick = function() {
+                                document.getElementById('kecamatanInput').value  = k;
+                                document.getElementById('kabupatenDisplay').value = kd || k;
+                                document.getElementById('kecamatanHidden').value  = k;
+                                document.getElementById('kabupatenHidden').value  = kb || kd || k;
+                                document.getElementById('provinsiHidden').value   = p;
+                                document.getElementById('kecDropdown').style.display = 'none';
+                            };
+                        })(kec, kabDisplay, kab, prov);
+                        dd.appendChild(item);
+                    });
+                    if (!dd.childElementCount) {
+                        dd.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:#6b7280;">Tidak ada hasil, coba kata lain</div>';
+                    }
+                })
+                .catch(function() {
+                    dd.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:#dc2626;">Gagal memuat. Periksa koneksi internet.</div>';
+                });
+            }, 450);
+        }
+
+        function _kecOnBlur() {
+            setTimeout(function() {
+                var dd = document.getElementById('kecDropdown');
+                if (dd) dd.style.display = 'none';
+            }, 200);
+        }
+        /* ─────────────────────────────────────────────────── */
 
         async function handleResend(e) {
             e.preventDefault();
