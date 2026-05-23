@@ -63,7 +63,7 @@ function _showVisionConflict(visionKey, visionLabel, bizKey, bizLabel) {
   if (qEl) {
     qEl.innerHTML =
       'SiLaris mendeteksi foto ini sebagai <strong>' + visionLabel + '</strong>, ' +
-      'bisnismu terdaftar sebagai <strong>' + bizPersonaName + '</strong>. ' +
+      'tapi fokus bisnismu di <strong>' + bizPersonaName + '</strong>. ' +
       'Apakah foto ini sudah benar?';
   }
 
