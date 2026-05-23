@@ -237,6 +237,24 @@ async function generateCaptionAI() {
     ? document.querySelector('.popup-loc').textContent.split(',')[0].trim()
     : '';
 
+  /* Deteksi apakah target di luar region bisnis → gunakan lokasi lebih lengkap */
+  var _bizRegion   = _kabupatenToRegion(bizKabupaten || bizKecamatan);
+  var _popupFull   = document.querySelector('.popup-loc') ? document.querySelector('.popup-loc').textContent.trim() : '';
+  var _targetRegion = _kabupatenToRegion(_popupFull);
+  var _regionCity  = { jogja:'Yogyakarta', solo:'Solo', semarang:'Semarang', jakarta:'Jakarta',
+    bandung:'Bandung', surabaya:'Surabaya', malang:'Malang', medan:'Medan',
+    makassar:'Makassar', bali:'Bali', manado:'Manado', palembang:'Palembang',
+    pontianak:'Pontianak', banjarmasin:'Banjarmasin', lampung:'Lampung' };
+  var _isFarTarget = _bizRegion && _targetRegion && (_bizRegion !== _targetRegion);
+  var bizLocDisplay = bizLoc;
+  if (_isFarTarget && _bizRegion && _regionCity[_bizRegion]) {
+    bizLocDisplay = bizLoc + ', ' + _regionCity[_bizRegion];
+  }
+
+  /* Sapaan dialek sesuai area target */
+  var _dialek  = getDialek();
+  var _greeting = _dialek.greeting || 'Halo';
+
   var platformLabel = {
     'ig-post'  : 'Instagram Post — caption bisa 3–5 baris, padat dan engaging',
     'ig-reel'  : 'Instagram Reel — hook kuat di baris pertama, energetik, maks 3 baris',
@@ -256,8 +274,8 @@ async function generateCaptionAI() {
     '- Nama: ' + (bizName || 'UMKM'),
     '- Kategori: ' + category,
     '- Keunggulan utama (USP): ' + usp,
-    '- Lokasi bisnis: ' + (bizLoc || 'tidak disebutkan'),
-    '- Area target iklan: ' + (targetArea || bizLoc || 'sekitar lokasi bisnis'),
+    '- Lokasi bisnis: ' + (bizLocDisplay || 'tidak disebutkan'),
+    '- Area target iklan: ' + (targetArea || bizLocDisplay || 'sekitar lokasi bisnis'),
     '- Layanan antar: ' + (hasDelivery ? 'ada' : 'tidak ada'),
     '',
     'MASTER PERSONA (target audiens):',
@@ -267,18 +285,21 @@ async function generateCaptionAI() {
     '',
     'PLATFORM: ' + platformLabel,
     '',
+    'SAPAAN LOKAL:',
+    '- Buka caption dengan sapaan dialek area target: "' + _greeting + '"',
+    '- Setelah sapaan, langsung masuk ke hook — jangan tambah kalimat basa-basi',
+    '',
     'ATURAN WAJIB:',
     '- Bahasa Indonesia natural, tidak kaku, tidak terkesan iklan murahan',
     '- Sesuaikan gaya bahasa dengan persona — foodie/anak muda = santai & seru, profesional = informatif & hangat',
     '- USP harus jadi kekuatan utama caption, bukan sekadar disebut',
-    '- KRITIS — Lokasi bisnis (' + (bizLoc || 'tidak diketahui') + ') dan area target iklan (' + (targetArea || 'sekitar lokasi') + ') adalah DUA HAL BERBEDA.',
-    '- DILARANG KERAS: menulis seolah bisnis berada di area target. Bisnis SELALU di lokasi aslinya (' + (bizLoc || 'lokasi bisnis') + ').',
-    '- Yang benar: ajak audiens di area target (' + (targetArea || 'sekitar') + ') untuk datang/memesan ke ' + (bizName || 'bisnis ini') + ' di ' + (bizLoc || 'lokasi kami') + '.',
-    '- Contoh hook yang BENAR: "Warga ' + (targetArea || 'sekitar') + ', udah coba belum ' + (bizName || 'kami') + ' di ' + (bizLoc || 'lokasi kami') + '?"',
+    '- KRITIS — Lokasi bisnis (' + (bizLocDisplay || 'tidak diketahui') + ') dan area target iklan (' + (targetArea || 'sekitar lokasi') + ') adalah DUA HAL BERBEDA.',
+    '- DILARANG KERAS: menulis seolah bisnis berada di area target. Bisnis SELALU di lokasi aslinya (' + (bizLocDisplay || 'lokasi bisnis') + ').',
+    '- Yang benar: ajak audiens di area target (' + (targetArea || 'sekitar') + ') untuk datang/memesan ke ' + (bizName || 'bisnis ini') + ' di ' + (bizLocDisplay || 'lokasi kami') + '.',
+    '- Contoh hook yang BENAR: "' + _greeting + ' Warga ' + (targetArea || 'sekitar') + ', udah coba belum ' + (bizName || 'kami') + ' di ' + (bizLocDisplay || 'lokasi kami') + '?"',
     '- Contoh hook yang SALAH: "Ada tempat makan baru di ' + (targetArea || 'area target') + '!" — ini SALAH karena bisnis tidak ada di sana.',
     '- Struktur: hook menarik → nilai/cerita → CTA',
-    '- Akhiri dengan 3–5 hashtag (mix populer + lokal + niche)',
-    '- JANGAN mulai dengan "Halo", "Hai", "Yuk", atau sapaan klise',
+    '- Akhiri dengan 3–5 hashtag (mix populer + lokal + niche, termasuk hashtag area target)',
     '- JANGAN mengarang fakta bisnis yang tidak ada di data',
     '- Output HANYA caption, tanpa penjelasan atau label tambahan',
   ].join('\n');

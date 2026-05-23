@@ -70,7 +70,7 @@ function selectCity(lat, lng, name, pop) {
   }
   updateRadius(currentRadius);
   updateRegionAndRefresh(lat, lng);
-  if (currentPersona) { generateCaption(false); updateStitch(); }
+  if (currentPersona) { generateCaptionAI(); updateStitch(); }
 }
 
 function updatePopupPosition() {
@@ -148,7 +148,7 @@ window.onload = function() {
         var pl = document.querySelector('.popup-loc');
         if (pl && loc) pl.textContent = loc;
         updateRegionAndRefresh(currentLat, currentLng);
-        if (currentPersona) { generateCaption(false); updateStitch(); }
+        if (currentPersona) { generateCaptionAI(); updateStitch(); }
       }).catch(function(){});
   });
 
@@ -180,7 +180,7 @@ function _moveToUserLocation() {
           var pl = document.querySelector('.popup-loc');
           if (pl && loc) pl.textContent = loc;
           updateRegionAndRefresh(lat, lng);
-          if (currentPersona) { generateCaption(false); updateStitch(); }
+          if (currentPersona) { generateCaptionAI(); updateStitch(); }
           console.log('[map] lokasi GPS:', loc, lat, lng);
         }).catch(function() {});
     },
@@ -203,9 +203,9 @@ function updateRegionAndRefresh(lat, lng) {
   var newRegion = detectRegionFromCoords(lat, lng);
   if (newRegion !== currentRegion) {
     currentRegion = newRegion;
-    /* Refresh caption and stitch with new dialek */
+    /* Refresh caption dan stitch dengan dialek baru */
     if (currentPersona) {
-      generateCaption(false);
+      generateCaptionAI();
       updateStitch();
     }
   }
