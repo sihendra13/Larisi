@@ -897,12 +897,18 @@
 
       planBadge.textContent = 'Paket saat ini: ' + currentPlan.toUpperCase();
 
-      // --- SKENARIO 1: PAID EXPIRED (30 HARI) ---
+      // --- SKENARIO 1: PAID EXPIRED (30 HARI) atau STARTER QUOTA HABIS ---
       let _scenarioMatched = false;
-      if (paymentStatus === 'paid' && diffDays >= 30) {
+      const _paidQuota = typeof window.freeCount !== 'undefined'
+        ? window.freeCount
+        : (profile.ai_launch_count != null ? profile.ai_launch_count : 1);
+      const _starterQuotaHabis = currentPlan === 'starter' && paymentStatus === 'paid' && _paidQuota <= 0;
+      if (paymentStatus === 'paid' && (diffDays >= 30 || _starterQuotaHabis)) {
         _scenarioMatched = true;
-        titleEl.textContent = "Masa Langganan Habis!";
-        descEl.innerHTML = `Masa aktif paket <b>${currentPlan.toUpperCase()}</b> Anda telah berakhir. Perpanjang sekarang agar tetap tayang.`;
+        titleEl.textContent = _starterQuotaHabis ? "Jatah Iklan Starter Habis!" : "Masa Langganan Habis!";
+        descEl.innerHTML = _starterQuotaHabis
+          ? `Jatah 50 iklan paket Starter Anda sudah habis. Isi ulang atau upgrade ke Pro.`
+          : `Masa aktif paket <b>${currentPlan.toUpperCase()}</b> Anda telah berakhir. Perpanjang sekarang agar tetap tayang.`;
 
         if (currentPlan === 'pro') {
           if (btnPro) btnPro.textContent = 'Perpanjang Paket Pro — Rp 199rb/bln';
