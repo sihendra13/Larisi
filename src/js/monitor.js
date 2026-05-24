@@ -803,8 +803,8 @@ function showDeleteConfirmModal(campaign) {
     +     '</svg>'
     +   '</div>'
     +   '<div>'
-    +     '<div style="font-size:16px;font-weight:700;color:#111827;">Hapus Campaign?</div>'
-    +     '<div style="font-size:12px;color:#6b7280;margin-top:1px;">Tindakan ini tidak bisa dibatalkan</div>'
+    +     '<div style="font-size:16px;font-weight:700;color:#111827;">Arsipkan Campaign?</div>'
+    +     '<div style="font-size:12px;color:#6b7280;margin-top:1px;">Iklan akan dipindahkan ke tab Diarsipkan</div>'
     +   '</div>'
     + '</div>'
 
@@ -834,9 +834,9 @@ function showDeleteConfirmModal(campaign) {
     +   '<button onclick="_confirmDeleteCampaign(\'' + campaign.id + '\',\''
     +     (campaign.supabase_id || campaign.id) + '\')" '
     +     'style="flex:1;padding:11px;border-radius:12px;'
-    +     'border:none;background:#ef4444;color:#fff;'
+    +     'border:none;background:#6b7280;color:#fff;'
     +     'font-size:13px;font-weight:600;cursor:pointer;'
-    +     'font-family:var(--font,sans-serif);">Hapus dari Larisi</button>'
+    +     'font-family:var(--font,sans-serif);">Arsipkan</button>'
     + '</div>'
     + '</div>';
 
@@ -847,24 +847,28 @@ async function _confirmDeleteCampaign(localId, supabaseId) {
   var overlay = document.getElementById('deleteConfirmOverlay');
   if (overlay) overlay.remove();
 
-  if (supabaseId && typeof deleteCampaign === 'function') {
-    await deleteCampaign(supabaseId);
+  // Archive di Supabase (update status → paused), bukan hard delete
+  if (supabaseId && typeof archiveCampaign === 'function') {
+    await archiveCampaign(supabaseId);
   }
 
-  CAMPAIGNS = CAMPAIGNS.filter(function(c) {
-    return String(c.id) !== String(localId);
-  });
+  // Update status di memory → paused (bukan dihapus dari array)
+  var camp = CAMPAIGNS.find(function(c) { return String(c.id) === String(localId); });
+  if (camp) camp.status = 'paused';
 
+  // Fade out card lalu re-render (agar filter "Semua" tetap tampil, "Diarsipkan" juga)
   var cardEl = document.getElementById('campaign-card-' + localId);
   if (cardEl) {
     cardEl.style.transition = 'opacity 0.3s, transform 0.3s';
     cardEl.style.opacity = '0';
     cardEl.style.transform = 'scale(0.95)';
-    setTimeout(function() { cardEl.remove(); }, 300);
+    setTimeout(function() { renderCampaigns(); }, 300);
+  } else {
+    renderCampaigns();
   }
 
   if (typeof showTopToast === 'function') {
-    showTopToast('✓ Iklan berhasil dihapus dari Larisi', 'success');
+    showTopToast('✓ Iklan berhasil diarsipkan', 'success');
   }
 }
 
@@ -872,7 +876,7 @@ function buildCampaignCard(c) {
   var isRunning = c.status === 'running';
   var isPaused  = c.status === 'paused';
   var statusColor = isRunning ? '#16a34a' : (isPaused ? '#d97706' : '#9ca3af');
-  var statusLbl   = isRunning ? 'Berjalan' : (isPaused ? 'Dihentikan' : 'Selesai');
+  var statusLbl   = isRunning ? 'Berjalan' : (isPaused ? 'Diarsipkan' : 'Selesai');
   var pct = Math.min(100, Math.round((c.reach / (c.reachTarget || 1)) * 100));
 
   var platColors = { ig:'#E1306C', tiktok:'#010101', meta:'#1877F2', youtube:'#FF0000' };

@@ -487,6 +487,25 @@ async function deleteCampaign(campaignId) {
 }
 window.deleteCampaign = deleteCampaign;
 
+async function archiveCampaign(campaignId) {
+  var client = getSupabaseClient();
+  if (!client || !campaignId) return { success: false };
+  try {
+    var result = await client
+      .from('campaigns')
+      .update({ status: 'paused' })
+      .eq('id', campaignId)
+      .eq('session_id', window.radarSessionId);
+    if (result.error) throw result.error;
+    console.log('[supabase] campaign archived:', campaignId);
+    return { success: true };
+  } catch(err) {
+    console.error('[supabase] archiveCampaign error:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+window.archiveCampaign = archiveCampaign;
+
 async function updateCampaignPostUrl(campaignId, postUrl) {
   var client = getSupabaseClient();
   if (!client || !campaignId || !postUrl) return;
