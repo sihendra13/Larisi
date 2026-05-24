@@ -1468,8 +1468,17 @@ async function _loadAnalyticsForCard(campaign) {
         }
       }
 
-      // Thumbnail update juga hanya jika exact match
-      if (mediaUrl && _isExactMatch) {
+      // Thumbnail update juga hanya jika exact match DAN belum ada thumb permanen
+      // Guard penting: jangan timpa Supabase Storage URL atau base64 dengan CDN/video URL dari PostForMe
+      var _sbDomCheck = RADAR_CONFIG.SUPABASE_URL + '/storage/';
+      var _isPermDom = campaign.thumbUrl && (
+        campaign.thumbUrl.startsWith('data:') ||
+        campaign.thumbUrl.startsWith(_sbDomCheck)
+      );
+      // Juga jangan set video URL (mp4/webm) sebagai src img
+      var _mediaIsImage = mediaUrl && !mediaUrl.match(/\.(mp4|webm|mov|avi|mkv)(\?|$)/i) &&
+        !mediaUrl.includes('video/');
+      if (mediaUrl && _isExactMatch && !_isPermDom && _mediaIsImage) {
         var thumbContainer = cardEl.querySelector('.cc-thumbnail-container');
         if (thumbContainer) {
           var img = thumbContainer.querySelector('.cc-thumbnail-img');
