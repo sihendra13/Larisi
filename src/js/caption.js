@@ -283,6 +283,23 @@ async function generateCaptionAI() {
   var _dialek   = getDialek();
   var _greeting = _dialek.greeting || 'Halo';
 
+  /* ── Deteksi positioning luxury/premium dari USP ──────────────────────────
+     Level 1 — Strong luxury: kata yang jarang dipakai sembarangan
+     Level 2 — Soft premium: kata umum, hanya dapat boost ringan
+     Kalau tidak ada match → _positioningLine = null → tidak ada perubahan prompt */
+  var _uspLower = usp.toLowerCase();
+  var _luxuryWords  = ['luxury','mewah','eksklusif','high-end','high end','branded',
+    'limited edition','premium leather','emas','berlian','platinum',
+    'prestige','prestise','kelas atas','bespoke','artisan premium'];
+  var _premiumWords = ['premium','grade a','kualitas tinggi'];
+  var _isLuxury  = _luxuryWords.some(function(w)  { return _uspLower.indexOf(w) !== -1; });
+  var _isPremium = !_isLuxury && _premiumWords.some(function(w) { return _uspLower.indexOf(w) !== -1; });
+  var _positioningLine = _isLuxury
+    ? '- POSITIONING LUXURY: USP menunjukkan produk/layanan premium-luxury — gunakan tone aspirasional, sophisticated, dan eksklusif. Caption harus terasa prestige, bukan sekadar promosi biasa.'
+    : _isPremium
+    ? '- POSITIONING PREMIUM: USP menunjukkan kualitas di atas rata-rata — caption sedikit lebih polished dan quality-focused, hindari kesan murahan.'
+    : null;
+
   /* Variasi gaya hook — rotasi berdasarkan _aiCallCount supaya tiap panggil AI beda gaya */
   var _n = _aiCallCount % 4;
   var _biz  = bizName || 'kami';
@@ -349,6 +366,7 @@ async function generateCaptionAI() {
     'ATURAN WAJIB:',
     '- Bahasa Indonesia natural, tidak kaku, tidak terkesan iklan murahan',
     '- Sesuaikan gaya bahasa dengan persona — foodie/anak muda = santai & seru, profesional = informatif & hangat',
+    _positioningLine,
     '- USP harus jadi kekuatan utama caption, bukan sekadar disebut',
     '- KRITIS — Lokasi bisnis (' + (bizLocDisplay || 'tidak diketahui') + ') dan area target iklan (' + (targetArea || 'sekitar lokasi') + ') adalah DUA HAL BERBEDA.',
     '- DILARANG KERAS: menulis seolah bisnis berada di area target. Bisnis SELALU di lokasi aslinya (' + (bizLocDisplay || 'lokasi bisnis') + ').',
@@ -359,7 +377,7 @@ async function generateCaptionAI() {
     '- JANGAN mengarang fakta bisnis yang tidak ada di data',
     '- JANGAN gunakan simbol markdown (**bold**, *italic*, _underline_) — Instagram tidak render ini, tulis plain text saja',
     '- Output HANYA caption, tanpa penjelasan atau label tambahan',
-  ].join('\n');
+  ].filter(function(l) { return l !== null && l !== undefined; }).join('\n');
 
   // Loading state
   var area   = document.getElementById('captionArea');
