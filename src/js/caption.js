@@ -429,7 +429,7 @@ function _kabupatenToRegion(kab) {
   if (/sleman|bantul|kulon.?progo|gunungkidul|gunung.?kidul|yogyakarta/.test(k))         return 'jogja';
   if (/surakarta|^solo$|sukoharjo|karanganyar|klaten|wonogiri|boyolali|sragen/.test(k)) return 'solo';
   if (/semarang|kendal|demak|kudus|jepara|pati|rembang|blora|grobogan/.test(k))         return 'semarang';
-  if (/jakarta|tangerang|bekasi|depok|bogor/.test(k))                                    return 'jakarta';
+  if (/jakarta|tangerang|bekasi|depok|bogor|kebayoran|mampang|tebet|setiabudi|pancoran|cilandak|pesanggrahan|pasar minggu|jagakarsa|menteng|gambir|sawah besar|cempaka putih|kemayoran|penjaringan|tanjung priok|kelapa gading|koja|cilincing|grogol|kebon jeruk|palmerah|kembangan|cengkareng|kalideres|tambora|jatinegara|matraman|pulo gadung|duren sawit|kramat jati|pasar rebo|ciracas|cipayung/.test(k)) return 'jakarta';
   if (/bandung|sumedang|garut|tasikmalaya|cianjur|sukabumi|cimahi|majalengka|kuningan|indramayu|subang|purwakarta|karawang|cirebon/.test(k)) return 'bandung';
   if (/surabaya|sidoarjo|gresik|mojokerto|lamongan|tuban|bojonegoro/.test(k))            return 'surabaya';
   if (/malang|pasuruan|probolinggo|lumajang|jember|banyuwangi/.test(k))                  return 'malang';

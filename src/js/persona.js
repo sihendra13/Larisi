@@ -307,35 +307,75 @@ async function startScanWithFile(filename, fileCount) {
 
       /* Jika ada key yang cocok, cek konflik dengan profil bisnis */
       if (filenameKey) {
-        var _bizCat2   = window.userBizProfile && window.userBizProfile.category;
+        var _bizCat2 = window.userBizProfile && window.userBizProfile.category;
+        /* localStorage fallback — fix race condition bila Supabase belum selesai load */
+        if (!_bizCat2) {
+          try {
+            var _cached2 = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+            _bizCat2 = _cached2.category || null;
+          } catch(e) {}
+        }
         if (_bizCat2) {
           var _bizKey2   = (typeof _BIZ_CAT_TO_TILE !== 'undefined') ? (_BIZ_CAT_TO_TILE[_bizCat2] || null) : null;
           var _bizLbl2   = _bizKey2 && personaDB && personaDB[_bizKey2] ? personaDB[_bizKey2].name : (_bizCat2 || 'Konten Umum');
           var _conflict2 = _bizKey2 !== null && _bizKey2 !== filenameKey;
           if (_conflict2) {
             _showVisionConflict(filenameKey, p.name, _bizKey2, _bizLbl2);
-            return; /* Tunggu pilihan user — jangan langsung apply */
+            return;
           }
           if (_bizKey2 === null) {
-            /* Biz kategori terlalu luas (jasa, retail, dll) → catNudge */
+            /* Biz kategori terlalu luas → catNudge */
             showPersonaDirect(p, false);
             masterPersonaLocked = true;
             return;
           }
+          /* Tidak konflik, biz key valid → pakai biz persona */
+          _applyVisionPersona(_bizKey2);
+          return;
         }
       }
-    }
 
-    if (!detected) {
-      /* Vision tidak yakin (manusia, tanaman, general) DAN filename generik
-         → masuk layer 2: cat nudge agar user konfirmasi */
+      /* Bug 1 fix: orphan persona (filenameKey null) atau _bizCat2 masih null setelah fallback
+         → cek profil bisnis sebelum apply persona dari filename */
+      var _bizCatFb = window.userBizProfile && window.userBizProfile.category;
+      if (!_bizCatFb) {
+        try {
+          var _cachedFb = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+          _bizCatFb = _cachedFb.category || null;
+        } catch(e) {}
+      }
+      var _bizKeyFb = _bizCatFb && (typeof _BIZ_CAT_TO_TILE !== 'undefined')
+        ? (_BIZ_CAT_TO_TILE[_bizCatFb] || null) : null;
+      if (_bizKeyFb) {
+        _applyVisionPersona(_bizKeyFb);
+        return;
+      }
+      /* Tidak ada profil bisnis spesifik → catNudge */
       showPersonaDirect(p, false);
       masterPersonaLocked = true;
       return;
     }
 
-    showPersonaDirect(p, detected);
-    masterPersonaLocked = true;
+    if (!detected) {
+      /* Bug 2 fix: filename generik → cek profil bisnis sebelum fallback ke catNudge */
+      var _bizCatGen = window.userBizProfile && window.userBizProfile.category;
+      if (!_bizCatGen) {
+        try {
+          var _cachedGen = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
+          _bizCatGen = _cachedGen.category || null;
+        } catch(e) {}
+      }
+      var _bizKeyGen = _bizCatGen && (typeof _BIZ_CAT_TO_TILE !== 'undefined')
+        ? (_BIZ_CAT_TO_TILE[_bizCatGen] || null) : null;
+      if (_bizKeyGen) {
+        _applyVisionPersona(_bizKeyGen);
+        return;
+      }
+      /* Tidak ada profil bisnis spesifik → catNudge */
+      showPersonaDirect(p, false);
+      masterPersonaLocked = true;
+      return;
+    }
   }
 }
 
