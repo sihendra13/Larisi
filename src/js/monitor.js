@@ -322,7 +322,8 @@ function filterCampaigns(filter, el) {
 }
 
 function getFilteredCampaigns() {
-  if (campaignFilter === 'all') return CAMPAIGNS;
+  // Tab "Semua" → tampil semua KECUALI yang diarsipkan (paused)
+  if (campaignFilter === 'all') return CAMPAIGNS.filter(function(c) { return c.status !== 'paused'; });
   return CAMPAIGNS.filter(function(c) { return c.status === campaignFilter; });
 }
 
