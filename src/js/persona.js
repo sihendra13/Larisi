@@ -366,21 +366,8 @@ async function startScanWithFile(filename, fileCount) {
     }
 
     if (!detected) {
-      /* Bug 2 fix: filename generik → cek profil bisnis sebelum fallback ke catNudge */
-      var _bizCatGen = window.userBizProfile && window.userBizProfile.category;
-      if (!_bizCatGen) {
-        try {
-          var _cachedGen = JSON.parse(localStorage.getItem('radar_user_profile') || '{}');
-          _bizCatGen = _cachedGen.category || null;
-        } catch(e) {}
-      }
-      var _bizKeyGen = _bizCatGen && (typeof _BIZ_CAT_TO_TILE !== 'undefined')
-        ? (_BIZ_CAT_TO_TILE[_bizCatGen] || null) : null;
-      if (_bizKeyGen) {
-        _applyVisionPersona(_bizKeyGen, true /* Opsi B: auto dari biz profile → show Edit */);
-        return;
-      }
-      /* Tidak ada profil bisnis spesifik → catNudge */
+      /* Filename generik + Vision null = SiLaris tidak tahu ini konten apa
+         → tampilkan catNudge, biarkan user pilih persona yang tepat */
       showPersonaDirect(p, false);
       masterPersonaLocked = true;
       return;
