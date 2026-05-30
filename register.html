@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mulai Coba Gratis - Larisi</title>
+    <script>
+      /* Redirect user HP ke mobile app */
+      (function() {
+        var isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) {
+          var plan = new URLSearchParams(window.location.search).get('plan') || '';
+          window.location.replace('https://mobile.larisi.id' + (plan ? '?plan=' + encodeURIComponent(plan) : ''));
+        }
+      })();
+    </script>
     <link rel="stylesheet" href="src/css/auth.css">
     <!-- Load FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
