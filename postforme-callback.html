@@ -86,7 +86,7 @@
               type:       'postforme_oauth_success',
               accountIds: ids.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
               provider:   provider
-            }, window.location.origin);
+            }, '*'); /* '*' agar mobile.larisi.id juga menerima pesan (cross-origin) */
           } catch(e) { /* cross-origin guard */ }
         }
 
@@ -118,7 +118,7 @@
           window.opener.postMessage({
             type:     'postforme_oauth_resync',
             provider: provider
-          }, window.location.origin);
+          }, '*'); /* '*' agar mobile.larisi.id juga menerima pesan */
         } catch(e) {}
 
         document.getElementById('card').innerHTML =
