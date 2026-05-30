@@ -35,18 +35,11 @@
             <span id="plan-badge-text"></span>
         </div>
 
-        <form action="onboarding.html" method="GET">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="firstName">Nama Depan</label>
-                    <input type="text" id="firstName" name="firstName" placeholder="Misal: Budi" required>
-                </div>
-                <div class="form-group">
-                    <label for="lastName">Nama Belakang</label>
-                    <input type="text" id="lastName" name="lastName" placeholder="Misal: Santoso" required>
-                </div>
-            </div>
+        <p style="margin: -4px 0 20px; font-size: 13px; color: var(--secondary); line-height: 1.5;">
+            Daftar sekarang, gratis. Nama dan info bisnis diisi di langkah berikutnya.
+        </p>
 
+        <form action="onboarding.html" method="GET">
             <div class="form-group">
                 <label for="email">Alamat Email</label>
                 <input type="email" id="email" name="email" placeholder="budi@contoh.com" required>
@@ -67,7 +60,7 @@
                 </label>
             </div>
 
-            <button type="submit" id="submitBtn" class="btn btn-primary" disabled>Create Account</button>
+            <button type="submit" id="submitBtn" class="btn btn-primary" disabled>Buat Akun</button>
             
             <div class="login-link">
                 Sudah punya akun? <a href="login.html">Masuk di sini</a>
@@ -139,8 +132,6 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
-            const firstName = document.getElementById('firstName').value;
-            const lastName = document.getElementById('lastName').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
@@ -150,16 +141,12 @@
             // Sign out sesi lama dulu — pastikan register selalu fresh
             try { await window.signOut && getSupabaseClient().auth.signOut(); } catch(e) {}
 
-            const { data, error } = await window.signUp(email, password, {
-                first_name: firstName,
-                last_name: lastName,
-                full_name: `${firstName} ${lastName}`
-            });
+            const { data, error } = await window.signUp(email, password, {});
 
             if (error) {
                 alert('Gagal daftar: ' + error.message);
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Create Account';
+                submitBtn.textContent = 'Buat Akun';
             } else {
                 // Selalu arahkan ke OTP step — biarkan onboarding.html yang handle
                 // (jika Confirm Email OFF di Supabase, onboarding akan detect & skip OTP)
