@@ -2785,18 +2785,18 @@ function _anSmartCalendar(agg) {
 
 /* ─── Milestone Definitions ─── */
 var _AN_MILESTONE_DEFS = [
-  { key: 'first_post',    label: 'Iklan Pertama! 🎉',        check: function(a) { return a.total >= 1; },             val: function(a) { return a.total; } },
-  { key: 'reach_100',     label: '100 Orang Terjangkau! 🎯', check: function(a) { return a.totalReach >= 100; },      val: function(a) { return a.totalReach; } },
-  { key: 'reach_1000',    label: '1.000 Reach Organik! 🚀',  check: function(a) { return a.totalReach >= 1000; },     val: function(a) { return a.totalReach; } },
-  { key: 'first_comment', label: 'Komentar Pertama! 💬',     check: function(a) { return a.bestCamp && ((a.bestCamp._engagement || {}).comments || 0) > 0; }, val: function() { return 1; } },
-  { key: 'er_bagus',      label: 'ER di Atas Rata-rata! ⭐', check: function(a) { return a.avgER != null && a.avgER >= 3; }, val: function(a) { return a.avgER; } },
-  { key: 'total_5',       label: '5 Iklan Selesai! 📱',      check: function(a) { return a.total >= 5; },             val: function(a) { return a.total; } },
-  { key: 'total_10',      label: '10 Iklan! Konsisten! 🔥',  check: function(a) { return a.total >= 10; },            val: function(a) { return a.total; } },
+  { key: 'first_post',    icon: '🎉', label: 'Iklan Pertama',        desc: 'Kamu berhasil buat dan posting iklan pertama lewat Larisi. Perjalanan dimulai dari sini.',           check: function(a) { return a.total >= 1; },             val: function(a) { return a.total; } },
+  { key: 'reach_100',     icon: '🎯', label: '100 Orang Terjangkau', desc: 'Iklan organikmu sudah dilihat lebih dari 100 orang tanpa iklan berbayar. Ini awal yang solid.',       check: function(a) { return a.totalReach >= 100; },      val: function(a) { return a.totalReach; } },
+  { key: 'reach_1000',    icon: '🚀', label: '1.000 Reach Organik',  desc: 'Ribuan orang sudah tahu bisnismu lewat konten organik saja. Saatnya pertimbangkan boost.',           check: function(a) { return a.totalReach >= 1000; },     val: function(a) { return a.totalReach; } },
+  { key: 'first_comment', icon: '💬', label: 'Komentar Pertama',     desc: 'Ada yang meluangkan waktu untuk berkomentar — tanda audiens mulai tertarik dan terlibat.',           check: function(a) { return a.bestCamp && ((a.bestCamp._engagement || {}).comments || 0) > 0; }, val: function() { return 1; } },
+  { key: 'er_bagus',      icon: '⭐', label: 'ER di Atas Rata-rata', desc: 'Engagement rate kamu melampaui rata-rata platform. Artinya kontenmu relevan dan disukai audiens.',   check: function(a) { return a.avgER != null && a.avgER >= 3; }, val: function(a) { return a.avgER; } },
+  { key: 'total_5',       icon: '📱', label: '5 Iklan Berjalan',     desc: '5 iklan sudah tayang — konsistensi mulai terbentuk. Algoritma platform menyukai pebisnis aktif.',   check: function(a) { return a.total >= 5; },             val: function(a) { return a.total; } },
+  { key: 'total_10',      icon: '🔥', label: '10 Iklan Konsisten',   desc: '10 iklan adalah bukti nyata konsistensi. Kamu termasuk pebisnis yang aktif di platform sosial.',     check: function(a) { return a.total >= 10; },            val: function(a) { return a.total; } },
 ];
 
 function _anMilestonesCheck(agg) {
   return _AN_MILESTONE_DEFS.filter(function(m) { return m.check(agg); }).map(function(m) {
-    return { key: m.key, label: m.label, value: m.val(agg) };
+    return { key: m.key, icon: m.icon, label: m.label, desc: m.desc, value: m.val(agg) };
   });
 }
 
@@ -2871,10 +2871,22 @@ function _renderStreakBanner(streak, freq) {
 function _renderMilestoneBanner(newMilestones) {
   if (!newMilestones || !newMilestones.length) return '<div id="an-milestone-wrap"></div>';
   return '<div id="an-milestone-wrap" class="an-milestone-card">' +
-    '<div class="an-milestone-title">🏆 Pencapaian Baru!</div>' +
-    '<div class="an-milestone-items">' +
+    '<div class="an-milestone-header">' +
+      '<span style="font-size:18px;">🏆</span>' +
+      '<div>' +
+        '<div class="an-milestone-title">Pencapaian Baru!</div>' +
+        '<div class="an-milestone-subtitle">Kamu baru saja mencapai ini</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="an-milestone-list">' +
     newMilestones.map(function(m) {
-      return '<div class="an-milestone-item">' + m.label + '</div>';
+      return '<div class="an-milestone-row">' +
+        '<div class="an-milestone-icon">' + (m.icon || '🎯') + '</div>' +
+        '<div class="an-milestone-body">' +
+          '<div class="an-milestone-label">' + m.label + '</div>' +
+          '<div class="an-milestone-desc">' + (m.desc || '') + '</div>' +
+        '</div>' +
+      '</div>';
     }).join('') +
     '</div>' +
   '</div>';
