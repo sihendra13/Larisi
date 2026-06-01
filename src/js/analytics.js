@@ -2852,18 +2852,41 @@ async function _anSyncStrategiesFromDB(userId) {
 
 /* ─── Render: Streak Banner ─── */
 function _renderStreakBanner(streak, freq) {
-  if (!streak || streak.weeks === 0) return '<div id="an-streak-wrap"></div>';
   var freqNote = freq ? ' · ' + freq.perMonth + '/' + freq.ideal + 'x bulan ini' : '';
-  var pct = freq ? Math.min(100, Math.round(freq.perMonth / freq.ideal * 100)) : 0;
-  return '<div id="an-streak-wrap" class="an-streak-banner">' +
-    '<div class="an-streak-left">' +
-      '<span class="an-streak-fire">🔥</span>' +
+
+  var statusHtml;
+  if (streak && streak.weeks > 0 && streak.thisWeek) {
+    statusHtml =
+      '<div class="an-streak-status-row">' +
+        '<span class="an-streak-emoji">🔥</span>' +
+        '<div>' +
+          '<div class="an-streak-status-title">Kamu Aktif ' + streak.weeks + ' minggu berturut-turut!</div>' +
+          '<div class="an-streak-status-sub">Algoritma platform mengenali akunmu yang konsisten, reach organikmu akan lebih terjaga.' + freqNote + '</div>' +
+        '</div>' +
+      '</div>';
+  } else if (streak && streak.weeks > 0 && !streak.thisWeek) {
+    statusHtml =
+      '<div class="an-streak-status-row">' +
+        '<span class="an-streak-emoji">⚠️</span>' +
+        '<div>' +
+          '<div class="an-streak-status-title" style="color:#B45309;">Belum posting minggu ini.</div>' +
+          '<div class="an-streak-status-sub">Posting sekarang agar algoritma terus mengenal kontenmu dan tidak skip akunmu.</div>' +
+        '</div>' +
+      '</div>';
+  } else {
+    statusHtml =
       '<div>' +
-        '<div class="an-streak-title">' + streak.weeks + ' minggu berturut-turut!</div>' +
-        '<div class="an-streak-sub">' + (streak.thisWeek ? '✓ Sudah posting minggu ini' : '⚠ Belum posting minggu ini') + freqNote + '</div>' +
-      '</div>' +
+        '<div class="an-streak-status-sub" style="margin-bottom:10px;">Posting rutin setiap minggu, algoritma akan lebih sering tampilkan iklanmu.</div>' +
+        '<button class="an-streak-cta" onclick="switchMenu(\'command\')">Mulai Sekarang →</button>' +
+      '</div>';
+  }
+
+  return '<div id="an-streak-wrap" class="an-streak-card">' +
+    '<div class="an-streak-highlight">' +
+      'Algoritma Instagram, Facebook, dan TikTok secara aktif memprioritaskan akun yang posting rutin. ' +
+      '<mark class="an-streak-mark">Akun yang konsisten mendapat organic reach lebih tinggi tanpa perlu iklan berbayar.</mark>' +
     '</div>' +
-    (freq ? '<div class="an-streak-bar-wrap"><div class="an-streak-bar-fill" style="width:' + pct + '%"></div></div>' : '') +
+    '<div class="an-streak-body">' + statusHtml + '</div>' +
   '</div>';
 }
 
