@@ -931,7 +931,28 @@ function _renderLocalPulse(agg) {
         '<div class="an-pulse-note">Format dominan dari iklan aktif</div>' +
       '</div>' +
     '</div>' +
-    '</div>' +
+    '</div>';
+
+  // Smart Calendar
+  var calSlots = _anSmartCalendar(agg);
+  if (calSlots.length) {
+    pulseHTML +=
+      '<div class="an-pulse-item">' +
+        '<div class="an-pulse-icon-wrap"><span>📅</span></div>' +
+        '<div><div class="an-pulse-key">Jadwal Posting Minggu Ini</div>' +
+        calSlots.map(function(s) {
+          var pName = (_AN_PLAT[s.platform] || {}).name || s.platform;
+          return '<div style="display:flex;align-items:center;gap:8px;margin-top:5px;">' +
+            '<span style="font-size:12px;font-weight:' + (s.isBest ? '700' : '500') + ';color:var(--near-black);min-width:130px;">' + s.label + '</span>' +
+            '<span style="font-size:11px;background:rgba(121,26,219,0.1);color:#791ADB;padding:2px 8px;border-radius:999px;">' + s.jam + '</span>' +
+            '<span style="font-size:11px;color:var(--secondary);">' + pName + '</span>' +
+          '</div>';
+        }).join('') +
+        '</div>' +
+      '</div>';
+  }
+
+  pulseHTML +=
     '<div class="an-stitch-section">' +
       '<div class="an-stitch-title">Stitching Text Terbaik di Foto</div>' +
       '<div id="an-stitch-previews">' + _buildStitchPreviews(agg) + '</div>' +
@@ -2513,6 +2534,8 @@ function initAnalytics() {
         '</div>' +
       '</div>' +
       _renderStatCardsSkeleton() +
+      '<div id="an-streak-wrap"></div>' +
+      '<div id="an-milestone-wrap"></div>' +
       '<div class="an-two-main-cols">' +
         '<div class="an-col-main">' +
           _renderSilarisNarasi() +
@@ -2545,6 +2568,26 @@ function initAnalytics() {
     _anReplace('an-pulse-wrap',_renderLocalPulse(agg));
     _anReplace('an-plat-wrap', _renderPlatformTerkuat(agg));
     _anRenderSavedStrategies();
+
+    // ── Streak & Posting Frequency ──
+    var streakData = _anStreak(campaigns);
+    var freqData   = _anPostingFreq(agg);
+    _anReplace('an-streak-wrap', _renderStreakBanner(streakData, freqData));
+
+    // ── Milestones: cek baru, simpan ke Supabase ──
+    var allReached = _anMilestonesCheck(agg);
+    _anGetMilestonesDB(userId).then(function(savedRows) {
+      var savedKeys = {};
+      (savedRows || []).forEach(function(r) { savedKeys[r.milestone_key] = true; });
+      var fresh = allReached.filter(function(m) { return !savedKeys[m.key]; });
+      _anReplace('an-milestone-wrap', _renderMilestoneBanner(fresh));
+      if (fresh.length) {
+        fresh.forEach(function(m) { _anSetMilestoneDB(userId, m.key, m.value); });
+      }
+    });
+
+    // ── Sync competitor strategies dari Supabase ──
+    _anSyncStrategiesFromDB(userId);
 
     // Update ER explainer dengan label kualitatif dari agg
     var erExpEl = document.getElementById('an-er-explainer-text');
@@ -2682,6 +2725,159 @@ async function exportPDF() {
     var df = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
     doc.save('radar-analytics-' + df + '.pdf');
   } catch(e) { console.error('[analytics] exportPDF error:', e); }
+}
+
+/* ─── Streak Mingguan ─── */
+function _anStreak(campaigns) {
+  if (!campaigns || !campaigns.length) return { weeks: 0, thisWeek: false };
+  function getWeekStart(d) {
+    var date = new Date(d.getTime());
+    var day = date.getDay();
+    date.setDate(date.getDate() - (day === 0 ? 6 : day - 1));
+    date.setHours(0, 0, 0, 0);
+    return date.getTime();
+  }
+  var weekStarts = {};
+  campaigns.forEach(function(c) {
+    if (!c.created_at) return;
+    var d = new Date(c.created_at);
+    if (!isNaN(d.getTime())) weekStarts[getWeekStart(d)] = true;
+  });
+  var now = new Date();
+  var thisWeekStart = getWeekStart(now);
+  var WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  var thisWeek = !!weekStarts[thisWeekStart];
+  var lastWeek = !!weekStarts[thisWeekStart - WEEK_MS];
+  var streak = 0;
+  var check = thisWeek ? thisWeekStart : (lastWeek ? thisWeekStart - WEEK_MS : null);
+  if (check) { while (weekStarts[check]) { streak++; check -= WEEK_MS; } }
+  return { weeks: streak, thisWeek: thisWeek };
+}
+
+/* ─── Posting Frequency ─── */
+function _anPostingFreq(agg) {
+  var perMonth = agg.countThisMonth || 0;
+  var ideal = { ig: 12, meta: 8, tiktok: 20, youtube: 4 };
+  var topPlat = (agg.platList && agg.platList.length) ? agg.platList[0].key : 'ig';
+  return { perMonth: perMonth, ideal: ideal[topPlat] || 8, platform: topPlat };
+}
+
+/* ─── Smart Calendar ─── */
+function _anSmartCalendar(agg) {
+  var dayNames = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  var bestDayIdx = dayNames.indexOf(agg.bestDay || 'Selasa');
+  var bestHour = agg.bestHour || 19;
+  var topPlat = (agg.platList && agg.platList.length) ? agg.platList[0].key : 'ig';
+  var months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+  var now = new Date();
+  var slots = [];
+  for (var i = 1; i <= 7 && slots.length < 3; i++) {
+    var d = new Date(now); d.setDate(now.getDate() + i);
+    var dayIdx = d.getDay();
+    var isBest = dayIdx === bestDayIdx;
+    var isMid = dayIdx === 3 && bestDayIdx !== 3;
+    if (isBest || isMid || (slots.length === 0 && i === 7)) {
+      slots.push({ label: dayNames[dayIdx] + ', ' + d.getDate() + ' ' + months[d.getMonth()], jam: String(bestHour).padStart(2,'0') + ':00', platform: topPlat, isBest: isBest });
+    }
+  }
+  return slots;
+}
+
+/* ─── Milestone Definitions ─── */
+var _AN_MILESTONE_DEFS = [
+  { key: 'first_post',    label: 'Iklan Pertama! 🎉',        check: function(a) { return a.total >= 1; },             val: function(a) { return a.total; } },
+  { key: 'reach_100',     label: '100 Orang Terjangkau! 🎯', check: function(a) { return a.totalReach >= 100; },      val: function(a) { return a.totalReach; } },
+  { key: 'reach_1000',    label: '1.000 Reach Organik! 🚀',  check: function(a) { return a.totalReach >= 1000; },     val: function(a) { return a.totalReach; } },
+  { key: 'first_comment', label: 'Komentar Pertama! 💬',     check: function(a) { return a.bestCamp && ((a.bestCamp._engagement || {}).comments || 0) > 0; }, val: function() { return 1; } },
+  { key: 'er_bagus',      label: 'ER di Atas Rata-rata! ⭐', check: function(a) { return a.avgER != null && a.avgER >= 3; }, val: function(a) { return a.avgER; } },
+  { key: 'total_5',       label: '5 Iklan Selesai! 📱',      check: function(a) { return a.total >= 5; },             val: function(a) { return a.total; } },
+  { key: 'total_10',      label: '10 Iklan! Konsisten! 🔥',  check: function(a) { return a.total >= 10; },            val: function(a) { return a.total; } },
+];
+
+function _anMilestonesCheck(agg) {
+  return _AN_MILESTONE_DEFS.filter(function(m) { return m.check(agg); }).map(function(m) {
+    return { key: m.key, label: m.label, value: m.val(agg) };
+  });
+}
+
+/* ─── Supabase: Milestones ─── */
+async function _anGetMilestonesDB(userId) {
+  var sb = getSupabaseClient();
+  if (!sb || !userId) return [];
+  try {
+    var res = await sb.from('user_milestones').select('milestone_key').eq('user_id', userId);
+    return res.data || [];
+  } catch(e) { return []; }
+}
+async function _anSetMilestoneDB(userId, key, value) {
+  var sb = getSupabaseClient();
+  if (!sb || !userId) return;
+  try {
+    await sb.from('user_milestones').upsert(
+      { user_id: userId, milestone_key: key, value_at_time: value },
+      { onConflict: 'user_id,milestone_key', ignoreDuplicates: true }
+    );
+  } catch(e) {}
+}
+
+/* ─── Supabase: Competitor Strategies sync ─── */
+async function _anSyncStrategiesFromDB(userId) {
+  var sb = getSupabaseClient();
+  if (!sb || !userId) return;
+  try {
+    var res = await sb.from('competitor_strategies').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+    if (!res.data || !res.data.length) return;
+    var local = _anGetSavedStrategies();
+    var merged = res.data.map(function(s, idx) {
+      var localMatch = local.find(function(l) { return l.handle === s.handle && l.platform === s.platform; });
+      return {
+        id: s.id || (Date.now() + idx),
+        handle: s.handle,
+        platform: s.platform,
+        comp_result: s.comp_result,
+        strategy: localMatch ? localMatch.strategy : null,
+        dateStr: s.created_at ? new Date(s.created_at).toLocaleDateString('id-ID') : '',
+        status: localMatch ? (localMatch.status || 'baru') : 'baru',
+      };
+    });
+    // Tambah item localStorage yang belum ada di DB
+    local.forEach(function(l) {
+      var inDB = merged.some(function(m) { return m.handle === l.handle && m.platform === l.platform; });
+      if (!inDB) merged.push(l);
+    });
+    _anPersistStrategies(merged);
+    _anRenderSavedStrategies();
+  } catch(e) {}
+}
+
+/* ─── Render: Streak Banner ─── */
+function _renderStreakBanner(streak, freq) {
+  if (!streak || streak.weeks === 0) return '<div id="an-streak-wrap"></div>';
+  var freqNote = freq ? ' · ' + freq.perMonth + '/' + freq.ideal + 'x bulan ini' : '';
+  var pct = freq ? Math.min(100, Math.round(freq.perMonth / freq.ideal * 100)) : 0;
+  return '<div id="an-streak-wrap" class="an-streak-banner">' +
+    '<div class="an-streak-left">' +
+      '<span class="an-streak-fire">🔥</span>' +
+      '<div>' +
+        '<div class="an-streak-title">' + streak.weeks + ' minggu berturut-turut!</div>' +
+        '<div class="an-streak-sub">' + (streak.thisWeek ? '✓ Sudah posting minggu ini' : '⚠ Belum posting minggu ini') + freqNote + '</div>' +
+      '</div>' +
+    '</div>' +
+    (freq ? '<div class="an-streak-bar-wrap"><div class="an-streak-bar-fill" style="width:' + pct + '%"></div></div>' : '') +
+  '</div>';
+}
+
+/* ─── Render: Milestone Cards ─── */
+function _renderMilestoneBanner(newMilestones) {
+  if (!newMilestones || !newMilestones.length) return '<div id="an-milestone-wrap"></div>';
+  return '<div id="an-milestone-wrap" class="an-milestone-card">' +
+    '<div class="an-milestone-title">🏆 Pencapaian Baru!</div>' +
+    '<div class="an-milestone-items">' +
+    newMilestones.map(function(m) {
+      return '<div class="an-milestone-item">' + m.label + '</div>';
+    }).join('') +
+    '</div>' +
+  '</div>';
 }
 
 /* ─── Backward Compat ─── */
