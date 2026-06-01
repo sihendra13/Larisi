@@ -2433,12 +2433,12 @@
   overflow: hidden; margin-bottom: 12px;
 }
 .an-streak-highlight {
-  background: #FFFBEB; border-bottom: 1px solid #FDE68A;
+  background: #F0E6FF; border-bottom: 1px solid #D6BCFA;
   padding: 12px 16px; font-size: 13px; font-weight: 700;
-  color: #92400E; line-height: 1.6;
+  color: #5B21B6; line-height: 1.6;
 }
 .an-streak-mark {
-  background: #FDE68A; color: #92400E;
+  background: #D6BCFA; color: #4C1D95;
   padding: 0 3px; border-radius: 3px;
 }
 .an-streak-body { padding: 14px 16px; }
