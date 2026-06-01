@@ -2437,10 +2437,7 @@
   padding: 12px 16px; font-size: 13px; font-weight: 700;
   color: #5B21B6; line-height: 1.6;
 }
-.an-streak-mark {
-  background: #D6BCFA; color: #4C1D95;
-  padding: 0 3px; border-radius: 3px;
-}
+.an-streak-strong { color: #4C1D95; }
 .an-streak-body { padding: 14px 16px; }
 .an-streak-status-row { display: flex; align-items: flex-start; gap: 10px; }
 .an-streak-emoji { font-size: 20px; flex-shrink: 0; line-height: 1.3; }

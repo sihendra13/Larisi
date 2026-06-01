@@ -2884,7 +2884,7 @@ function _renderStreakBanner(streak, freq) {
   return '<div id="an-streak-wrap" class="an-streak-card">' +
     '<div class="an-streak-highlight">' +
       'Algoritma Instagram, Facebook, dan TikTok secara aktif memprioritaskan akun yang posting rutin. ' +
-      '<mark class="an-streak-mark">Akun yang konsisten mendapat organic reach lebih tinggi tanpa perlu iklan berbayar.</mark>' +
+      '<strong class="an-streak-strong">Akun yang konsisten mendapat organic reach lebih tinggi tanpa perlu iklan berbayar.</strong>' +
     '</div>' +
     '<div class="an-streak-body">' + statusHtml + '</div>' +
   '</div>';
