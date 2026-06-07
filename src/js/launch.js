@@ -52,12 +52,6 @@ function showLaunchModal() {
     { ok: hasChannel,  text: chText }
   ];
 
-  if (hasAsset) {
-    checks.push({ ok: noCatNudge, text: 'Konfirmasi kategori usahamu (pilih di panel kiri)' });
-    checks.push({ ok: noConflict, text: 'Konfirmasi kecocokan foto dengan kategori usahamu' });
-    checks.push({ ok: hasCaption, text: 'Tulis atau buat caption iklan' });
-  }
-
   var okSVG   = '<svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var failSVG = '<svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke-linecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke-linecap="round"/></svg>';
 
