@@ -499,6 +499,7 @@ function applyStoryZoom(skipTransition) {
   if (useContainMode) {
     // We are in contain mode (Story, or Video in Reel/Shorts)
     el.style.objectFit = 'contain';
+    el.style.objectPosition = 'center';
     if (blurBg) blurBg.style.display = 'block';
     
     // Gunakan kunci 'master' khusus untuk foto pertama agar sinkronisasi 100% stabil
@@ -556,6 +557,11 @@ function applyStoryZoom(skipTransition) {
   } else {
     // Normal mode (Post / Reel image)
     el.style.objectFit = 'cover';
+    if (el.tagName.toLowerCase() === 'video') {
+      el.style.objectPosition = 'top center';
+    } else {
+      el.style.objectPosition = 'center';
+    }
     if (blurBg) blurBg.style.display = 'none';
     el.style.transition = 'transform 0.2s';
     el.style.transform = 'translate(0px, 0px) scale(1)';
