@@ -427,7 +427,8 @@ function showInPhone(url, isVid, idx) {
     m.style.position = 'relative'; // ensure wrapper boundaries
 
     var onDragStart = function(e) {
-      if (typeof activeFormat === 'undefined' || activeFormat !== 'story') return;
+      var isStoryPlat = (activePlatform === 'ig-story' || activePlatform === 'meta-story');
+      if (!isStoryPlat) return;
       isDraggingMedia = true;
       var clientX = e.touches ? e.touches[0].clientX : e.clientX;
       var clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -443,7 +444,8 @@ function showInPhone(url, isVid, idx) {
 
     var onDragMove = function(e) {
       if (!isDraggingMedia) return;
-      if (typeof activeFormat === 'undefined' || activeFormat !== 'story') return;
+      var isStoryPlat = (activePlatform === 'ig-story' || activePlatform === 'meta-story');
+      if (!isStoryPlat) return;
       e.preventDefault(); // prevent scrolling
       var clientX = e.touches ? e.touches[0].clientX : e.clientX;
       var clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -490,8 +492,8 @@ function applyStoryZoom(skipTransition) {
   if (!el || !currentMediaUrl) return;
 
   var slider = document.getElementById('storyZoomSlider');
-  var isStory = (typeof activeFormat !== 'undefined' && activeFormat === 'story');
-  var isPost = (typeof activeFormat !== 'undefined' && activeFormat === 'post');
+  var isStory = (activePlatform === 'ig-story' || activePlatform === 'meta-story');
+  var isPost = (activePlatform === 'ig-post' || activePlatform === 'ig-feed' || activePlatform === 'meta');
   
   // Reels, TikTok, YouTube Shorts yang berupa video juga harus menggunakan contain + blur background
   var isVideo = el.tagName.toLowerCase() === 'video';
@@ -597,7 +599,7 @@ window.applyStoryZoom = applyStoryZoom;
 function toggleStoryZoomUI() {
   var ui = document.getElementById('storyZoomControl');
   if (!ui) return;
-  var isStory = (typeof activeFormat !== 'undefined' && activeFormat === 'story');
+  var isStory = (activePlatform === 'ig-story' || activePlatform === 'meta-story');
   
   // Hanya tampilkan UI Zoom jika di format Story DAN yang sedang dibuka adalah foto pertama (index 0)
   var isFirst = (currentMediaIndex === 0);
