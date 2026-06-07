@@ -986,7 +986,7 @@ function buildCampaignCard(c) {
       var d = new Date(c.scheduled_at);
       var days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
       var months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-      timeDisplay = 'Jadwal: ' + days[d.getDay()] + ', ' + d.getDate() + ' '
+      timeDisplay = days[d.getDay()] + ', ' + d.getDate() + ' '
         + months[d.getMonth()] + ' ' + d.getFullYear()
         + ' · ' + String(d.getHours()).padStart(2,'0') + '.'
         + String(d.getMinutes()).padStart(2,'0');
