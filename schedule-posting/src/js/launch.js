@@ -220,11 +220,13 @@ function _ensureConfirmModal() {
         <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.05em;">
           Akan Diposting Ke
         </div>
-        <div id="lcmPlatformSummary" style="display:flex;align-items:center;gap:10px;">
-          <!-- Diisi JS -->
-        </div>
-        <div id="lcmFormatSummary" style="font-size:12px;color:#6b7280;">
-          <!-- Format info -->
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div id="lcmPlatformSummary" style="display:flex;align-items:center;">
+            <!-- Diisi JS -->
+          </div>
+          <div id="lcmFormatSummary" style="display:flex;align-items:center;">
+            <!-- Format info -->
+          </div>
         </div>
       </div>
 
@@ -282,7 +284,9 @@ function openLaunchConfirmModal(campName, channel, format) {
   // Platform summary
   var chName  = chLabels[channel]  || channel  || 'Platform';
   var fmtName = fmtLabels[format]  || format   || '';
-  if (channel === 'youtube') fmtName = 'Shorts';
+  if (channel === 'tiktok' || channel === 'youtube') {
+    fmtName = '';
+  }
 
   var summaryEl = document.getElementById('lcmPlatformSummary');
   if (summaryEl) {
@@ -946,7 +950,9 @@ function openScheduleModal() {
   var format = activeFormat;
   var chName  = chLabels[channel]  || channel  || 'Platform';
   var fmtName = fmtLabels[format]  || format   || '';
-  if (channel === 'youtube') fmtName = 'Shorts';
+  if (channel === 'tiktok' || channel === 'youtube') {
+    fmtName = '';
+  }
 
   var summaryEl = document.getElementById('schedPlatformSummary');
   if (summaryEl) {
