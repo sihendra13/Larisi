@@ -734,7 +734,7 @@ function showConnectAccountsFlow() {
     '#pfmModalOverlay .pfm-platform-btn:focus{outline:none!important;background:#efefef!important;}' +
     '#pfmModalOverlay .pfm-platform-btn:active{background:#e5e5e5!important;box-shadow:none!important;}' +
     '</style>' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">' +
     '<div>' +
     '<div style="font-size:16px;font-weight:700;color:#111827;">Hubungkan Akun Sosial</div>' +
     '<div style="font-size:12px;color:#9ca3af;margin-top:2px;">via PostForMe.dev · OAuth aman</div>' +
@@ -742,6 +742,9 @@ function showConnectAccountsFlow() {
     '<button onclick="_closePfmModal()" style="background:none;border:none;cursor:pointer;' +
     'width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;' +
     'color:#9ca3af;font-size:18px;line-height:1;outline:none;">✕</button>' +
+    '</div>' +
+    '<div style="font-size:11px;color:#b45309;background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:10px 12px;margin-bottom:14px;line-height:1.45;">' +
+    '<strong>💡 Tips Facebook/Instagram:</strong> Pastikan Anda mencentang <strong>semua izin halaman (Pages)</strong> saat popup persetujuan Facebook muncul agar postingan berhasil terbit.' +
     '</div>' +
     platforms.map(function(p) {
       var acc    = connectedMap[p.id];
