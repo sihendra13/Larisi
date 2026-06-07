@@ -159,7 +159,7 @@ async function _fetchConnectedAccounts() {
     var changed  = false;
 
     list.forEach(function(a) {
-      var apiPlatform = (a.platform || '').toLowerCase();
+      var apiPlatform = (a.platform || a.provider || '').toLowerCase();
       var apiUsername = a.username || a.handle || a.name || '';
       var apiId       = a.id || '';
 
