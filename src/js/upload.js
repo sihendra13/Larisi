@@ -495,10 +495,9 @@ function applyStoryZoom(skipTransition) {
   var isStory = (activePlatform === 'ig-story' || activePlatform === 'meta-story');
   var isPost = (activePlatform === 'ig-post' || activePlatform === 'ig-feed' || activePlatform === 'meta');
   
-  // Reels, TikTok, YouTube Shorts yang berupa video juga harus menggunakan contain + blur background
-  var isVideo = el.tagName.toLowerCase() === 'video';
+  // Reels, TikTok, YouTube Shorts (baik foto maupun video) juga menggunakan contain + blur background
   var isReelOrShorts = (activePlatform === 'ig-reel' || activePlatform === 'tiktok' || activePlatform === 'youtube' || activePlatform === 'meta-reel');
-  var useContainMode = isStory || (isVideo && isReelOrShorts);
+  var useContainMode = isStory || isReelOrShorts;
 
   var blurBg = document.getElementById('phoneBlurBg');
   var pm = document.getElementById('phoneMedia');
