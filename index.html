@@ -64,6 +64,7 @@
     </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Circular+Std:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <!-- CSS modules -->
   <link rel="stylesheet" href="src/css/tokens.css">
@@ -1578,11 +1579,18 @@
   <!-- ── Agency: Schedule Modal ─────────────────────────────── -->
   <div class="sched-overlay" id="schedOverlay" onclick="if(event.target===this)closeScheduleModal()">
     <div class="sched-card">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">
-        <div class="sched-title" style="margin:0;">Jadwalkan Tayang</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:36px;height:36px;background:#791ADB15;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">
+            <i class="fa-solid fa-calendar-check" style="color:#791ADB;"></i>
+          </div>
+          <div>
+            <div class="sched-title" style="margin:0; font-size:16px; font-weight:700; color:#111;">Jadwalkan Tayang</div>
+            <div style="font-size:11px; color:#6b7280; margin-top:1px;">Atur tanggal & waktu penayangan iklan</div>
+          </div>
+        </div>
         <button onclick="closeScheduleModal()" style="background:none; border:none; cursor:pointer; color:#9ca3af; font-size:20px; line-height:1; padding:4px;">✕</button>
       </div>
-      <div class="sched-sub">Konten akan disiapkan dan ditayangkan otomatis pada waktu yang kamu pilih.</div>
       <div style="display:flex; gap:12px;">
         <div style="flex:1; display:flex; flex-direction:column; gap:2px;">
           <div class="sched-label">Tanggal</div>
@@ -1593,12 +1601,41 @@
           <input type="time" class="sched-input" id="schedTime">
         </div>
       </div>
-      <div class="sched-label">Catatan (opsional)</div>
-      <input type="text" class="sched-input" id="schedNote" placeholder="Contoh: Promo Ramadan...">
-      <div class="sched-actions">
+
+      <!-- Input nama campaign -->
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px;">
+        <label style="font-size:12px;font-weight:600;color:#374151;letter-spacing:0.02em;">
+          Nama Iklan
+        </label>
+        <input id="schedCampName" type="text"
+          style="border:1.5px solid #e5e7eb;border-radius:10px;
+          padding:10px 14px;font-size:14px;font-weight:500;color:#111;
+          font-family:var(--font,sans-serif);outline:none;
+          transition:border-color 0.2s;"
+          onfocus="this.style.borderColor='#791ADB'"
+          onblur="this.style.borderColor='#e5e7eb'"
+          placeholder="Nama iklan..." />
+        <div style="font-size:11px;color:#9ca3af;">Terisi otomatis dari kategori usaha & lokasimu</div>
+      </div>
+
+      <!-- Ringkasan publish -->
+      <div style="background:#f9fafb;border-radius:12px;padding:12px 14px;
+        display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+        <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.05em;">
+          Akan Diposting Ke
+        </div>
+        <div id="schedPlatformSummary" style="display:flex;align-items:center;gap:10px;">
+          <!-- Diisi JS -->
+        </div>
+        <div id="schedFormatSummary" style="font-size:12px;color:#6b7280;">
+          <!-- Format info -->
+        </div>
+      </div>
+
+      <div class="sched-actions" style="margin-top:16px;">
         <button class="sched-cancel" onclick="closeScheduleModal()">Batal</button>
         <button class="sched-confirm" onclick="confirmSchedule()">
-          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:inline;vertical-align:middle;margin-right:4px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <i class="fa-regular fa-calendar-check" style="margin-right:4px;"></i>
           Jadwalkan
         </button>
       </div>

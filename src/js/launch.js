@@ -181,13 +181,14 @@ function _ensureConfirmModal() {
       box-shadow:0 20px 60px rgba(0,0,0,0.2);
       display:flex;flex-direction:column;gap:20px;
     ">
-      <!-- Header -->
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="
           width:40px;height:40px;border-radius:12px;
-          background:#7C3AED;
+          background:#791ADB15;
           display:flex;align-items:center;justify-content:center;
-          font-size:20px;flex-shrink:0;">🚀</div>
+          font-size:16px;flex-shrink:0;color:#791ADB;">
+          <i class="fa-solid fa-rocket"></i>
+        </div>
         <div>
           <div style="font-size:16px;font-weight:700;color:#111;">Konfirmasi</div>
           <div style="font-size:12px;color:#6b7280;margin-top:1px;">Cek dulu sebelum tayang</div>
@@ -267,7 +268,12 @@ function openLaunchConfirmModal(campName, channel, format) {
   var chLabels  = { instagram: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
   var fmtLabels = { post: 'Post', reel: 'Reel', story: 'Story' };
   var chColors  = { instagram: '#e1306c', meta: '#1877f2', tiktok: '#010101', youtube: '#ff0000' };
-  var chIcons   = { instagram: '📸', meta: '📘', tiktok: '🎵', youtube: '▶️' };
+  var chIcons   = {
+    instagram: '<i class="fa-brands fa-instagram" style="font-size:16px;"></i>',
+    meta:      '<i class="fa-brands fa-facebook" style="font-size:16px;"></i>',
+    tiktok:    '<i class="fa-brands fa-tiktok" style="font-size:16px;"></i>',
+    youtube:   '<i class="fa-brands fa-youtube" style="font-size:16px;"></i>'
+  };
 
   // Pre-fill nama campaign
   var input = document.getElementById('lcmCampName');
@@ -281,14 +287,14 @@ function openLaunchConfirmModal(campName, channel, format) {
   var summaryEl = document.getElementById('lcmPlatformSummary');
   if (summaryEl) {
     var color = chColors[channel] || '#791ADB';
-    var icon  = chIcons[channel]  || '📡';
+    var icon  = chIcons[channel]  || '<i class="fa-solid fa-share-nodes" style="font-size:16px;"></i>';
     summaryEl.innerHTML =
       '<div style="' +
         'background:' + color + '15;border:1.5px solid ' + color + '40;' +
         'border-radius:10px;padding:8px 14px;' +
         'display:flex;align-items:center;gap:8px;' +
       '">' +
-        '<span style="font-size:18px;">' + icon + '</span>' +
+        '<span style="display:flex;align-items:center;color:' + color + ';">' + icon + '</span>' +
         '<span style="font-size:13px;font-weight:700;color:' + color + ';">' + chName + '</span>' +
       '</div>';
   }
@@ -297,10 +303,10 @@ function openLaunchConfirmModal(campName, channel, format) {
   if (fmtEl) {
     fmtEl.innerHTML = fmtName
       ? '<span style="' +
-          'display:inline-flex;align-items:center;gap:4px;' +
+          'display:inline-flex;align-items:center;gap:6px;' +
           'background:#791ADB15;color:#791ADB;' +
           'border-radius:6px;padding:3px 10px;font-size:12px;font-weight:600;' +
-        '">📐 Format: ' + fmtName + '</span>'
+        '"><i class="fa-regular fa-image"></i> Format: ' + fmtName + '</span>'
       : '';
   }
 
@@ -913,7 +919,61 @@ function openScheduleModal() {
                         
   document.getElementById('schedDate').value = defaultDate;
   document.getElementById('schedTime').value = defaultTime;
-  document.getElementById('schedNote').value = '';
+
+  // Pre-fill nama campaign
+  var personaEl = document.getElementById('personaName');
+  var locEl     = document.querySelector('.popup-loc');
+  var personaName = personaEl ? personaEl.textContent.trim() : 'Iklan Baru';
+  var locFull     = locEl ? locEl.textContent.trim() : '';
+  var locShort    = locFull ? locFull.split(',')[0].trim() : '';
+  var campName    = personaName + (locShort ? ' · ' + locShort : '');
+
+  var input = document.getElementById('schedCampName');
+  if (input) input.value = campName;
+
+  // Platform & Format Summary
+  var chLabels  = { instagram: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
+  var fmtLabels = { post: 'Post', reel: 'Reel', story: 'Story' };
+  var chColors  = { instagram: '#e1306c', meta: '#1877f2', tiktok: '#010101', youtube: '#ff0000' };
+  var chIcons   = {
+    instagram: '<i class="fa-brands fa-instagram" style="font-size:16px;"></i>',
+    meta:      '<i class="fa-brands fa-facebook" style="font-size:16px;"></i>',
+    tiktok:    '<i class="fa-brands fa-tiktok" style="font-size:16px;"></i>',
+    youtube:   '<i class="fa-brands fa-youtube" style="font-size:16px;"></i>'
+  };
+
+  var channel = activeChannel;
+  var format = activeFormat;
+  var chName  = chLabels[channel]  || channel  || 'Platform';
+  var fmtName = fmtLabels[format]  || format   || '';
+  if (channel === 'youtube') fmtName = 'Shorts';
+
+  var summaryEl = document.getElementById('schedPlatformSummary');
+  if (summaryEl) {
+    var color = chColors[channel] || '#791ADB';
+    var icon  = chIcons[channel]  || '<i class="fa-solid fa-share-nodes" style="font-size:16px;"></i>';
+    summaryEl.innerHTML =
+      '<div style="' +
+        'background:' + color + '15;border:1.5px solid ' + color + '40;' +
+        'border-radius:10px;padding:8px 14px;' +
+        'display:flex;align-items:center;gap:8px;' +
+      '">' +
+        '<span style="display:flex;align-items:center;color:' + color + ';">' + icon + '</span>' +
+        '<span style="font-size:13px;font-weight:700;color:' + color + ';">' + chName + '</span>' +
+      '</div>';
+  }
+
+  var fmtEl = document.getElementById('schedFormatSummary');
+  if (fmtEl) {
+    fmtEl.innerHTML = fmtName
+      ? '<span style="' +
+          'display:inline-flex;align-items:center;gap:6px;' +
+          'background:#791ADB15;color:#791ADB;' +
+          'border-radius:6px;padding:3px 10px;font-size:12px;font-weight:600;' +
+        '"><i class="fa-regular fa-image"></i> Format: ' + fmtName + '</span>'
+      : '';
+  }
+
   document.getElementById('schedOverlay').classList.add('open');
 }
 
@@ -996,13 +1056,17 @@ function confirmSchedule() {
     return;
   }
 
-  // ── Build nama campaign pre-filled ──
-  var personaEl = document.getElementById('personaName');
-  var locEl     = document.querySelector('.popup-loc');
-  var personaName = personaEl ? personaEl.textContent.trim() : 'Iklan Baru';
-  var locFull     = locEl ? locEl.textContent.trim() : '';
-  var locShort    = locFull ? locFull.split(',')[0].trim() : '';
-  var campName    = personaName + (locShort ? ' · ' + locShort : '');
+  // ── Build nama campaign pre-filled / input ──
+  var input = document.getElementById('schedCampName');
+  var campName = input ? input.value.trim() : '';
+  if (!campName) {
+    var personaEl = document.getElementById('personaName');
+    var locEl     = document.querySelector('.popup-loc');
+    var personaName = personaEl ? personaEl.textContent.trim() : 'Iklan Baru';
+    var locFull     = locEl ? locEl.textContent.trim() : '';
+    var locShort    = locFull ? locFull.split(',')[0].trim() : '';
+    campName = personaName + (locShort ? ' · ' + locShort : '');
+  }
 
   // ── Cek akun sosial ──
   var _platformConnected = typeof isPlatformAccountConnected === 'function'
