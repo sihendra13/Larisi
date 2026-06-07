@@ -55,11 +55,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--white);
-  color: var(--rausch);
-  border: 1.5px solid var(--rausch);
+  background: var(--near-black);
+  color: #fff;
+  border: none;
   border-radius: var(--radius-btn);
-  padding: 11px 24px;
+  padding: 12px 28px;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -70,7 +70,7 @@
 }
 .schedule-btn:hover {
   background: var(--rausch);
-  color: var(--white);
+  color: #fff;
   box-shadow: var(--shadow-hover);
 }
 .schedule-btn svg {
