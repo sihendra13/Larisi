@@ -478,21 +478,26 @@ function showInPhone(url, isVid, idx) {
 }
 
 function applyFilters() {
-  var el = document.querySelector('#phoneMedia img, #phoneMedia video');
+  var el = document.querySelector('#phoneMedia img, #phoneMedia video:not(#phoneBlurBg)');
   if (el) el.style.filter = 'brightness('+brightnessVal+'%) contrast('+contrastVal+'%)';
 }
 
 function applyStoryZoom(skipTransition) {
-  var el = document.querySelector('#phoneMedia img, #phoneMedia video');
+  var el = document.querySelector('#phoneMedia img, #phoneMedia video:not(#phoneBlurBg)');
   if (!el || !currentMediaUrl) return;
 
   var slider = document.getElementById('storyZoomSlider');
   var isStory = (typeof activeFormat !== 'undefined' && activeFormat === 'story');
+  
+  // Reels, TikTok, YouTube Shorts yang berupa video juga harus menggunakan contain + blur background
+  var isVideo = el.tagName.toLowerCase() === 'video';
+  var isReelOrShorts = (activePlatform === 'ig-reel' || activePlatform === 'tiktok' || activePlatform === 'youtube' || activePlatform === 'meta-reel');
+  var useContainMode = isStory || (isVideo && isReelOrShorts);
 
   var blurBg = document.getElementById('phoneBlurBg');
 
-  if (isStory) {
-    // We are in story mode
+  if (useContainMode) {
+    // We are in contain mode (Story, or Video in Reel/Shorts)
     el.style.objectFit = 'contain';
     if (blurBg) blurBg.style.display = 'block';
     
@@ -549,7 +554,7 @@ function applyStoryZoom(skipTransition) {
     if (slider) slider.value = st.z;
 
   } else {
-    // Normal mode (Post / Reel)
+    // Normal mode (Post / Reel image)
     el.style.objectFit = 'cover';
     if (blurBg) blurBg.style.display = 'none';
     el.style.transition = 'transform 0.2s';
