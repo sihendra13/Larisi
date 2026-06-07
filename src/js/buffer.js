@@ -672,14 +672,14 @@ function showManageChannelsModal() {
       var label = platLabel[acc.platform] || acc.platform;
       return '<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;' +
         'margin-bottom:10px;border:1.5px solid #e5e7eb;border-radius:12px;' +
-        'background:#f9fafb;">' +
+        'background:#f9fafb;min-width:0;">' +
         '<div style="width:40px;height:40px;border-radius:10px;background:' +
           (acc.platform === 'tiktok' ? '#f0f0f0' : color + '18') +
           ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
           logo + '</div>' +
-        '<div style="flex:1;">' +
-          '<div style="font-size:14px;font-weight:600;color:#111827;">' + label + '</div>' +
-          '<div style="font-size:12px;color:#6b7280;">@' + (acc.username || acc.id) + '</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:14px;font-weight:600;color:#111827;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;">' + label + '</div>' +
+          '<div style="font-size:12px;color:#6b7280;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;" title="@' + (acc.username || acc.id) + '">@' + (acc.username || acc.id) + '</div>' +
         '</div>' +
         '<button onclick="_disconnectAccount(\'' + acc.platform + '\')" ' +
           'style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;' +
@@ -769,7 +769,9 @@ function showConnectAccountsFlow() {
         '<span style="flex:1;font-size:14px;font-weight:600;color:#111827;text-align:left;">' + p.label + '</span>' +
         '<span style="font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;' +
         'background:' + (isConn ? '#f3f4f6' : '#f0f0f0') + ';' +
-        'color:' + (isConn ? '#374151' : '#6b7280') + ';">' + badge + '</span>' +
+        'color:' + (isConn ? '#374151' : '#6b7280') + ';' +
+        (isConn ? 'max-width:120px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;display:inline-block;' : '') +
+        '" title="' + (isConn ? badge : '') + '">' + badge + '</span>' +
         '</button>';
     }).join('');
 
