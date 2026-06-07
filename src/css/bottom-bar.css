@@ -55,22 +55,23 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--near-black);
-  color: #fff;
-  border: none;
+  background: var(--white);
+  color: var(--near-black);
+  border: 1.5px solid var(--near-black);
   border-radius: var(--radius-btn);
-  padding: 12px 28px;
+  padding: 11px 24px;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   font-family: var(--font);
-  transition: background .15s, color .15s, box-shadow .15s;
+  transition: background .15s, color .15s, border-color .15s, box-shadow .15s;
   letter-spacing: -0.18px;
   white-space: nowrap;
 }
 .schedule-btn:hover {
   background: var(--rausch);
   color: #fff;
+  border-color: var(--rausch);
   box-shadow: var(--shadow-hover);
 }
 .schedule-btn svg {
