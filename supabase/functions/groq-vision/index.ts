@@ -10,6 +10,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const allowedOrigins = [
   "http://localhost:8080",
   "http://localhost:3000",
+  "http://localhost:8000",
   "https://larisi.vercel.app",
   "https://app.larisi.id",
 ];
