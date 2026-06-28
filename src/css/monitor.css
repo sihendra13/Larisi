@@ -315,3 +315,16 @@
   opacity: 1;
   transform: translateY(0);
 }
+
+/* === Desktop Thumbnail Override === */
+/* Menggunakan 1:1 Aspect Ratio khusus untuk Desktop agar proporsional */
+@media (min-width: 768px) {
+  .cc-thumbnail-container {
+    height: auto !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+  .cc-thumbnail-img {
+    object-fit: contain !important;
+    object-position: center !important;
+  }
+}
