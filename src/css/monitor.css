@@ -317,10 +317,11 @@
 }
 
 /* === Desktop Thumbnail Override === */
-/* Memenuhi kotak dengan object-fit: cover dan posisi center agar rapi */
+/* Pakai aspect-ratio agar proporsional di semua ukuran card */
 @media (min-width: 768px) {
   .cc-thumbnail-container {
-    height: 240px !important;
+    height: auto !important;
+    aspect-ratio: 1/1;
     position: relative !important;
     background: #f3f4f6 !important;
     display: block !important;
