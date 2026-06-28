@@ -1226,7 +1226,7 @@
       
       <div style="font-size:40px; margin-bottom:12px;">⏰</div>
       <h2 id="trial-modal-title" style="font-size:22px; font-weight:700; color:#1a1a1a; margin:0 0 8px;">Masa trial kamu sudah selesai!</h2>
-      <p id="trial-modal-desc" style="font-size:14px; color:#666; margin:0 0 8px;">30 hari gratis telah berakhir. Pilih langkah berikutnya:</p>
+      <p id="trial-modal-desc" style="font-size:14px; color:#666; margin:0 0 8px;">Masa gratis Anda telah berakhir. Pilih langkah berikutnya:</p>
       <div id="trial-modal-plan" style="display:inline-block; background:#f4f0ff; color:#5b17b7; font-size:12px; font-weight:600; padding:4px 12px; border-radius:20px; margin-bottom:24px;"></div>
 
       <div style="display:flex; flex-direction:column; gap:12px;">
@@ -1261,18 +1261,19 @@
       if (!trialStart) return; // Tidak ada trial_start di DB → skip
 
       const now      = new Date();
+      const trialDays = profile.trial_days || 30;
       const diffDays = Math.floor((now - new Date(trialStart)) / 86400000);
-      const remaining = 30 - diffDays;
+      const remaining = trialDays - diffDays;
 
       // Sync localStorage agar konsisten
       localStorage.setItem('larisi_trial_start', trialStart);
       localStorage.setItem('larisi_selected_plan', plan);
 
-      if (diffDays >= 30) {
+      if (diffDays >= trialDays) {
         // Trial benar-benar habis → tampilkan modal
         const modal = document.getElementById('trial-modal');
         const planBadge = document.getElementById('trial-modal-plan');
-        planBadge.textContent = 'Paket ' + plan.charAt(0).toUpperCase() + plan.slice(1) + ' — trial 30 hari berakhir';
+        planBadge.textContent = 'Paket ' + plan.charAt(0).toUpperCase() + plan.slice(1) + ' — trial ' + trialDays + ' hari berakhir';
         if (plan === 'starter') {
           document.getElementById('trial-btn-starter').style.display = 'block';
           document.querySelector('#trial-modal button[onclick="choosePlan(\'pro\')"]').style.display = 'none';
@@ -1303,6 +1304,7 @@
       const paymentStatus = (profile.payment_status || 'trial').toLowerCase();
       
       const now = new Date();
+      const trialDays = profile.trial_days || 30;
       const start = profile.trial_start ? new Date(profile.trial_start) : new Date(profile.created_at);
       const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
       
@@ -1338,11 +1340,11 @@
         }
         if (btnFree) btnFree.textContent = 'Lanjut ke Freemium (Gratis Selamanya)';
       }
-      // --- SKENARIO 2: TRIAL EXPIRED (7 HARI) ---
-      else if (paymentStatus === 'trial' && diffDays >= 30) {
+      // --- SKENARIO 2: TRIAL EXPIRED ---
+      else if (paymentStatus === 'trial' && diffDays >= trialDays) {
         _scenarioMatched = true;
         titleEl.textContent = "Masa Trial Selesai!";
-        descEl.textContent = "30 hari gratis Anda telah berakhir. Pilih paket untuk mulai berlangganan:";
+        descEl.textContent = trialDays + " hari gratis Anda telah berakhir. Pilih paket untuk mulai berlangganan:";
 
         if (btnPro) btnPro.textContent = 'Mulai Berlangganan Pro — Rp 199rb/bln';
         if (btnStarter) btnStarter.textContent = 'Mulai Berlangganan Starter — Rp 99rb/bln';
@@ -1437,12 +1439,13 @@
         const closeBtn = banner ? banner.querySelector('.qb-close') : null;
         if (!banner || !textEl) return;
 
-        // Hitung sisa hari trial (30 hari dari created_at)
+        // Hitung sisa hari trial dinamis
         let remainingDays = 99;
+        const trialDays = profile.trial_days || 30;
         if (profile.created_at) {
           const startDate = new Date(profile.created_at);
           const diffDays = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
-          remainingDays = 7 - diffDays;
+          remainingDays = trialDays - diffDays;
         }
 
         // Hitung masa aktif (30 hari) untuk paid status
