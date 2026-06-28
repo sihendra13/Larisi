@@ -464,7 +464,7 @@ function _createThumbDataUrl(dataUrl) {
     var img = new Image();
     img.onload = function() {
       try {
-        var maxW   = 600;
+        var maxW   = 720;
         var ratio  = maxW / img.naturalWidth;
         var targetW = maxW;
         var targetH = Math.round(img.naturalHeight * ratio);
@@ -503,12 +503,14 @@ function captureVideoFrame(videoFile) {
     video.addEventListener('seeked', function() {
       try {
         var canvas = document.createElement('canvas');
-        canvas.width  = 480;
-        canvas.height = 270;
+        var maxW = 720;
+        var scale = Math.min(maxW / video.videoWidth, 1);
+        canvas.width  = Math.round(video.videoWidth * scale);
+        canvas.height = Math.round(video.videoHeight * scale);
         var ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         URL.revokeObjectURL(url);
-        var dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
         console.log('[launch] captureVideoFrame success, size:', dataUrl.length);
         resolve(dataUrl);
       } catch(e) {
