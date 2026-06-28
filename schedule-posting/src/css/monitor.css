@@ -317,19 +317,21 @@
 }
 
 /* === Desktop Thumbnail Override === */
-/* Menggunakan tinggi awal agar tidak terlalu besar, tapi gambar tetap proporsional (contain) */
+/* Menggunakan tinggi awal 240px dengan position absolute agar ukuran presisi dan bebas distorsi */
 @media (min-width: 768px) {
   .cc-thumbnail-container {
     height: 240px !important;
-    aspect-ratio: auto !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
+    width: 100% !important;
+    position: relative !important;
+    background: #f3f4f6 !important;
+    display: block !important;
   }
   .cc-thumbnail-img {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
     height: 100% !important;
-    width: auto !important;
-    max-width: 100% !important;
     object-fit: contain !important;
     object-position: center !important;
   }
