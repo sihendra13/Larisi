@@ -321,7 +321,7 @@
 @media (min-width: 768px) {
   .cc-thumbnail-container {
     height: auto !important;
-    aspect-ratio: 1/1;
+    aspect-ratio: 4/5;
     position: relative !important;
     background: #f3f4f6 !important;
     display: block !important;
