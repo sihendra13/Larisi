@@ -696,6 +696,7 @@ async function fetchAndUpdatePostUrl(campaign, _attempt) {
     if (msg.indexOf('401') !== -1) {
       console.warn('[monitor] 401 dari social-posts (silent) — post lama, tidak perlu reconnect');
       campaign._postUrlError = true;
+      if (!campaign.thumbUrl) _tryFeedThumb(campaign);
       return;
     }
 
@@ -1232,6 +1233,45 @@ function _engRowNA(label, elId, tooltip) {
     +   '</svg>'
     + '</span>'
     + '</div>';
+}
+
+/* ─── Fallback: ambil thumbnail dari feed jika social-posts 401 ─── */
+async function _tryFeedThumb(campaign) {
+  try {
+    var accounts = typeof _getStoredAccounts === 'function' ? _getStoredAccounts() : [];
+    var platApiMap = { ig:'instagram', meta:'facebook', tiktok:'tiktok', youtube:'youtube' };
+    var plat = (campaign.platforms || [])[0];
+    var sp = platApiMap[plat] || plat;
+    var acc = null;
+    for (var j = 0; j < accounts.length; j++) {
+      if (accounts[j].platform === sp) { acc = accounts[j]; break; }
+    }
+    if (!acc || !acc.id) return;
+    var feedKey = acc.id;
+    var posts = _analyticsCache[feedKey] || [];
+    if (!posts.length) {
+      var data = await _pfmProxy('/v1/social-account-feeds/' + acc.id + '?limit=50', 'GET', null);
+      posts = (data && (data.posts || data.data || data.items || data.feeds || data.results || data.feed)) || (Array.isArray(data) ? data : []);
+    }
+    for (var k = 0; k < posts.length; k++) {
+      var p = posts[k];
+      if (campaign.platform_post_id && p.platform_post_id === campaign.platform_post_id) {
+        var url = (p.media && p.media.length) ? p.media[0].url : null;
+        if (url) {
+          campaign.thumbUrl = url;
+          if (typeof updateCampaignThumbUrl === 'function' && campaign.supabase_id) {
+            updateCampaignThumbUrl(campaign.supabase_id, url);
+          }
+          localStorage.setItem('radar_thumb_' + campaign.id, url);
+          var el = document.querySelector('[data-id="' + campaign.id + '"] .cc-thumbnail-container');
+          if (el) {
+            el.innerHTML = '<img src="' + url + '" class="cc-thumbnail-img" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentNode.innerHTML=\'<span style=\\\'color:#9ca3af;font-size:12px;\\\'>Foto tidak tersedia</span>\'">';
+          }
+        }
+        break;
+      }
+    }
+  } catch(e) { console.warn('[monitor] _tryFeedThumb error:', e.message); }
 }
 
 /* ─── Load Analytics for Card ─── */
