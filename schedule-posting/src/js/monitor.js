@@ -1051,8 +1051,8 @@ function buildCampaignCard(c) {
     + (fmt === 'reel' ? '▶ REEL' : '▶ VIDEO') + '</span></div>'
     + '</div>';
   var thumbHTML = !_thumb
-    ? '<div class="cc-thumbnail-container" style="margin:0 12px 8px;'
-    +   'border-radius:8px;display:flex;align-items:center;justify-content:center;">'
+    ? '<div class="cc-thumbnail-container cc-no-thumb" style="margin:0 12px 8px;'
+    +   'border-radius:8px;align-items:center;justify-content:center;">'
     +   '<span style="color:#9ca3af;font-size:12px;text-align:center;">Foto tidak tersedia</span>'
     + '</div>'
     : _isVideoPlaceholder

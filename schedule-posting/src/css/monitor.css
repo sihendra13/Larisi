@@ -328,8 +328,11 @@
     display: block !important;
     overflow: hidden;
   }
-  .cc-thumbnail-container.cc-video-placeholder {
+  .cc-thumbnail-container.cc-video-placeholder,
+  .cc-thumbnail-container.cc-no-thumb {
     display: flex !important;
+  }
+  .cc-thumbnail-container.cc-video-placeholder {
     background: linear-gradient(135deg,#1a1a2e 0%,#2d1b69 100%) !important;
   }
   .cc-thumbnail-img {
