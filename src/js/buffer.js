@@ -1524,6 +1524,20 @@ async function publishViaPostForMe(canvas, campaignData) {
             var resolvedPlatformPostId = platformPostId
               || (statusData.social_accounts && statusData.social_accounts[0] && statusData.social_accounts[0].platform_post_id)
               || null;
+            // Fallback: cek social-post-results untuk platform_data.id
+            if (!resolvedPlatformPostId && (statusData.status === 'processed' || statusData.status === 'published')) {
+              try {
+                var _prData = await _pfmProxy('/v1/social-post-results?post_id=' + postId, 'GET', null);
+                var _prItems = _prData && _prData.data ? _prData.data : (Array.isArray(_prData) ? _prData : []);
+                if (_prItems.length && _prItems[0].platform_data && _prItems[0].platform_data.id) {
+                  resolvedPlatformPostId = _prItems[0].platform_data.id;
+                  console.log('[postforme] platform_post_id from post-results:', resolvedPlatformPostId);
+                }
+                if (!resolvedUrl && _prItems.length && _prItems[0].platform_data && _prItems[0].platform_data.url) {
+                  resolvedUrl = _prItems[0].platform_data.url;
+                }
+              } catch(_prE) { console.warn('[postforme] post-results fallback error:', _prE.message); }
+            }
             if (resolvedUrl || resolvedPlatformPostId) {
               console.log('[postforme] ✅ resolved — post_url:', resolvedUrl, '| platform_post_id:', resolvedPlatformPostId);
 
