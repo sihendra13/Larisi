@@ -762,18 +762,21 @@ async function _doLaunch(campNameOverride) {
       newCamp.supabase_id      = saveResult.id;
       campaignData.supabase_id = saveResult.id;
       console.log('[launch] supabase_id ready:', saveResult.id);
-      // Upload thumbnail ke Supabase Storage → URL permanen, tidak expire
+      // Lapis 1: Upload compressed thumbnail ke Supabase Storage
       if (compressedThumb && typeof uploadThumbToStorage === 'function') {
         uploadThumbToStorage(saveResult.id, compressedThumb).then(function(storageUrl) {
           if (storageUrl) {
             newCamp.thumbUrl = storageUrl;
             updateCampaignThumbUrl(saveResult.id, storageUrl);
-            try { localStorage.setItem('radar_thumb_' + saveResult.id, storageUrl); } catch(e) {}
-          } else {
-            // Fallback: simpan base64 ke localStorage kalau Storage gagal
-            try { localStorage.setItem('radar_thumb_' + saveResult.id, compressedThumb); } catch(e) {}
+            newCamp._thumbPermanent = true;
+            console.log('[launch] ✅ Lapis 1: thumbnail → Supabase Storage');
           }
         });
+      }
+      // Lapis 2+3: Kalau compress gagal, ambil dari PostForMe setelah publish → upload ke Storage
+      if (!compressedThumb) {
+        newCamp._pendingThumbUpload = saveResult.id;
+        console.log('[launch] ⚠ compressedThumb null, akan fallback ke PostForMe setelah publish');
       }
     }
 

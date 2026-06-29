@@ -896,6 +896,80 @@ async function _confirmDisconnect(platform, accId) {
   if (typeof showAnToast === 'function') showAnToast('Akun ' + platform + ' dilepas', 'success');
 }
 
+/* ─── Lapis 2+3: Fetch media dari PostForMe → compress → upload ke Supabase Storage ─── */
+async function _fetchAndUploadThumb(campaign, supabaseId, mediaUrl) {
+  try {
+    var resp = await fetch(mediaUrl);
+    if (!resp.ok) return;
+    var contentType = resp.headers.get('content-type') || '';
+    var blob = await resp.blob();
+    var dataUrl = null;
+
+    if (contentType.startsWith('image/')) {
+      dataUrl = await new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onloadend = function() { resolve(reader.result); };
+        reader.onerror = function() { resolve(null); };
+        reader.readAsDataURL(blob);
+      });
+    } else if (contentType.startsWith('video/')) {
+      dataUrl = await new Promise(function(resolve) {
+        var video = document.createElement('video');
+        video.preload = 'metadata';
+        video.muted = true;
+        video.src = URL.createObjectURL(blob);
+        video.addEventListener('loadeddata', function() {
+          video.currentTime = Math.min(0.5, video.duration || 0.5);
+        });
+        video.addEventListener('seeked', function() {
+          try {
+            var canvas = document.createElement('canvas');
+            var maxW = 720;
+            var scale = Math.min(maxW / video.videoWidth, 1);
+            canvas.width = Math.round(video.videoWidth * scale);
+            canvas.height = Math.round(video.videoHeight * scale);
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            URL.revokeObjectURL(video.src);
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+          } catch(e) { resolve(null); }
+        });
+        video.addEventListener('error', function() { resolve(null); });
+      });
+    }
+
+    if (!dataUrl || !dataUrl.startsWith('data:image')) {
+      if (typeof updateCampaignThumbUrl === 'function') updateCampaignThumbUrl(supabaseId, mediaUrl);
+      campaign.thumbUrl = mediaUrl;
+      console.log('[buffer] Lapis 2: thumbnail → PostForMe URL (Storage gagal)');
+      return;
+    }
+
+    if (typeof uploadThumbToStorage === 'function') {
+      var storageUrl = await uploadThumbToStorage(supabaseId, dataUrl);
+      if (storageUrl) {
+        campaign.thumbUrl = storageUrl;
+        campaign._thumbPermanent = true;
+        if (typeof updateCampaignThumbUrl === 'function') updateCampaignThumbUrl(supabaseId, storageUrl);
+        console.log('[buffer] ✅ Lapis 3: thumbnail → Supabase Storage permanen');
+        var el = document.querySelector('[data-id="' + campaign.id + '"] .cc-thumbnail-container');
+        if (el) {
+          el.innerHTML = '<img src="' + storageUrl + '" class="cc-thumbnail-img" style="width:100%;height:100%;object-fit:cover;object-position:center;">';
+        }
+        return;
+      }
+    }
+    if (typeof updateCampaignThumbUrl === 'function') updateCampaignThumbUrl(supabaseId, mediaUrl);
+    campaign.thumbUrl = mediaUrl;
+    console.log('[buffer] Lapis 2: thumbnail → PostForMe URL (fallback)');
+  } catch(e) {
+    console.warn('[buffer] _fetchAndUploadThumb error:', e.message);
+    if (mediaUrl && typeof updateCampaignThumbUrl === 'function') {
+      updateCampaignThumbUrl(supabaseId, mediaUrl);
+      campaign.thumbUrl = mediaUrl;
+    }
+  }
+}
+
 /* ─── Geo-Stitch Canvas Compositing ───────────────────────── */
 
 // Helper: draw rounded rect path
@@ -1603,11 +1677,19 @@ async function publishViaPostForMe(canvas, campaignData) {
                   }
 
                   // Re-trigger analytics setelah platform_post_id di-set
-                  // Ini akan fetch dengan exact filter → engagement real + timestamp link
                   if (_platPostIdUpdated && typeof _loadAnalyticsForCard === 'function') {
                     (function(camp) {
                       setTimeout(function() { _loadAnalyticsForCard(camp); }, 800);
                     })(c);
+                  }
+
+                  // Lapis 2+3: Upload thumbnail dari PostForMe ke Supabase Storage
+                  if (c._pendingThumbUpload && !c._thumbPermanent && statusData.media && statusData.media.length) {
+                    (function(_c, _sid, _media) {
+                      var _mUrl = _media[0].url || _media[0].media_url || null;
+                      if (!_mUrl) return;
+                      _fetchAndUploadThumb(_c, _sid, _mUrl);
+                    })(c, c._pendingThumbUpload, statusData.media);
                   }
                 });
               }
