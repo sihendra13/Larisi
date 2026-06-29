@@ -684,7 +684,7 @@ async function fetchAndUpdatePostUrl(campaign, _attempt) {
       if (card) {
         var imgWrapper = card.querySelector('.cc-thumbnail-container') || card.querySelector('.cc-media');
         if (imgWrapper) {
-          imgWrapper.innerHTML = '<img src="' + mediaUrl + '" class="cc-thumbnail-img" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentNode.innerHTML=\'<span style=\\\'color:#9ca3af;font-size:12px;padding:20px;\\\'>Foto tidak tersedia</span>\'">';
+          imgWrapper.innerHTML = '<img src="' + mediaUrl + '" class="cc-thumbnail-img" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentNode.innerHTML=\'<span style=\\\'color:#9ca3af;font-size:12px;padding:20px;\\\'>Pratinjau tidak tersedia</span>\'">';
         }
       }
     }
@@ -1054,7 +1054,7 @@ function buildCampaignCard(c) {
     thumbHTML = '<div class="cc-thumbnail-container cc-no-thumb" style="margin:0 12px 8px;'
       + 'border-radius:8px;align-items:center;justify-content:center;background:#f3f4f6;">'
       + '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'
-      + '<span style="color:#9ca3af;font-size:11px;font-weight:600;">Foto tidak tersedia</span>'
+      + '<span style="color:#9ca3af;font-size:11px;font-weight:600;">Pratinjau tidak tersedia</span>'
       + '</div>';
   }
 
@@ -1261,7 +1261,7 @@ async function _tryFeedThumb(campaign) {
           localStorage.setItem('radar_thumb_' + campaign.id, url);
           var el = document.querySelector('[data-id="' + campaign.id + '"] .cc-thumbnail-container');
           if (el) {
-            el.innerHTML = '<img src="' + url + '" class="cc-thumbnail-img" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentNode.innerHTML=\'<span style=\\\'color:#9ca3af;font-size:12px;\\\'>Foto tidak tersedia</span>\'">';
+            el.innerHTML = '<img src="' + url + '" class="cc-thumbnail-img" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentNode.innerHTML=\'<span style=\\\'color:#9ca3af;font-size:12px;\\\'>Pratinjau tidak tersedia</span>\'">';
           }
         }
         break;
@@ -1515,7 +1515,7 @@ async function _loadAnalyticsForCard(campaign) {
       localStorage.setItem('radar_thumb_' + campaign.id, mediaUrl);
       var _thumbCard = document.querySelector('[data-id="' + campaign.id + '"] .cc-thumbnail-container');
       if (_thumbCard) {
-        _thumbCard.innerHTML = '<img src="' + mediaUrl + '" class="cc-thumbnail-img" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentNode.innerHTML=\'<span style=\\\'color:#9ca3af;font-size:12px;\\\'>Foto tidak tersedia</span>\'">';
+        _thumbCard.innerHTML = '<img src="' + mediaUrl + '" class="cc-thumbnail-img" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentNode.innerHTML=\'<span style=\\\'color:#9ca3af;font-size:12px;\\\'>Pratinjau tidak tersedia</span>\'">';
       }
     }
 
@@ -2415,6 +2415,6 @@ function _onThumbError(img) {
   container.classList.add('cc-no-thumb');
   container.innerHTML =
     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'
-    + '<span style="color:#9ca3af;font-size:11px;font-weight:600;">Foto tidak tersedia</span>';
+    + '<span style="color:#9ca3af;font-size:11px;font-weight:600;">Pratinjau tidak tersedia</span>';
 }
 window._onThumbError = _onThumbError;
