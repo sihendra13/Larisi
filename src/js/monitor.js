@@ -1028,43 +1028,35 @@ function buildCampaignCard(c) {
   var fmt = c.format || 'post';
   var platName = platLabels[c.platforms[0]] || 'Platform';
 
-  // Thumbnail dari thumbUrl (foto yang diupload saat launch)
-  // blob: URL tidak valid antar sesi — buang agar tidak tampil blur setelah refresh
+  // Thumbnail + format badge (sama dengan mobile PWA)
   var _thumbRaw = c.thumbUrl || '';
   var _thumb = _thumbRaw.startsWith('blob:') ? '' : _thumbRaw;
-  // blob: URLs bisa berupa gambar OR video — cek format campaign untuk menentukan
-  var _isActualVideo = _thumb.startsWith('data:video') ||
-    (c.format && (c.format === 'reel' || c.format === 'video')) ||
-    (typeof uploadedVideoFile !== 'undefined' && uploadedVideoFile && c.id === (window._lastLaunchedId));
-  var _isVideoPlaceholder = _isActualVideo && !_thumb.startsWith('data:image') && !_thumb.startsWith('https://');
-  // Hanya pakai data: atau https: — blob: sudah dibuang di atas
-  var _isImage = _thumb.startsWith('data:image') || _thumb.startsWith('https://');
-  var _videoPlaceholderHTML =
-    '<div class="cc-thumbnail-container cc-video-placeholder" style="margin:0 12px 8px;'
-    + 'border-radius:8px;flex-direction:column;align-items:center;justify-content:center;gap:10px;">'
-    + '<div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.15);'
-    + 'display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">'
-    + '<svg width="20" height="20" viewBox="0 0 24 24" fill="white" style="margin-left:2px;">'
-    + '<path d="M8 5v14l11-7z"/></svg></div>'
-    + '<div style="display:flex;align-items:center;gap:6px;">'
-    + '<span style="color:rgba(255,255,255,0.9);font-size:11px;font-weight:600;letter-spacing:0.08em;">'
-    + (fmt === 'reel' ? '▶ REEL' : '▶ VIDEO') + '</span></div>'
-    + '</div>';
-  var thumbHTML = !_thumb
-    ? '<div class="cc-thumbnail-container cc-no-thumb" style="margin:0 12px 8px;'
-    +   'border-radius:8px;align-items:center;justify-content:center;">'
-    +   '<span style="color:#9ca3af;font-size:12px;text-align:center;">Foto tidak tersedia</span>'
-    + '</div>'
-    : _isVideoPlaceholder
-    ? _videoPlaceholderHTML
-    : _isImage
-    ? '<div class="cc-thumbnail-container" style="margin:0 12px 8px;border-radius:8px;overflow:hidden;background:#f3f4f6;">'
-    +   '<img src="' + _thumb + '" class="cc-thumbnail-img" style="width:100%;height:100%;'
-    +   'object-fit:cover;object-position:top;display:none;"'
-    +   ' onload="this.style.display=\'block\'"'
-    +   ' onerror="_onThumbError(this,' + (_isActualVideo ? '1' : '0') + ",'" + (c.thumbColor || '#1a1a2e') + "')\""  + '>'
-    + '</div>'
-    : _videoPlaceholderHTML;
+  var _hasThumb = _thumb.startsWith('data:image') || _thumb.startsWith('https://');
+  var _isVideo = c.hasVideo || (c.format && (c.format === 'reel' || c.format === 'video' || c.format === 'story'));
+  var _fmtLabel = (fmt || 'post').toUpperCase();
+  var _badgeIcon = _isVideo
+    ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>'
+    : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+  var _badgeHTML = '<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.45);border-radius:6px;padding:4px 6px;display:flex;align-items:center;gap:3px;z-index:2;">'
+    + _badgeIcon
+    + '<span style="font-size:9px;font-weight:800;color:#fff;letter-spacing:0.03em;">' + _fmtLabel + '</span></div>';
+
+  var thumbHTML;
+  if (_hasThumb) {
+    thumbHTML = '<div class="cc-thumbnail-container" style="margin:0 12px 8px;border-radius:8px;overflow:hidden;background:#f3f4f6;">'
+      + _badgeHTML
+      + '<img src="' + _thumb + '" class="cc-thumbnail-img" style="width:100%;height:100%;'
+      + 'object-fit:cover;object-position:center;display:none;"'
+      + ' onload="this.style.display=\'block\'"'
+      + ' onerror="_onThumbError(this)">'
+      + '</div>';
+  } else {
+    thumbHTML = '<div class="cc-thumbnail-container cc-no-thumb" style="margin:0 12px 8px;'
+      + 'border-radius:8px;align-items:center;justify-content:center;background:#f3f4f6;">'
+      + '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'
+      + '<span style="color:#9ca3af;font-size:11px;font-weight:600;">Foto tidak tersedia</span>'
+      + '</div>';
+  }
 
   // View URL untuk timestamp — pakai post_url langsung dari API (bukan konstruksi)
   // Story tidak punya URL permanen, selalu plain text
@@ -2417,28 +2409,12 @@ function _startRealtimeCampaignSync() {
 }
 window._startRealtimeCampaignSync = _startRealtimeCampaignSync;
 
-function _onThumbError(img, isVideo, thumbColor) {
+function _onThumbError(img) {
   var container = img.parentNode;
   if (!container) return;
-  if (isVideo) {
-    container.style.background = thumbColor || '#1a1a2e';
-    container.style.display = 'flex';
-    container.style.flexDirection = 'column';
-    container.style.alignItems = 'center';
-    container.style.justifyContent = 'center';
-    container.style.gap = '8px';
-    container.classList.add('cc-video-placeholder');
-    container.innerHTML =
-      '<div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.15);'
-      + 'display:flex;align-items:center;justify-content:center;">'
-      + '<svg width="20" height="20" viewBox="0 0 24 24" fill="white" style="margin-left:2px;">'
-      + '<path d="M8 5v14l11-7z"/></svg></div>'
-      + '<span style="color:rgba(255,255,255,0.9);font-size:11px;font-weight:600;letter-spacing:0.08em;">▶ VIDEO</span>';
-  } else {
-    container.style.display = 'flex';
-    container.style.alignItems = 'center';
-    container.style.justifyContent = 'center';
-    container.innerHTML = '<span style="color:#9ca3af;font-size:12px;text-align:center;">Foto tidak tersedia</span>';
-  }
+  container.classList.add('cc-no-thumb');
+  container.innerHTML =
+    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'
+    + '<span style="color:#9ca3af;font-size:11px;font-weight:600;">Foto tidak tersedia</span>';
 }
 window._onThumbError = _onThumbError;
