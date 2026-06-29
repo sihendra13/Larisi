@@ -1041,10 +1041,15 @@ function buildCampaignCard(c) {
   var _isImage = _thumb.startsWith('data:image') || _thumb.startsWith('https://');
   var _videoPlaceholderHTML =
     '<div class="cc-thumbnail-container" style="margin:0 12px 8px;'
-    + 'border-radius:8px;background:' + (c.thumbColor || '#1a1a2e') + ';'
-    + 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;">'
-    + '<span style="font-size:36px;line-height:1;">&#9654;</span>'
-    + '<span style="color:white;font-size:12px;font-weight:600;letter-spacing:0.05em;">VIDEO</span>'
+    + 'border-radius:8px;background:linear-gradient(135deg,#1a1a2e 0%,#2d1b69 100%);'
+    + 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">'
+    + '<div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.15);'
+    + 'display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">'
+    + '<svg width="20" height="20" viewBox="0 0 24 24" fill="white" style="margin-left:2px;">'
+    + '<path d="M8 5v14l11-7z"/></svg></div>'
+    + '<div style="display:flex;align-items:center;gap:6px;">'
+    + '<span style="color:rgba(255,255,255,0.9);font-size:11px;font-weight:600;letter-spacing:0.08em;">'
+    + (fmt === 'reel' ? '▶ REEL' : '▶ VIDEO') + '</span></div>'
     + '</div>';
   var thumbHTML = !_thumb
     ? '<div class="cc-thumbnail-container" style="margin:0 12px 8px;'
@@ -2423,9 +2428,13 @@ function _onThumbError(img, isVideo, thumbColor) {
     container.style.alignItems = 'center';
     container.style.justifyContent = 'center';
     container.style.gap = '8px';
+    container.style.background = 'linear-gradient(135deg,#1a1a2e 0%,#2d1b69 100%)';
     container.innerHTML =
-      '<span style="font-size:36px;line-height:1;">&#9654;</span>' +
-      '<span style="color:white;font-size:12px;font-weight:600;letter-spacing:0.05em;">VIDEO</span>';
+      '<div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.15);'
+      + 'display:flex;align-items:center;justify-content:center;">'
+      + '<svg width="20" height="20" viewBox="0 0 24 24" fill="white" style="margin-left:2px;">'
+      + '<path d="M8 5v14l11-7z"/></svg></div>'
+      + '<span style="color:rgba(255,255,255,0.9);font-size:11px;font-weight:600;letter-spacing:0.08em;">▶ VIDEO</span>';
   } else {
     container.style.display = 'flex';
     container.style.alignItems = 'center';
