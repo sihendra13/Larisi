@@ -1040,9 +1040,8 @@ function buildCampaignCard(c) {
   // Hanya pakai data: atau https: — blob: sudah dibuang di atas
   var _isImage = _thumb.startsWith('data:image') || _thumb.startsWith('https://');
   var _videoPlaceholderHTML =
-    '<div class="cc-thumbnail-container" style="margin:0 12px 8px;'
-    + 'border-radius:8px;background:linear-gradient(135deg,#1a1a2e 0%,#2d1b69 100%);'
-    + 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">'
+    '<div class="cc-thumbnail-container cc-video-placeholder" style="margin:0 12px 8px;'
+    + 'border-radius:8px;flex-direction:column;align-items:center;justify-content:center;gap:10px;">'
     + '<div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.15);'
     + 'display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">'
     + '<svg width="20" height="20" viewBox="0 0 24 24" fill="white" style="margin-left:2px;">'
@@ -2428,7 +2427,7 @@ function _onThumbError(img, isVideo, thumbColor) {
     container.style.alignItems = 'center';
     container.style.justifyContent = 'center';
     container.style.gap = '8px';
-    container.style.background = 'linear-gradient(135deg,#1a1a2e 0%,#2d1b69 100%)';
+    container.classList.add('cc-video-placeholder');
     container.innerHTML =
       '<div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.15);'
       + 'display:flex;align-items:center;justify-content:center;">'
