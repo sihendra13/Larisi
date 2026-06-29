@@ -592,7 +592,8 @@ window.startAnalyticsAutoRefresh = startAnalyticsAutoRefresh;
 
 async function fetchAndUpdatePostUrl(campaign, _attempt) {
   if (!campaign.post_id) return;
-  if (campaign.post_url) return; // sudah ada, skip
+  var _needThumb = !campaign.thumbUrl || campaign.thumbUrl === '';
+  if (campaign.post_url && !_needThumb) return;
 
   var attempt = _attempt || 1;
   var MAX_RETRIES = 3;
@@ -681,9 +682,9 @@ async function fetchAndUpdatePostUrl(campaign, _attempt) {
       // Update gambar di kartu iklan secara instan (DOM)
       var card = document.querySelector('[data-id="' + campaign.id + '"]');
       if (card) {
-        var imgWrapper = card.querySelector('.cc-media');
+        var imgWrapper = card.querySelector('.cc-thumbnail-container') || card.querySelector('.cc-media');
         if (imgWrapper) {
-          imgWrapper.innerHTML = '<img src="' + mediaUrl + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentNode.innerHTML=\'<div style=\\\'padding:20px;color:#94a3b8;font-size:12px;\\\'>Foto tidak tersedia</div>\'">';
+          imgWrapper.innerHTML = '<img src="' + mediaUrl + '" class="cc-thumbnail-img" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentNode.innerHTML=\'<span style=\\\'color:#9ca3af;font-size:12px;padding:20px;\\\'>Foto tidak tersedia</span>\'">';
         }
       }
     }
@@ -1465,15 +1466,20 @@ async function _loadAnalyticsForCard(campaign) {
       isExact:  _isExactMatch
     };
 
-    // Ambil thumbnail dari media PostForMe HANYA jika match exact
+    // Ambil thumbnail dari media PostForMe — update jika belum ada
     var mediaUrl = null;
     if (targetPost.media && targetPost.media.length && targetPost.media[0].url) {
       mediaUrl = targetPost.media[0].url;
-      // Update thumbUrl hanya jika exact match dan belum ada thumbnail permanen
-      if (campaign.platform_post_id && targetPost.platform_post_id === campaign.platform_post_id) {
-        var _sb = RADAR_CONFIG.SUPABASE_URL + '/storage/';
-        var _isPerm = campaign.thumbUrl && (campaign.thumbUrl.startsWith('data:') || campaign.thumbUrl.startsWith(_sb));
-        if (!_isPerm) campaign.thumbUrl = mediaUrl;
+    }
+    if (mediaUrl && (!campaign.thumbUrl || campaign.thumbUrl === '')) {
+      campaign.thumbUrl = mediaUrl;
+      if (typeof updateCampaignThumbUrl === 'function' && campaign.supabase_id) {
+        updateCampaignThumbUrl(campaign.supabase_id, mediaUrl);
+      }
+      localStorage.setItem('radar_thumb_' + campaign.id, mediaUrl);
+      var _thumbCard = document.querySelector('[data-id="' + campaign.id + '"] .cc-thumbnail-container');
+      if (_thumbCard) {
+        _thumbCard.innerHTML = '<img src="' + mediaUrl + '" class="cc-thumbnail-img" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentNode.innerHTML=\'<span style=\\\'color:#9ca3af;font-size:12px;\\\'>Foto tidak tersedia</span>\'">';
       }
     }
 
