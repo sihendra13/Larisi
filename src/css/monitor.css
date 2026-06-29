@@ -324,8 +324,7 @@
     aspect-ratio: 4/3;
     max-height: 280px;
     position: relative !important;
-    background: #f3f4f6 !important;
-    display: block !important;
+    overflow: hidden;
   }
   .cc-thumbnail-img {
     position: absolute !important;
