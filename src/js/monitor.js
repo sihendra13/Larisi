@@ -669,23 +669,22 @@ async function fetchAndUpdatePostUrl(campaign, _attempt) {
       campaign.thumbUrl.startsWith(_supabaseStorage)
     );
     if (mediaUrl && campaign.thumbUrl !== mediaUrl && !_hasPermThumb) {
-      console.log('[monitor] Memperbarui thumbnail ke Supabase:', campaign.name);
+      console.log('[monitor] Memperbarui thumbnail ke Supabase Storage:', campaign.name);
+      // Tampilkan dulu di UI
       campaign.thumbUrl = mediaUrl;
-
-      // Simpan ke database agar permanen
-      if (typeof updateCampaignThumbUrl === 'function') {
-        updateCampaignThumbUrl(campaign.supabase_id, mediaUrl);
-      }
-      // Simpan ke localStorage juga untuk performa instan di browser ini
       localStorage.setItem('radar_thumb_' + campaign.id, mediaUrl);
-
-      // Update gambar di kartu iklan secara instan (DOM)
       var card = document.querySelector('[data-id="' + campaign.id + '"]');
       if (card) {
         var imgWrapper = card.querySelector('.cc-thumbnail-container') || card.querySelector('.cc-media');
         if (imgWrapper) {
           imgWrapper.innerHTML = '<img src="' + mediaUrl + '" class="cc-thumbnail-img" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentNode.innerHTML=\'<span style=\\\'color:#9ca3af;font-size:12px;padding:20px;\\\'>Pratinjau tidak tersedia</span>\'">';
         }
+      }
+      // Upload ke Supabase Storage permanen (CDN PostForMe expire)
+      if (typeof _fetchAndUploadThumb === 'function' && campaign.supabase_id) {
+        _fetchAndUploadThumb(campaign, campaign.supabase_id, mediaUrl);
+      } else if (typeof updateCampaignThumbUrl === 'function') {
+        updateCampaignThumbUrl(campaign.supabase_id, mediaUrl);
       }
     }
   } catch(e) {
@@ -1254,14 +1253,18 @@ async function _tryFeedThumb(campaign) {
       if (campaign.platform_post_id && p.platform_post_id === campaign.platform_post_id) {
         var url = (p.media && p.media.length) ? p.media[0].url : null;
         if (url) {
+          // Tampilkan dulu di UI pakai CDN URL sementara
           campaign.thumbUrl = url;
-          if (typeof updateCampaignThumbUrl === 'function' && campaign.supabase_id) {
-            updateCampaignThumbUrl(campaign.supabase_id, url);
-          }
           localStorage.setItem('radar_thumb_' + campaign.id, url);
           var el = document.querySelector('[data-id="' + campaign.id + '"] .cc-thumbnail-container');
           if (el) {
             el.innerHTML = '<img src="' + url + '" class="cc-thumbnail-img" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentNode.innerHTML=\'<span style=\\\'color:#9ca3af;font-size:12px;\\\'>Pratinjau tidak tersedia</span>\'">';
+          }
+          // Upload ke Supabase Storage agar permanen (CDN PostForMe expire)
+          if (typeof _fetchAndUploadThumb === 'function' && campaign.supabase_id) {
+            _fetchAndUploadThumb(campaign, campaign.supabase_id, url);
+          } else if (typeof updateCampaignThumbUrl === 'function' && campaign.supabase_id) {
+            updateCampaignThumbUrl(campaign.supabase_id, url);
           }
         }
         break;
@@ -1507,15 +1510,23 @@ async function _loadAnalyticsForCard(campaign) {
     if (targetPost.media && targetPost.media.length && targetPost.media[0].url) {
       mediaUrl = targetPost.media[0].url;
     }
-    if (mediaUrl && (!campaign.thumbUrl || campaign.thumbUrl === '')) {
+    var _sbStorageDom = RADAR_CONFIG.SUPABASE_URL + '/storage/';
+    var _hasPermThumbEng = campaign.thumbUrl && (
+      campaign.thumbUrl.startsWith('data:') ||
+      campaign.thumbUrl.startsWith(_sbStorageDom)
+    );
+    if (mediaUrl && !_hasPermThumbEng) {
       campaign.thumbUrl = mediaUrl;
-      if (typeof updateCampaignThumbUrl === 'function' && campaign.supabase_id) {
-        updateCampaignThumbUrl(campaign.supabase_id, mediaUrl);
-      }
       localStorage.setItem('radar_thumb_' + campaign.id, mediaUrl);
       var _thumbCard = document.querySelector('[data-id="' + campaign.id + '"] .cc-thumbnail-container');
       if (_thumbCard) {
         _thumbCard.innerHTML = '<img src="' + mediaUrl + '" class="cc-thumbnail-img" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentNode.innerHTML=\'<span style=\\\'color:#9ca3af;font-size:12px;\\\'>Pratinjau tidak tersedia</span>\'">';
+      }
+      // Upload ke Supabase Storage agar permanen
+      if (typeof _fetchAndUploadThumb === 'function' && campaign.supabase_id) {
+        _fetchAndUploadThumb(campaign, campaign.supabase_id, mediaUrl);
+      } else if (typeof updateCampaignThumbUrl === 'function' && campaign.supabase_id) {
+        updateCampaignThumbUrl(campaign.supabase_id, mediaUrl);
       }
     }
 
