@@ -3,6 +3,8 @@
 
 /* ─── Campaign Data ─── */
 var CAMPAIGNS = [];
+var _campaignPageOffset = 0; // dipakai untuk "Muat Lebih Banyak" — halaman berikutnya dari getCampaigns()
+var _campaignLoadingMore = false;
 
 /* ─── State ─── */
 var activeCampaignId = null;
@@ -401,6 +403,76 @@ function renderCampaigns() {
 }
 
 /* ─── Load Campaigns from Supabase ─── */
+var _CAMPAIGN_PLAT_MAP = { ig: 'ig', tiktok: 'tiktok', meta: 'meta', youtube: 'youtube',
+                            instagram: 'ig', facebook: 'meta' };
+
+/* Bangun object CAMPAIGNS entry dari 1 row Supabase — dipakai baik untuk load awal
+   maupun "Muat Lebih Banyak", supaya logic-nya tidak duplikat/berisiko divergen. */
+function _buildCampaignEntry(row) {
+  var platforms = (row.platforms || []).map(function(p) { return _CAMPAIGN_PLAT_MAP[p] || p; });
+  if (!platforms.length) platforms = ['ig'];
+
+  var platLabel = platforms.map(function(p) { return p.toUpperCase(); }).join(', ');
+  var dateStr   = row.created_at
+    ? new Date(row.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '';
+
+  var isRowScheduled = row.status === 'scheduled';
+  var finalStatus = row.status;
+  var scheduledTimeStr = '';
+  if (isRowScheduled && row.scheduled_at) {
+    try {
+      scheduledTimeStr = new Date(row.scheduled_at).toLocaleString('id-ID');
+      var schedTime = new Date(row.scheduled_at);
+      if (schedTime <= new Date()) {
+        finalStatus = 'active';
+        isRowScheduled = false;
+        if (typeof updateCampaignStatus === 'function') {
+          updateCampaignStatus(row.id, 'active');
+        }
+      }
+    } catch(e) {}
+  }
+
+  return {
+    id:             row.id,
+    supabase_id:    row.id,
+    post_id:        row.post_id          || null,
+    post_url:       row.post_url         || null,
+    platform_post_id: row.platform_post_id || null,
+    format:         row.format           || 'post',
+    name:        row.nama_campaign || 'Campaign',
+    status:      finalStatus === 'active' ? 'running' : (finalStatus || 'running'),
+    platforms:   platforms,
+    reach:       row.estimated_reach_min || 0,
+    reachTarget: row.estimated_reach_max || 10000,
+    budget:      row.budget_idr || 0,
+    budgetUsed:  0,
+    sparkData:   [0, 0, 0, 0, 0, 0],
+    thumbColor:  '#791ADB',
+    // Prioritas: thumb_url dari Supabase (compressed JPEG, reliable antar sesi)
+    // Fallback: localStorage (untuk campaign lama sebelum fitur ini)
+    thumbUrl:    row.thumb_url || localStorage.getItem('radar_thumb_' + row.id) || null,
+    launchTime:  dateStr,
+    created_at:  row.created_at || null,
+    scheduled_at: row.scheduled_at || null,
+    aiOpening: isRowScheduled
+      ? 'Iklan <strong>' + (row.nama_campaign || 'Campaign') + '</strong> telah dijadwalkan untuk ditayangkan pada ' + (scheduledTimeStr || 'waktu yang ditentukan') + '.\n\nSaya akan mulai memantau performa iklan begitu iklan ini aktif ditayangkan.'
+      : 'Campaign <strong>' + (row.nama_campaign || 'Campaign') + '</strong>\n\n' +
+        'Lokasi: <strong>' + (row.kecamatan || '—') + '</strong> · Radius ' + (row.radius_km || 1) + ' km\n' +
+        'Kategori: <strong>' + (row.kategori || '—') + '</strong>\n' +
+        'Platform: <strong>' + platLabel + '</strong>\n' +
+        'Estimasi reach: <strong>' + formatReach(row.estimated_reach_min || 0) + ' – ' + formatReach(row.estimated_reach_max || 0) + '</strong>\n' +
+        (dateStr ? 'Diluncurkan: ' + dateStr + '\n' : '') +
+        '\nAda yang ingin dianalisis dari campaign ini?',
+    aiChips: isRowScheduled ? ['Lihat detail jadwal', 'Bagikan ke tim'] : ['Lihat performa', 'Optimalkan targeting', 'Bagikan ke tim'],
+    aiChipResponses: isRowScheduled ? {
+      'Lihat detail jadwal': 'Iklan dijadwalkan pada:\n\nWaktu: <strong>' + (scheduledTimeStr || '—') + '</strong>\nPlatform: <strong>' + platLabel + '</strong>\nStatus: Terjadwal otomatis\n\nAnda dapat membatalkan atau mengubah jadwal sebelum waktu tayang.',
+      'Bagikan ke tim': 'Untuk bagikan status iklan terjadwal ke tim:\n\n1. Screenshot halaman monitor ini\n2. Kirim via WhatsApp grup tim kamu\n\nMau saya siapkan ringkasan jadwal singkat untuk di-share?'
+    } : {}
+  };
+}
+
 async function loadCampaignsFromSupabase() {
   if (typeof getCampaigns !== 'function') return;
 
@@ -417,11 +489,8 @@ async function loadCampaignsFromSupabase() {
       return;
     }
 
-    var platMap = { ig: 'ig', tiktok: 'tiktok', meta: 'meta', youtube: 'youtube',
-                    instagram: 'ig', facebook: 'meta' };
-
     // JANGAN hapus demo campaign agar user bisa melihat contoh premium
-    /* 
+    /*
     for (var j = CAMPAIGNS.length - 1; j >= 0; j--) {
       if (CAMPAIGNS[j].isDemo) CAMPAIGNS.splice(j, 1);
     }
@@ -431,73 +500,13 @@ async function loadCampaignsFromSupabase() {
       // Skip if already loaded (by supabase id)
       var exists = CAMPAIGNS.some(function(c) { return c.supabase_id === row.id; });
       if (exists) return;
-
-      var platforms = (row.platforms || []).map(function(p) { return platMap[p] || p; });
-      if (!platforms.length) platforms = ['ig'];
-
-      var platLabel = platforms.map(function(p) { return p.toUpperCase(); }).join(', ');
-      var dateStr   = row.created_at
-        ? new Date(row.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-        : '';
-
-      var isRowScheduled = row.status === 'scheduled';
-      var finalStatus = row.status;
-      var scheduledTimeStr = '';
-      if (isRowScheduled && row.scheduled_at) {
-        try {
-          scheduledTimeStr = new Date(row.scheduled_at).toLocaleString('id-ID');
-          var schedTime = new Date(row.scheduled_at);
-          if (schedTime <= new Date()) {
-            finalStatus = 'active';
-            isRowScheduled = false;
-            if (typeof updateCampaignStatus === 'function') {
-              updateCampaignStatus(row.id, 'active');
-            }
-          }
-        } catch(e) {}
-      }
-
-      CAMPAIGNS.unshift({
-        id:             row.id,
-        supabase_id:    row.id,
-        post_id:        row.post_id          || null,
-        post_url:       row.post_url         || null,
-        platform_post_id: row.platform_post_id || null,
-        format:         row.format           || 'post',
-        name:        row.nama_campaign || 'Campaign',
-        status:      finalStatus === 'active' ? 'running' : (finalStatus || 'running'),
-        platforms:   platforms,
-        reach:       row.estimated_reach_min || 0,
-        reachTarget: row.estimated_reach_max || 10000,
-        budget:      row.budget_idr || 0,
-        budgetUsed:  0,
-        sparkData:   [0, 0, 0, 0, 0, 0],
-        thumbColor:  '#791ADB',
-        // Prioritas: thumb_url dari Supabase (compressed JPEG, reliable antar sesi)
-        // Fallback: localStorage (untuk campaign lama sebelum fitur ini)
-        thumbUrl:    row.thumb_url || localStorage.getItem('radar_thumb_' + row.id) || null,
-        launchTime:  dateStr,
-        created_at:  row.created_at || null,
-        scheduled_at: row.scheduled_at || null,
-        aiOpening: isRowScheduled
-          ? 'Iklan <strong>' + (row.nama_campaign || 'Campaign') + '</strong> telah dijadwalkan untuk ditayangkan pada ' + (scheduledTimeStr || 'waktu yang ditentukan') + '.\n\nSaya akan mulai memantau performa iklan begitu iklan ini aktif ditayangkan.'
-          : 'Campaign <strong>' + (row.nama_campaign || 'Campaign') + '</strong>\n\n' +
-            'Lokasi: <strong>' + (row.kecamatan || '—') + '</strong> · Radius ' + (row.radius_km || 1) + ' km\n' +
-            'Kategori: <strong>' + (row.kategori || '—') + '</strong>\n' +
-            'Platform: <strong>' + platLabel + '</strong>\n' +
-            'Estimasi reach: <strong>' + formatReach(row.estimated_reach_min || 0) + ' – ' + formatReach(row.estimated_reach_max || 0) + '</strong>\n' +
-            (dateStr ? 'Diluncurkan: ' + dateStr + '\n' : '') +
-            '\nAda yang ingin dianalisis dari campaign ini?',
-        aiChips: isRowScheduled ? ['Lihat detail jadwal', 'Bagikan ke tim'] : ['Lihat performa', 'Optimalkan targeting', 'Bagikan ke tim'],
-        aiChipResponses: isRowScheduled ? {
-          'Lihat detail jadwal': 'Iklan dijadwalkan pada:\n\nWaktu: <strong>' + (scheduledTimeStr || '—') + '</strong>\nPlatform: <strong>' + platLabel + '</strong>\nStatus: Terjadwal otomatis\n\nAnda dapat membatalkan atau mengubah jadwal sebelum waktu tayang.',
-          'Bagikan ke tim': 'Untuk bagikan status iklan terjadwal ke tim:\n\n1. Screenshot halaman monitor ini\n2. Kirim via WhatsApp grup tim kamu\n\nMau saya siapkan ringkasan jadwal singkat untuk di-share?'
-        } : {}
-      });
+      CAMPAIGNS.unshift(_buildCampaignEntry(row));
     });
 
+    _campaignPageOffset = rows.length;
     window.CAMPAIGNS_LOADED = true;
     renderCampaigns();
+    renderLoadMoreButton();
     startReachCounters();
     startPostUrlPolling();
     startAnalyticsAutoRefresh();
@@ -507,6 +516,56 @@ async function loadCampaignsFromSupabase() {
     console.warn('[monitor] loadCampaignsFromSupabase error:', e);
   }
 }
+
+/* ─── Muat Lebih Banyak — halaman berikutnya, di-append ke CAMPAIGNS yang sudah ada ─── */
+function renderLoadMoreButton() {
+  var list = document.getElementById('campaign-list');
+  if (!list || !list.parentNode) return;
+  var wrap = document.getElementById('campaign-load-more');
+  if (!wrap) {
+    wrap = document.createElement('div');
+    wrap.id = 'campaign-load-more';
+    wrap.style.cssText = 'display:flex;justify-content:center;padding:16px 0;';
+    list.parentNode.insertBefore(wrap, list.nextSibling);
+  }
+  if (!window.CAMPAIGNS_HAS_MORE) {
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.innerHTML =
+    '<button id="campaign-load-more-btn" onclick="loadMoreCampaigns()" style="' +
+    'padding:12px 24px;border-radius:999px;background:#F5F5F7;color:#1a1a2e;' +
+    'border:none;font-family:var(--font,sans-serif);font-size:13px;font-weight:700;cursor:pointer;">' +
+    (_campaignLoadingMore ? 'Memuat…' : 'Muat Lebih Banyak') +
+    '</button>';
+}
+
+async function loadMoreCampaigns() {
+  if (_campaignLoadingMore || !window.CAMPAIGNS_HAS_MORE) return;
+  if (typeof getCampaigns !== 'function') return;
+
+  _campaignLoadingMore = true;
+  renderLoadMoreButton();
+
+  try {
+    var rows = await getCampaigns(_campaignPageOffset);
+    if (rows && rows.length) {
+      rows.forEach(function(row) {
+        var exists = CAMPAIGNS.some(function(c) { return c.supabase_id === row.id; });
+        if (exists) return;
+        CAMPAIGNS.push(_buildCampaignEntry(row));
+      });
+      _campaignPageOffset += rows.length;
+      renderCampaigns();
+    }
+  } catch(e) {
+    console.warn('[monitor] loadMoreCampaigns error:', e);
+  } finally {
+    _campaignLoadingMore = false;
+    renderLoadMoreButton();
+  }
+}
+window.loadMoreCampaigns = loadMoreCampaigns;
 
 /* ─── Scheduled Status Checker (Check scheduled campaigns every 10s) ─── */
 var _scheduledStatusCheckerTimer = null;
