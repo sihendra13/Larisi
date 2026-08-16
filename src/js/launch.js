@@ -126,24 +126,38 @@ function showTopToast(message, type) {
 }
 
 /**
- * Bangun copy toast yang spesifik berdasarkan channel + format
- * Contoh: "✓ Story Instagram berhasil dipublish!"
+ * Bangun copy toast sukses berdasarkan channel(s) + format.
+ * Terima array channel supaya bisa dipakai untuk 1 platform maupun multi-platform.
+ * Contoh: "✓ Story Instagram berhasil dipublish!" atau "✓ Reel Instagram, TikTok berhasil dipublish!"
  */
-function _buildPublishToastCopy(channel, format) {
+function _buildPublishToastCopy(channels, format) {
   var chLabels  = { instagram: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
   var fmtLabels = { post: 'Post', reel: 'Reel', story: 'Story' };
+  var chArr = Array.isArray(channels) ? channels : [channels];
 
-  var chName  = chLabels[channel]   || channel   || 'Konten';
-  var fmtName = fmtLabels[format]   || '';
+  var chNames = chArr.map(function(c) { return chLabels[c] || c || 'Konten'; });
+  var fmtName = fmtLabels[format] || '';
 
-  // YouTube special case (formatnya "Shorts")
-  if (channel === 'youtube') fmtName = 'Shorts';
+  // YouTube special case (formatnya "Shorts") — hanya kalau satu-satunya channel
+  if (chArr.length === 1 && chArr[0] === 'youtube') fmtName = 'Shorts';
 
-  var label = fmtName ? fmtName + ' ' + chName : chName;
+  var label = fmtName ? fmtName + ' ' + chNames.join(', ') : chNames.join(', ');
   if (window._scheduledPostTime) {
     return '✓ ' + label + ' berhasil dijadwalkan!';
   }
   return '✓ ' + label + ' berhasil dipublish!';
+}
+
+/**
+ * Tandai campaign gagal publish — update status lokal (untuk re-render card)
+ * dan persist ke Supabase kalau supabase_id sudah tersedia.
+ */
+function _markCampaignFailed(camp) {
+  camp.status = 'failed';
+  if (camp.supabase_id && typeof updateCampaignStatus === 'function') {
+    updateCampaignStatus(camp.supabase_id, 'failed');
+  }
+  if (typeof renderCampaigns === 'function') renderCampaigns();
 }
 
 /* ─────────────────────────────────────────
@@ -757,11 +771,10 @@ async function _doLaunch(campNameOverride) {
     window._strategyContext = null; // clear context setelah publish
   }
 
-  // ── P2: Toast spesifik platform SEBELUM modal launching ──
-  var toastCopy = _buildPublishToastCopy(activeChannels[0], activeFormat);
-  showTopToast(toastCopy, 'success');
-
   // ── Launching modal → pindah ke Monitor ──
+  // (Toast sukses/gagal TIDAK ditampilkan di sini lagi — dulu muncul sebelum hasil
+  // publish diketahui, jadi bisa bilang "berhasil" padahal ujungnya gagal. Sekarang
+  // toast baru muncul setelah publishViaBuffer() benar-benar selesai, lihat di bawah.)
   showLaunchingModal(campName, function() {
     switchMenu('monitor');
   });
@@ -814,6 +827,10 @@ async function _doLaunch(campNameOverride) {
           newCamp.post_id  = result.postId;
           console.log('[launch] post_id saved:', result.postId, '(post_url ditunggu dari polling)');
 
+          // Toast sukses BARU muncul di sini — setelah publish benar-benar confirmed,
+          // bukan sebelum tau hasilnya (dulu bisa bilang "berhasil" padahal ujungnya gagal)
+          showTopToast(_buildPublishToastCopy(activeChannels, activeFormat), 'success');
+
           // Update chip di DOM card yang sudah dirender
           var cardEl = document.getElementById('campaign-card-' + newCamp.id);
           if (cardEl) {
@@ -858,10 +875,12 @@ async function _doLaunch(campNameOverride) {
           var errMsg = (result && result.error) ? result.error : 'unknown_error';
           console.warn('[launch] Publish gagal, post_id tidak didapat:', errMsg);
           showTopToast('⚠ Publish ke ' + activeChannels.join(', ') + ' gagal (' + errMsg + '). Cek koneksi akun sosial mediamu.', 'error');
+          _markCampaignFailed(newCamp);
         }
       }).catch(function(e) {
         console.warn('[launch] publishViaBuffer error:', e);
         showTopToast('⚠ Publish gagal: ' + (e && e.message ? e.message : 'terjadi kesalahan') + '.', 'error');
+        _markCampaignFailed(newCamp);
       });
     }
   });

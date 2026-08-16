@@ -1020,8 +1020,9 @@ function buildCampaignCard(c) {
   var isRunning = c.status === 'running';
   var isPaused  = c.status === 'paused';
   var isScheduled = c.status === 'scheduled';
-  var statusColor = isRunning ? '#16a34a' : (isPaused ? '#d97706' : (isScheduled ? '#791ADB' : '#9ca3af'));
-  var statusLbl   = isRunning ? 'Berjalan' : (isPaused ? 'Diarsipkan' : (isScheduled ? 'Dijadwalkan' : 'Selesai'));
+  var isFailed  = c.status === 'failed';
+  var statusColor = isFailed ? '#dc2626' : (isRunning ? '#16a34a' : (isPaused ? '#d97706' : (isScheduled ? '#791ADB' : '#9ca3af')));
+  var statusLbl   = isFailed ? 'Gagal' : (isRunning ? 'Berjalan' : (isPaused ? 'Diarsipkan' : (isScheduled ? 'Dijadwalkan' : 'Selesai')));
   var pct = Math.min(100, Math.round((c.reach / (c.reachTarget || 1)) * 100));
 
   var platColors = { ig:'#E1306C', tiktok:'#010101', meta:'#1877F2', youtube:'#FF0000' };
