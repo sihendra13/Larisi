@@ -80,6 +80,7 @@
   <link rel="stylesheet" href="src/css/bottom-bar.css">
   <link rel="stylesheet" href="src/css/monitor.css">
   <link rel="stylesheet" href="src/css/analytics.css">
+  <link rel="stylesheet" href="src/css/multiplatform.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     /* Warning Banner Styles */
@@ -496,9 +497,14 @@
           <div class="p3-left">
 
             <!-- 1. Publish ke Channel Selector -->
-            <div class="opt-mode-row">
+            <div class="opt-mode-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
               <div class="section-label">Posting ke Media Sosial</div>
-              <div class="preview-label-badge" id="previewLabel" onclick="cycleChannel()" style="cursor:pointer;user-select:none;" title="Klik untuk ganti platform">Instagram</div>
+              <div id="channelSelector" style="display:flex;gap:6px;flex-wrap:wrap;">
+                <label class="channel-check"><input type="checkbox" value="instagram" checked onchange="toggleChannel(this)"> Instagram</label>
+                <label class="channel-check"><input type="checkbox" value="tiktok" onchange="toggleChannel(this)"> TikTok</label>
+                <label class="channel-check"><input type="checkbox" value="youtube" onchange="toggleChannel(this)"> YouTube</label>
+                <label class="channel-check"><input type="checkbox" value="meta" onchange="toggleChannel(this)"> Facebook</label>
+              </div>
             </div>
 
             <!-- 2. Visual Filters -->
@@ -519,10 +525,12 @@
             </div>
 
             <!-- 3. AI Caption -->
-            <div>
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <div class="section-label">Pesan dioptimalkan oleh AI</div>
-                <div id="captionPlatformLabel" style="font-size:10px;font-weight:700;color:#791ADB;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:4px;"></div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div class="section-label">Pesan iklan (Caption)</div>
+                <label style="font-size:11px;font-weight:600;color:var(--secondary);display:flex;align-items:center;gap:4px;cursor:pointer;">
+                  <input type="checkbox" id="manualCaptionToggle" onchange="toggleManualCaption(this)"> Tulis Manual
+                </label>
               </div>
               <div class="caption-box">
                 <textarea id="captionArea" placeholder="Tunggu sebentar, AI akan menuliskan pesan untukmu. Kamu bebas mengeditnya kembali agar lebih sesuai." rows="5"></textarea>
@@ -567,7 +575,12 @@
             <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
               <!-- Baris 1: LIVE PREVIEW + nama platform+format -->
               <div style="display:flex;align-items:center;justify-content:space-between;">
-                <div class="section-label">Live Preview</div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div class="section-label">Live Preview</div>
+                  <div id="previewTabsContainer" style="display:flex;gap:4px;">
+                    <!-- Diisi JS -->
+                  </div>
+                </div>
                 <span id="livePreviewPlatformLabel" style="font-size:11px;font-weight:600;color:var(--secondary);letter-spacing:0.2px;">Instagram Reel</span>
               </div>
               <!-- Baris 2: Post / Reel / Story full-width (hanya Instagram & Facebook) -->

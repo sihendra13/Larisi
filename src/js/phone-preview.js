@@ -331,21 +331,27 @@ function _updateLivePreviewLabel() {
   if (el) el.textContent = ch + fmt;
 }
 
-/* ─── Channel cycler (AI Editor "Publish ke Channel") ────── */
-function cycleChannel() {
-  channelIdx = (channelIdx + 1) % channelOrder.length;
-  activeChannel = channelOrder[channelIdx];
+/* ─── Channel toggle (AI Editor "Publish ke Channel") ────── */
+function toggleChannel(cb) {
+  var val = cb.value;
+  if (cb.checked) {
+    if (!activeChannels.includes(val)) activeChannels.push(val);
+  } else {
+    activeChannels = activeChannels.filter(function(c) { return c !== val; });
+    if (activeChannels.length === 0) {
+      cb.checked = true;
+      activeChannels.push(val);
+      if (typeof showAnToast === 'function') showAnToast('Pilih minimal 1 media sosial');
+      return;
+    }
+  }
 
-  var labels = { instagram: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
-  var badge  = document.getElementById('previewLabel');
-  if (badge) badge.textContent = labels[activeChannel];
+  // Jika channel aktif yang sedang dipreview di-uncheck, pindah preview ke yg pertama checked
+  if (!activeChannels.includes(activeChannel)) {
+    activeChannel = activeChannels[0];
+  }
 
-  // Tampilkan/sembunyikan format selector
-  var hasFmt = (activeChannel === 'instagram' || activeChannel === 'meta');
-  var fmtSel = document.getElementById('formatSelector');
-  if (fmtSel) fmtSel.style.display = hasFmt ? 'flex' : 'none';
-
-  // Update Live Preview label (channel + format)
+  _updateLivePreviewTabs();
   _updateLivePreviewLabel();
 
   // Tentukan platform key berdasarkan channel + format aktif
@@ -355,11 +361,45 @@ function cycleChannel() {
   applyShell(key);
 
   captionAltIndex = 0;
-  if (typeof generateCaption === 'function')       generateCaption(false);
+  if (typeof generateCaption === 'function' && !isManualCaption) generateCaption(false);
   if (typeof updateCaptionPlatformLabel === 'function') updateCaptionPlatformLabel();
   if (typeof updateReach === 'function') updateReach();
   if (typeof toggleStoryZoomUI === 'function') toggleStoryZoomUI();
 }
+
+function _updateLivePreviewTabs() {
+  var container = document.getElementById('previewTabsContainer');
+  if (!container) return;
+  var labels = { instagram: 'IG', meta: 'FB', tiktok: 'TikTok', youtube: 'YT' };
+  var html = '';
+  activeChannels.forEach(function(ch) {
+    var act = (ch === activeChannel) ? ' active' : '';
+    html += '<div class="preview-tab' + act + '" onclick="setPreviewChannel(\'' + ch + '\')">' + labels[ch] + '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function setPreviewChannel(ch) {
+  activeChannel = ch;
+  
+  // Tampilkan/sembunyikan format selector jika platform yg dipreview support format
+  var hasFmt = (activeChannel === 'instagram' || activeChannel === 'meta');
+  var fmtSel = document.getElementById('formatSelector');
+  if (fmtSel) fmtSel.style.display = hasFmt ? 'flex' : 'none';
+
+  _updateLivePreviewTabs();
+  _updateLivePreviewLabel();
+
+  var fmtMap = CHANNEL_FORMAT_MAP[activeChannel];
+  var key    = fmtMap.single || fmtMap[activeFormat] || fmtMap.reel || fmtMap.post;
+  activePlatform = key;
+  applyShell(key);
+}
+
+// Panggil di awal untuk set tab default
+document.addEventListener('DOMContentLoaded', function() {
+  _updateLivePreviewTabs();
+});
 
 /* ─── Format selector (Post / Reel / Story) ────────────────── */
 function selectFormat(fmt) {
@@ -375,8 +415,3 @@ function selectFormat(fmt) {
   if (typeof toggleStoryZoomUI === 'function') toggleStoryZoomUI();
 }
 
-/* ─── Channel chips — multi select, controls reach ─────────── */
-function toggleChannel(el) {
-  el.classList.toggle('active');
-  updateReach();
-}

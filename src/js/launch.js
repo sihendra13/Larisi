@@ -32,7 +32,7 @@ function toggleStitchFn() {
 function showLaunchModal() {
   var hasAsset    = !!uploadedDataURL;
   var hasAudience = audLocal || audTraveler;
-  var hasChannel  = typeof activeChannel !== 'undefined' && !!activeChannel;
+  var hasChannel  = typeof activeChannels !== 'undefined' && activeChannels.length > 0;
   var captionEl   = document.getElementById('captionArea');
   var hasCaption  = captionEl && !!captionEl.value.trim();
   var catNudge    = document.getElementById('catNudge');
@@ -43,7 +43,7 @@ function showLaunchModal() {
   var chLabels = { instagram:'Instagram', meta:'Facebook', tiktok:'TikTok', youtube:'YouTube' };
   var fmtLabels = { post:'Post', reel:'Reel', story:'Story' };
   var chText = hasChannel
-    ? 'Channel: ' + (chLabels[activeChannel] || activeChannel) + (activeFormat ? ' · ' + (fmtLabels[activeFormat] || activeFormat) : '')
+    ? 'Channel: ' + (typeof activeChannels !== 'undefined' ? activeChannels.map(function(c) { return chLabels[c] || c; }).join(', ') : 'Belum dipilih') + (activeFormat ? ' · ' + (fmtLabels[activeFormat] || activeFormat) : '')
     : 'Pilih channel publish';
 
   var checks = [
@@ -222,7 +222,7 @@ function _ensureConfirmModal() {
           Akan Diposting Ke
         </div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <div id="lcmPlatformSummary" style="display:flex;align-items:center;">
+          <div id="lcmPlatformSummary" style="display:flex;align-items:center;gap:8px;">
             <!-- Diisi JS -->
           </div>
           <div id="lcmFormatSummary" style="display:flex;align-items:center;">
@@ -265,7 +265,7 @@ function _ensureConfirmModal() {
   });
 }
 
-function openLaunchConfirmModal(campName, channel, format) {
+function openLaunchConfirmModal(campName, channels, format) {
   _ensureConfirmModal();
 
   var chLabels  = { instagram: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
@@ -283,18 +283,23 @@ function openLaunchConfirmModal(campName, channel, format) {
   if (input) input.value = campName;
 
   // Platform summary
-  var chName  = chLabels[channel]  || channel  || 'Platform';
   var fmtName = fmtLabels[format]  || format   || '';
-  if (channel === 'tiktok' || channel === 'youtube') {
-    fmtName = '';
-  }
-
+  
   var summaryEl = document.getElementById('lcmPlatformSummary');
   if (summaryEl) {
-    var color = chColors[channel] || '#791ADB';
-    var icon  = chIcons[channel]  || '<i class="fa-solid fa-share-nodes" style="font-size:16px;"></i>';
-    summaryEl.innerHTML =
-      '<div style="' +
+    var html = '';
+    var hasNonIgFb = false;
+    
+    // Ensure channels is an array
+    var channelArray = Array.isArray(channels) ? channels : [channels];
+    
+    channelArray.forEach(function(channel) {
+      if (channel === 'tiktok' || channel === 'youtube') hasNonIgFb = true;
+      var chName  = chLabels[channel]  || channel  || 'Platform';
+      var color = chColors[channel] || '#791ADB';
+      var icon  = chIcons[channel]  || '<i class="fa-solid fa-share-nodes" style="font-size:16px;"></i>';
+      
+      html += '<div style="' +
         'background:' + color + '15;border:1.5px solid ' + color + '40;' +
         'border-radius:10px;padding:8px 14px;' +
         'display:flex;align-items:center;gap:8px;' +
@@ -302,6 +307,9 @@ function openLaunchConfirmModal(campName, channel, format) {
         '<span style="display:flex;align-items:center;color:' + color + ';">' + icon + '</span>' +
         '<span style="font-size:13px;font-weight:700;color:' + color + ';">' + chName + '</span>' +
       '</div>';
+    });
+    
+    summaryEl.innerHTML = html;
   }
 
   var fmtEl = document.getElementById('lcmFormatSummary');
@@ -367,7 +375,7 @@ async function launchRadar() {
   // ── Validasi awal ──
   var hasAsset    = !!uploadedDataURL;
   var hasAudience = audLocal || audTraveler;
-  var hasChannel  = typeof activeChannel !== 'undefined' && !!activeChannel;
+  var hasChannel  = typeof activeChannels !== 'undefined' && activeChannels.length > 0;
   var captionEl   = document.getElementById('captionArea');
   var hasCaption  = captionEl && !!captionEl.value.trim();
   var catNudge    = document.getElementById('catNudge');
@@ -445,18 +453,18 @@ async function launchRadar() {
 
   // ── Cek akun sosial — harus akun platform YANG DIPILIH yang terhubung ──
   var _platformConnected = typeof isPlatformAccountConnected === 'function'
-    ? isPlatformAccountConnected(activeChannel)
+    ? activeChannels.every(function(c) { return isPlatformAccountConnected(c); })
     : (typeof isBufferConnected === 'function' && isBufferConnected());
 
   if (!_platformConnected) {
     var _platformNames = { instagram: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
-    var _selectedPlatformName = _platformNames[activeChannel] || 'Media Sosial';
+    var _selectedPlatformName = activeChannels.map(function(c) { return _platformNames[c] || c; }).join(', ');
     _showSocialWarning(_selectedPlatformName);
     return;
   }
 
-  // ── Buka modal konfirmasi (P1) ──
-  openLaunchConfirmModal(campName, activeChannel, activeFormat);
+  // ── Show confirmation modal ──
+  openLaunchConfirmModal(campName, activeChannels, activeFormat);
 }
 
 /* ─────────────────────────────────────────
@@ -596,8 +604,14 @@ async function _doLaunch(campNameOverride) {
 
   // Active platform dari cycler "Publish ke Channel"
   var platMap   = { instagram: 'ig', tiktok: 'tiktok', youtube: 'youtube', meta: 'meta' };
-  var activePlats = activeChannel && platMap[activeChannel] ? [platMap[activeChannel]] : ['ig'];
-
+  var activePlats = [];
+  if (typeof activeChannels !== 'undefined' && activeChannels.length > 0) {
+    activeChannels.forEach(function(c) {
+      if (platMap[c]) activePlats.push(platMap[c]);
+    });
+  } else {
+    activePlats = activeChannel && platMap[activeChannel] ? [platMap[activeChannel]] : ['ig'];
+  }
   // Parse reach
   var reachText      = reachEl ? reachEl.textContent.trim() : '10K';
   var reachTextClean = reachText.replace(/,/g, '');
@@ -744,7 +758,7 @@ async function _doLaunch(campNameOverride) {
   }
 
   // ── P2: Toast spesifik platform SEBELUM modal launching ──
-  var toastCopy = _buildPublishToastCopy(activeChannel, activeFormat);
+  var toastCopy = _buildPublishToastCopy(activeChannels[0], activeFormat);
   showTopToast(toastCopy, 'success');
 
   // ── Launching modal → pindah ke Monitor ──
@@ -904,7 +918,7 @@ function openScheduleModal() {
   // ── Validasi awal ──
   var hasAsset    = !!uploadedDataURL;
   var hasAudience = audLocal || audTraveler;
-  var hasChannel  = typeof activeChannel !== 'undefined' && !!activeChannel;
+  var hasChannel  = typeof activeChannels !== 'undefined' && activeChannels.length > 0;
   var captionEl   = document.getElementById('captionArea');
   var hasCaption  = captionEl && !!captionEl.value.trim();
   var catNudge    = document.getElementById('catNudge');
@@ -1082,12 +1096,12 @@ function confirmSchedule() {
 
   // ── Cek akun sosial ──
   var _platformConnected = typeof isPlatformAccountConnected === 'function'
-    ? isPlatformAccountConnected(activeChannel)
+    ? activeChannels.every(function(c) { return isPlatformAccountConnected(c); })
     : (typeof isBufferConnected === 'function' && isBufferConnected());
 
   if (!_platformConnected) {
     var _platformNames = { instagram: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
-    var _selectedPlatformName = _platformNames[activeChannel] || 'Media Sosial';
+    var _selectedPlatformName = activeChannels.map(function(c) { return _platformNames[c] || c; }).join(', ');
     _showSocialWarning(_selectedPlatformName);
     window._scheduledPostTime = null;
     return;

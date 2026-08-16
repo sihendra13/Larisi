@@ -128,10 +128,12 @@ var PLAT_LABEL_MAP = {
 var platformOrder = ['ig-story','ig-feed','tiktok','youtube','meta'];
 
 /* ─── Channel / Format state (untuk AI Editor cycler) ──────── */
-var activeChannel = 'instagram';  // instagram | meta | tiktok | youtube
+var activeChannels = ['instagram']; // Multi-platform array
+var activeChannel = 'instagram';  // Default preview channel
 var activeFormat  = 'reel';       // post | reel | story
 var channelOrder  = ['instagram', 'meta', 'tiktok', 'youtube'];
 var channelIdx    = 0;
+var isManualCaption = false;
 
 var CHANNEL_FORMAT_MAP = {
   instagram: { post: 'ig-post',  reel: 'ig-reel',    story: 'ig-story'    },

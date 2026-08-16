@@ -217,6 +217,22 @@ function fillCaptionVars(text) {
     .replace(/\{cta\}/g,      d.cta);
 }
 
+function toggleManualCaption(el) {
+  isManualCaption = el.checked;
+  var area = document.getElementById('captionArea');
+  if (isManualCaption) {
+    area.removeAttribute('readonly');
+    if (area.value === '' || area.placeholder.includes('AI')) {
+      area.value = '';
+      area.placeholder = 'Tulis pesan / judul iklanmu di sini...';
+    }
+  } else {
+    area.setAttribute('readonly', 'true');
+    area.placeholder = 'Tunggu sebentar, AI akan menuliskan pesan untukmu...';
+    generateCaptionAI();
+  }
+}
+
 function generateCaption(cycle) {
   if (!currentPersona) return;
   var platKey    = getCurrentPlatformKey();
@@ -238,6 +254,7 @@ function generateCaption(cycle) {
 // ── AI Caption Generator ──────────────────────────────────────────────────────
 var _aiCallCount = 0; /* Counter naik setiap generateCaptionAI() dipanggil — untuk rotasi hook style */
 async function generateCaptionAI() {
+  if (isManualCaption) return; // Skip if manual
   if (!currentPersona) return;
   _aiCallCount++;
 
