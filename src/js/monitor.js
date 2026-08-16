@@ -971,6 +971,8 @@ function buildCampaignCard(c) {
 
   var storedAccounts = typeof _getStoredAccounts === 'function' ? _getStoredAccounts() : [];
   var platApiMap = { ig:'instagram', meta:'facebook', tiktok:'tiktok', youtube:'youtube' };
+  
+  // Ambil avatar dari platform pertama
   var matchedAcc = null;
   for (var i = 0; i < storedAccounts.length; i++) {
     if (storedAccounts[i].platform === (platApiMap[c.platforms[0]] || c.platforms[0])) {
@@ -978,8 +980,19 @@ function buildCampaignCard(c) {
     }
   }
   var avatarUrl = matchedAcc ? (matchedAcc.avatar_url || '') : '';
-  var username  = matchedAcc ? (matchedAcc.username || '') : '';
-  var usernameDisplay = username ? ('@' + username) : (platLabels[c.platforms[0]] || 'Social');
+  
+  // Kumpulkan username unik untuk semua platform di campaign ini
+  var usernames = [];
+  c.platforms.forEach(function(plat) {
+    var m = null;
+    for (var j = 0; j < storedAccounts.length; j++) {
+      if (storedAccounts[j].platform === (platApiMap[plat] || plat)) { m = storedAccounts[j]; break; }
+    }
+    if (m && m.username) usernames.push('@' + m.username);
+    else usernames.push(platLabels[plat] || 'Social');
+  });
+  var uniqueUsernames = usernames.filter(function(v, idx, a) { return a.indexOf(v) === idx; });
+  var usernameDisplay = uniqueUsernames.join(', ');
 
   var timeDisplay = c.launchTime || '';
   if (c.status === 'scheduled' && c.scheduled_at) {
@@ -1021,8 +1034,19 @@ function buildCampaignCard(c) {
     +   'this.parentElement.appendChild(fb);">'
     : '<div style="' + avatarFallbackStyle + '">' + initials + '</div>';
 
-  var platSvgContent = (PLAT_SVG[c.platforms[0]] || '')
-    .replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
+  var platformBadgesHTML = '<div style="position:absolute;bottom:-4px;right:-4px;display:flex;flex-direction:row-reverse;align-items:center;">';
+  for (var k = 0; k < c.platforms.length; k++) {
+    var p = c.platforms[k];
+    var pColor = platColors[p] || '#791ADB';
+    var pSvg = (PLAT_SVG[p] || '').replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
+    var zIndex = 10 - k;
+    platformBadgesHTML += '<div style="width:16px;height:16px;border-radius:50%;background:white;border:1.5px solid white;'
+      + 'display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px;'
+      + 'box-shadow:0 1px 2px rgba(0,0,0,0.1);margin-left:-4px;z-index:' + zIndex + ';">'
+      + '<svg viewBox="0 0 24 24" fill="' + pColor + '" width="10" height="10">'
+      + pSvg + '</svg></div>';
+  }
+  platformBadgesHTML += '</div>';
 
   var fmt = c.format || 'post';
   var platName = platLabels[c.platforms[0]] || 'Platform';
@@ -1078,14 +1102,7 @@ function buildCampaignCard(c) {
     + '<div style="position:relative;width:40px;height:40px;flex-shrink:0;">'
     +   '<div style="width:40px;height:40px;border-radius:50%;overflow:hidden;'
     +     'border:1.5px solid ' + primaryColor + '40;">' + avatarHTML + '</div>'
-    +   '<div style="position:absolute;bottom:0;right:0;width:16px;height:16px;'
-    +     'border-radius:50%;background:white;border:1.5px solid #e5e7eb;'
-    +     'display:flex;align-items:center;justify-content:center;'
-    +     'box-sizing:border-box;padding:2px;">'
-    +     '<svg viewBox="0 0 24 24" fill="' + primaryColor + '" width="10" height="10">'
-    +       platSvgContent
-    +     '</svg>'
-    +   '</div>'
+    +   platformBadgesHTML
     + '</div>'
 
     // Info — nama + username + timestamp
