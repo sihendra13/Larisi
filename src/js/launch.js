@@ -52,6 +52,13 @@ function showLaunchModal() {
     { ok: hasChannel,  text: chText }
   ];
 
+  if (!noCatNudge) {
+    checks.push({ ok: false, text: 'Pilih kategori bisnis pada panel aset kreatif' });
+  }
+  if (!noConflict) {
+    checks.push({ ok: false, text: 'Konfirmasi kesesuaian foto pada panel aset kreatif' });
+  }
+
   var okSVG   = '<svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var failSVG = '<svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke-linecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke-linecap="round"/></svg>';
 
@@ -368,7 +375,7 @@ async function launchRadar() {
   var conflict    = document.getElementById('visionConflict');
   var noConflict  = !conflict || !conflict.classList.contains('visible');
 
-  var isReady = hasAsset && hasAudience && hasChannel && hasCaption && noCatNudge && noConflict;
+  var isReady = hasAsset && hasAudience && hasChannel && noCatNudge && noConflict;
   if (!isReady) { showLaunchModal(); return; }
 
   // ── Cek Status Berlangganan & Gembok (Paywall) ──
@@ -905,7 +912,7 @@ function openScheduleModal() {
   var conflict    = document.getElementById('visionConflict');
   var noConflict  = !conflict || !conflict.classList.contains('visible');
 
-  var isReady = hasAsset && hasAudience && hasChannel && hasCaption && noCatNudge && noConflict;
+  var isReady = hasAsset && hasAudience && hasChannel && noCatNudge && noConflict;
   if (!isReady) { showLaunchModal(); return; }
 
   // Set default date & time: tomorrow at 09:00
