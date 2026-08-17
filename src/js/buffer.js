@@ -279,9 +279,11 @@ function _saveAndUpdateUI(platform, accountId, username, avatarUrl) {
   accounts.push({ id: accountId, platform: platform, username: username || '', avatar_url: avatarUrl || '' });
   localStorage.setItem('radar_social_accounts', JSON.stringify(accounts));
 
-  // Update tombol di modal
+  // Update tombol di modal (feedback visual sesaat — modal ditutup otomatis
+  // 1.8 detik lagi lalu di-render ulang lengkap dgn tombol refresh+putuskan
+  // terpisah kalau dibuka lagi, jadi patch ini cuma perlu benar utk state transisi)
   var btn = document.getElementById('pfm-btn-' + platform);
-  if (btn) {
+  if (btn && btn.tagName === 'BUTTON') {
     var badge = btn.querySelector('span:last-child');
     if (badge) {
       badge.textContent    = username ? '✓ @' + username : '✓ Terhubung';
@@ -291,7 +293,7 @@ function _saveAndUpdateUI(platform, accountId, username, avatarUrl) {
     btn.style.border     = '1.5px solid #e5e7eb';
     btn.style.background = '#f9fafb';
     btn.disabled = false;
-    btn.onclick  = function() { _disconnectAccount(platform); };
+    btn.onclick  = null; // hindari klik ganda sesaat sebelum modal auto-close
   }
 
   // Update header pill & channel chips
@@ -681,9 +683,16 @@ function showManageChannelsModal() {
           '<div style="font-size:14px;font-weight:600;color:#111827;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;">' + label + '</div>' +
           '<div style="font-size:12px;color:#6b7280;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;" title="@' + (acc.username || acc.id) + '">@' + (acc.username || acc.id) + '</div>' +
         '</div>' +
+        '<button onclick="connectPostForMe(\'' + acc.platform + '\')" title="Perbarui izin akun" ' +
+          'style="width:30px;height:30px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;' +
+          'cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+          '<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>' +
+          '<path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>' +
+          '</button>' +
         '<button onclick="_disconnectAccount(\'' + acc.platform + '\')" ' +
           'style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;' +
-          'border:1.5px solid #fca5a5;background:#fff5f5;color:#dc2626;cursor:pointer;' +
+          'border:1.5px solid #fca5a5;background:#fff5f5;color:#dc2626;cursor:pointer;flex-shrink:0;' +
           'font-family:var(--font,sans-serif);transition:all .15s;"' +
           'onmouseenter="this.style.background=\'#dc2626\';this.style.color=\'#fff\'"' +
           'onmouseleave="this.style.background=\'#fff5f5\';this.style.color=\'#dc2626\'">' +
@@ -755,24 +764,43 @@ function showConnectAccountsFlow() {
         ? ('✓ @' + (acc.username || acc.id))
         : 'Hubungkan';
       var _bgDefault = isConn ? '#f9fafb' : '#fafafa';
-      return '<button id="pfm-btn-' + p.id + '" class="pfm-platform-btn" ' +
-        'onclick="' + (isConn ? '_disconnectAccount(\'' + p.id + '\')' : 'connectPostForMe(\'' + p.id + '\')') + '" ' +
-        'style="display:flex;align-items:center;gap:14px;width:100%;padding:12px 16px;' +
-        'margin-bottom:10px;border:1.5px solid ' + (isConn ? '#e5e7eb' : '#f0f0f0') + ';' +
-        'border-radius:12px;background:' + _bgDefault + ';' +
-        'cursor:pointer;font-family:var(--font,sans-serif);transition:background 0.15s,box-shadow 0.15s;' +
-        'outline:none;-webkit-appearance:none;appearance:none;">' +
-        '<div style="width:40px;height:40px;border-radius:10px;background:' +
+      var iconBox = '<div style="width:40px;height:40px;border-radius:10px;background:' +
         (p.id === 'tiktok' ? '#f0f0f0' : color + '18') +
-        ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-        logo + '</div>' +
-        '<span style="flex:1;font-size:14px;font-weight:600;color:#111827;text-align:left;">' + p.label + '</span>' +
-        '<span style="font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;' +
-        'background:' + (isConn ? '#f3f4f6' : '#f0f0f0') + ';' +
-        'color:' + (isConn ? '#374151' : '#6b7280') + ';' +
-        (isConn ? 'max-width:120px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;display:inline-block;' : '') +
-        '" title="' + (isConn ? badge : '') + '">' + badge + '</span>' +
-        '</button>';
+        ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + logo + '</div>';
+      var label = '<span style="flex:1;font-size:14px;font-weight:600;color:#111827;text-align:left;">' + p.label + '</span>';
+
+      if (!isConn) {
+        return '<button id="pfm-btn-' + p.id + '" class="pfm-platform-btn" ' +
+          'onclick="connectPostForMe(\'' + p.id + '\')" ' +
+          'style="display:flex;align-items:center;gap:14px;width:100%;padding:12px 16px;' +
+          'margin-bottom:10px;border:1.5px solid #f0f0f0;' +
+          'border-radius:12px;background:' + _bgDefault + ';' +
+          'cursor:pointer;font-family:var(--font,sans-serif);transition:background 0.15s,box-shadow 0.15s;' +
+          'outline:none;-webkit-appearance:none;appearance:none;">' +
+          iconBox + label +
+          '<span style="font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;background:#f0f0f0;color:#6b7280;">' + badge + '</span>' +
+          '</button>';
+      }
+
+      // Connected: dua tombol terpisah — refresh izin (reuse connectPostForMe, PostForMe
+      // update akun yang sama kalau platform+user_id sudah ada) & putuskan.
+      return '<div id="pfm-btn-' + p.id + '" ' +
+        'style="display:flex;align-items:center;gap:14px;width:100%;padding:12px 16px;' +
+        'margin-bottom:10px;border:1.5px solid #e5e7eb;border-radius:12px;background:' + _bgDefault + ';' +
+        'font-family:var(--font,sans-serif);">' +
+        iconBox + label +
+        '<button onclick="connectPostForMe(\'' + p.id + '\')" title="Perbarui izin akun" ' +
+        'style="width:30px;height:30px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;' +
+        'cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;outline:none;">' +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>' +
+        '<path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>' +
+        '</button>' +
+        '<button onclick="_disconnectAccount(\'' + p.id + '\')" title="' + badge + '" ' +
+        'style="font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;border:none;cursor:pointer;' +
+        'background:#f3f4f6;color:#374151;max-width:120px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;' +
+        'font-family:var(--font,sans-serif);flex-shrink:0;outline:none;">' + badge + '</button>' +
+        '</div>';
     }).join('');
 
   overlay.appendChild(card);

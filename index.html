@@ -346,6 +346,42 @@
 
   <div class="content">
     <div id="view-command" style="display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;">
+
+    <!-- Banner: ajak refresh koneksi akun (one-time, dismissible) -->
+    <div id="reconnectBanner" style="display:none;padding:14px;background:#F5F0FF;border-radius:14px;border:1.5px solid #E4D4FF;align-items:flex-start;gap:10px;font-family:var(--font,sans-serif);">
+      <div style="width:32px;height:32px;border-radius:50%;background:#EBDDFF;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#791ADB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:4px;">Perbarui koneksi akun sosial media</div>
+        <div style="font-size:12px;color:#6b7280;line-height:1.5;margin-bottom:10px;">Supaya bisa lihat data performa lengkap (views, likes, komentar) di Kelola Iklan.</div>
+        <button onclick="dismissReconnectBanner(); showManageChannelsModal();" style="padding:8px 14px;border-radius:8px;background:#791ADB;color:#fff;border:none;font-family:var(--font,sans-serif);font-size:12px;font-weight:700;cursor:pointer;">Perbarui Sekarang</button>
+      </div>
+      <button onclick="dismissReconnectBanner()" style="flex-shrink:0;width:24px;height:24px;border-radius:50%;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <script>
+      function dismissReconnectBanner() {
+        localStorage.setItem('radar_reconnect_banner_dismissed', '1');
+        var el = document.getElementById('reconnectBanner');
+        if (el) el.style.display = 'none';
+      }
+      (function() {
+        if (localStorage.getItem('radar_reconnect_banner_dismissed')) return;
+        try {
+          var accounts = JSON.parse(localStorage.getItem('radar_social_accounts') || '[]');
+          if (accounts.length > 0) {
+            var el = document.getElementById('reconnectBanner');
+            if (el) el.style.display = 'flex';
+          }
+        } catch(e) {}
+      })();
+    </script>
+
     <div class="panels">
 
       <!-- LEFT: Creative Assets -->
