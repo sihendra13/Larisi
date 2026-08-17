@@ -1355,6 +1355,13 @@ async function _loadAnalyticsForCard(campaign) {
   // _authError dari fetchAndUpdatePostUrl (endpoint /v1/social-posts) TIDAK memblokir
   // engagement fetch (endpoint /v1/social-account-feeds) — keduanya independen
   try {
+    // Campaign yang masih 'scheduled' (belum tayang) TIDAK BOLEH di-temporal-match
+    // ke feed post yang sudah ada — matching pakai created_at ±15 menit di bawah bisa
+    // salah-cocok ke post LAIN yang kebetulan waktunya berdekatan (bug nyata: campaign
+    // yang belum tayang besok malah dapat engagement & link dari post orang lain hari ini).
+    // Begitu status berubah jadi 'running'/'active' (sudah lewat scheduled_at), baru aman.
+    if (campaign.status === 'scheduled') return;
+
     var accounts = typeof _getStoredAccounts === 'function'
       ? _getStoredAccounts() : [];
     if (!accounts.length) return;
