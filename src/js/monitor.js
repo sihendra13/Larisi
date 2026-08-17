@@ -441,6 +441,7 @@ function _buildCampaignEntry(row) {
     post_url:       row.post_url         || null,
     platform_post_id: row.platform_post_id || null,
     format:         row.format           || 'post',
+    caption:        row.caption           || '',
     name:        row.nama_campaign || 'Campaign',
     status:      finalStatus === 'active' ? 'running' : (finalStatus || 'running'),
     platforms:   platforms,
@@ -910,6 +911,148 @@ function startPostUrlPolling() {
 }
 window.startPostUrlPolling = startPostUrlPolling;
 
+/* ─── Edit Jadwal Campaign (scheduled saja) ─────────────────────────── */
+function openEditScheduleModal(campaignId) {
+  var campaign = CAMPAIGNS.filter(function(c) { return c.id === campaignId; })[0];
+  if (!campaign) return;
+
+  var old = document.getElementById('editScheduleOverlay');
+  if (old) old.remove();
+
+  var d = campaign.scheduled_at ? new Date(campaign.scheduled_at) : new Date();
+  var pad = function(n) { return n < 10 ? '0' + n : n; };
+  var defaultDate = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  var defaultTime = pad(d.getHours()) + ':' + pad(d.getMinutes());
+
+  var overlay = document.createElement('div');
+  overlay.id = 'editScheduleOverlay';
+  overlay.style.cssText =
+    'position:fixed;inset:0;background:rgba(0,0,0,0.55);'
+    + 'z-index:9999;display:flex;align-items:center;'
+    + 'justify-content:center;font-family:var(--font,sans-serif);'
+    + 'backdrop-filter:blur(4px);';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+
+  overlay.innerHTML =
+    '<div style="background:#fff;border-radius:20px;padding:28px;'
+    + 'width:380px;max-width:calc(100vw - 32px);'
+    + 'box-shadow:0 24px 64px rgba(0,0,0,0.2);">'
+
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">'
+    +   '<div style="width:40px;height:40px;border-radius:12px;'
+    +     'background:#f5f0ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+    +     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#791ADB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+    +       '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/>'
+    +       '<line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'
+    +     '</svg>'
+    +   '</div>'
+    +   '<div>'
+    +     '<div style="font-size:16px;font-weight:700;color:#111827;">Ubah Jadwal</div>'
+    +     '<div style="font-size:12px;color:#6b7280;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;">' + campaign.name + '</div>'
+    +   '</div>'
+    + '</div>'
+
+    + '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">'
+    +   '<label style="font-size:12px;font-weight:600;color:#374151;">Tanggal Tayang</label>'
+    +   '<input id="editSchedDate" type="date" value="' + defaultDate + '" '
+    +     'style="border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 14px;font-size:14px;font-family:inherit;outline:none;">'
+    + '</div>'
+
+    + '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;">'
+    +   '<label style="font-size:12px;font-weight:600;color:#374151;">Jam Tayang</label>'
+    +   '<input id="editSchedTime" type="time" value="' + defaultTime + '" '
+    +     'style="border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 14px;font-size:14px;font-family:inherit;outline:none;">'
+    + '</div>'
+
+    + '<div style="font-size:11px;color:#9ca3af;line-height:1.5;margin-bottom:20px;">'
+    +   'Postingan lama akan dibatalkan dan dibuat ulang otomatis dengan jadwal baru ini.'
+    + '</div>'
+
+    + '<div style="display:flex;gap:10px;">'
+    +   '<button onclick="document.getElementById(\'editScheduleOverlay\').remove();" '
+    +     'style="flex:1;padding:12px;border-radius:10px;border:1.5px solid #e5e7eb;'
+    +     'background:#fff;color:#374151;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Batal</button>'
+    +   '<button id="editScheduleSaveBtn" onclick="confirmEditSchedule(' + JSON.stringify(campaignId) + ');" '
+    +     'style="flex:1;padding:12px;border-radius:10px;border:none;'
+    +     'background:#791ADB;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Simpan</button>'
+    + '</div>'
+    + '</div>';
+
+  document.body.appendChild(overlay);
+}
+
+async function confirmEditSchedule(campaignId) {
+  var campaign = CAMPAIGNS.filter(function(c) { return c.id === campaignId; })[0];
+  if (!campaign) return;
+
+  var dateVal = document.getElementById('editSchedDate').value;
+  var timeVal = document.getElementById('editSchedTime').value;
+  if (!dateVal || !timeVal) return;
+
+  var btn = document.getElementById('editScheduleSaveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Menyimpan...'; btn.style.opacity = '0.6'; }
+
+  try {
+    var newScheduledAt = new Date(dateVal + 'T' + timeVal + ':00').toISOString();
+
+    // 1. Hapus post lama kalau ada (best-effort, jangan blokir kalau gagal)
+    if (campaign.post_id) {
+      await _pfmProxy('/v1/social-posts/' + campaign.post_id, 'DELETE', null).catch(function() {});
+    }
+
+    // 2. Buat post baru dengan jadwal baru — pakai akun & platform yang sama
+    var sp = campaign.platforms[0] || 'ig';
+    var placementMap = { post: 'timeline', reel: 'reels', story: 'stories' };
+    var platApiMap   = { ig:'instagram', meta:'facebook', tiktok:'tiktok', youtube:'youtube' };
+    var accounts = typeof _getStoredAccounts === 'function' ? _getStoredAccounts() : [];
+    var acc = accounts.filter(function(a) { return a.platform === (platApiMap[sp] || sp); })[0];
+
+    if (!acc || !acc.id) {
+      throw new Error('Akun ' + sp + ' tidak terhubung — reconnect dulu di Kelola Akun.');
+    }
+
+    var payload = {
+      caption: campaign.caption || '',
+      social_accounts: [acc.id],
+      platform_configurations: {},
+      scheduled_at: newScheduledAt
+    };
+    payload.platform_configurations[platApiMap[sp] || sp] = { placement: placementMap[campaign.format] || 'timeline' };
+    if (campaign.thumbUrl) payload.media = [{ url: campaign.thumbUrl }];
+
+    var data = await _pfmProxy('/v1/social-posts', 'POST', payload);
+    var newPostId = data && (data.id || data.post_id) || null;
+    if (!newPostId) throw new Error((data && data.message) || 'Gagal membuat post baru');
+
+    // 3. Update Supabase
+    var client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    if (client) {
+      await client.from('campaigns').update({
+        scheduled_at: newScheduledAt,
+        post_id: newPostId,
+        post_url: null,
+        platform_post_id: null
+      }).eq('id', campaign.supabase_id).eq('session_id', window.radarSessionId);
+    }
+
+    // 4. Update in-memory + re-render
+    campaign.scheduled_at     = newScheduledAt;
+    campaign.post_id          = newPostId;
+    campaign.post_url         = null;
+    campaign.platform_post_id = null;
+
+    document.getElementById('editScheduleOverlay').remove();
+    renderCampaigns();
+    if (typeof showTopToast === 'function') showTopToast('✓ Jadwal berhasil diubah', 'success');
+  } catch (e) {
+    console.error('[monitor] confirmEditSchedule error:', e);
+    if (typeof showTopToast === 'function') showTopToast('⚠ Gagal ubah jadwal: ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Simpan'; btn.style.opacity = '1'; }
+  }
+}
+window.openEditScheduleModal = openEditScheduleModal;
+window.confirmEditSchedule   = confirmEditSchedule;
+
 function showDeleteConfirmModal(campaign) {
   var old = document.getElementById('deleteConfirmOverlay');
   if (old) old.remove();
@@ -1174,7 +1317,7 @@ function buildCampaignCard(c) {
     +   '<div style="font-size:10px;color:#9ca3af;margin-top:1px;">'
     +     usernameDisplay
     +   '</div>'
-    +   '<div style="font-size:10px;margin-top:2px;">'
+    +   '<div style="font-size:10px;margin-top:2px;display:flex;align-items:center;gap:4px;">'
     +     (viewUrl
     ?       '<a href="' + viewUrl + '" target="_blank" rel="noopener" class="cc-timestamp" '
     +         'style="color:#791ADB;text-decoration:underline;text-underline-offset:2px;font-weight:600;" '
@@ -1182,6 +1325,16 @@ function buildCampaignCard(c) {
     : isStory
     ?       '<span class="cc-timestamp" style="color:#9ca3af;">' + timeDisplay + '</span>'
     :       '<span class="cc-timestamp" style="color:#9ca3af;cursor:help;" title="Link belum tersedia">' + timeDisplay + '</span>')
+    +     (isScheduled
+    ?       '<button onclick="event.stopPropagation();openEditScheduleModal(' + JSON.stringify(c.id) + ');" '
+    +         'title="Ubah Jadwal" style="background:rgba(121,26,219,0.1);border:none;cursor:pointer;'
+    +         'display:inline-flex;align-items:center;justify-content:center;color:#791ADB;padding:3px;'
+    +         'border-radius:5px;flex-shrink:0;">'
+    +         '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'
+    +         '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>'
+    +         '<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>'
+    +         '</svg></button>'
+    :       '')
     +   '</div>'
     + '</div>'
 
