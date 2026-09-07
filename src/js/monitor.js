@@ -673,11 +673,13 @@ async function fetchAndUpdatePostUrl(campaign, _attempt) {
     ));
 
     var url = null;
+    var platformPostId = campaign.platform_post_id || null;
     // PostForMe menyimpan post_url per akun di social_accounts
     if (data.social_accounts && data.social_accounts.length) {
       for (var i = 0; i < data.social_accounts.length; i++) {
         var sa = data.social_accounts[i];
         url = sa.post_url || sa.permalink || sa.platform_url || sa.url || null;
+        if (!platformPostId) platformPostId = sa.platform_post_id || null;
         if (url) break;
       }
     }
@@ -688,8 +690,15 @@ async function fetchAndUpdatePostUrl(campaign, _attempt) {
 
     if (url) {
       campaign.post_url = url;
+      // platform_post_id WAJIB disimpan juga — dipakai matching engagement metrics
+      // (_loadAnalyticsForCard). Campaign yang dijadwalkan lama (jam publish beda
+      // jauh dari created_at) hanya bisa dapat metrik lewat exact match ini, bukan
+      // temporal fallback yang di-gate ±15 menit.
+      if (platformPostId) campaign.platform_post_id = platformPostId;
 
-      if (typeof updateCampaignPostUrl === 'function') {
+      if (typeof updateCampaignPostId === 'function' && campaign.post_id) {
+        updateCampaignPostId(campaign.supabase_id, campaign.post_id, url, platformPostId);
+      } else if (typeof updateCampaignPostUrl === 'function') {
         updateCampaignPostUrl(campaign.supabase_id, url);
       }
 
@@ -1614,13 +1623,47 @@ async function _loadAnalyticsForCard(campaign) {
             updateCampaignPostId(campaign.supabase_id, campaign.post_id, null, _bestPost.platform_post_id);
           }
         }
-      } else if (_bestPost) {
-        // Diff > 15 menit — pakai best-effort engagement saja (tanpa URL/thumbnail)
-        // Tidak perlu post_id — campaign.created_at sudah cukup sebagai gating
-        targetPost    = _bestPost;
-        _isExactMatch = false;
-        console.warn('[monitor] Temporal fallback (diff terlalu jauh):', campaign.name,
-          Math.round(_bestDiff / 1000) + 's');
+      } else {
+        // Diff > 15 menit — kasus umum untuk campaign yang DIJADWALKAN jauh di muka
+        // (created_at = saat dijadwalkan, posted_at = jam tayang beneran, bisa
+        // beda berjam-jam). Waktu saja tidak cukup dipercaya di sini, tapi caption
+        // yang cocok PERSIS adalah sinyal kuat (jauh lebih unik daripada waktu),
+        // jadi dipakai sebagai exact match kedua supaya campaign terjadwal juga
+        // bisa dapat metrik & platform_post_id ter-backfill — bukan cuma yang
+        // publish langsung.
+        // Kalau ada beberapa post dengan caption identik, ambil yang waktunya
+        // paling dekat ke campaign.created_at — bukan asal yang pertama ketemu.
+        var _capCandidates = campaign.caption ? posts.filter(function(pp) {
+          return pp.caption && pp.caption.trim() === campaign.caption.trim();
+        }) : [];
+        var _capMatch = null;
+        if (_capCandidates.length === 1) {
+          _capMatch = _capCandidates[0];
+        } else if (_capCandidates.length > 1) {
+          _capMatch = _capCandidates.reduce(function(closest, pp) {
+            var ppTime = new Date(pp.posted_at || pp.published_at || pp.created_at || 0).getTime();
+            var clTime = new Date(closest.posted_at || closest.published_at || closest.created_at || 0).getTime();
+            return Math.abs(_campTime - ppTime) < Math.abs(_campTime - clTime) ? pp : closest;
+          });
+        }
+        if (_capMatch) {
+          targetPost    = _capMatch;
+          _isExactMatch = true;
+          console.log('[monitor] Caption match (diff waktu terlalu jauh utk temporal):',
+            campaign.name, '— post:', _capMatch.platform_post_id);
+          if (_capMatch.platform_post_id && !campaign.platform_post_id) {
+            campaign.platform_post_id = _capMatch.platform_post_id;
+            if (typeof updateCampaignPostId === 'function' && campaign.supabase_id && campaign.post_id) {
+              updateCampaignPostId(campaign.supabase_id, campaign.post_id, null, _capMatch.platform_post_id);
+            }
+          }
+        } else if (_bestPost) {
+          // Diff > 15 menit dan caption juga tidak cocok — pakai best-effort saja
+          targetPost    = _bestPost;
+          _isExactMatch = false;
+          console.warn('[monitor] Temporal fallback (diff terlalu jauh):', campaign.name,
+            Math.round(_bestDiff / 1000) + 's');
+        }
       }
     }
 
