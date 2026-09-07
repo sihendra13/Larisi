@@ -993,32 +993,40 @@ function openScheduleModal() {
     youtube:   '<i class="fa-brands fa-youtube" style="font-size:16px;"></i>'
   };
 
-  var channel = activeChannel;
+  // Tampilkan SEMUA channel yang benar-benar dicentang (activeChannels),
+  // bukan cuma activeChannel (channel preview tunggal) — supaya ringkasan
+  // di modal selalu cocok dengan platform yang benar-benar akan dipublish.
+  var channelsToShow = (typeof activeChannels !== 'undefined' && activeChannels.length > 0)
+    ? activeChannels
+    : [activeChannel];
   var format = activeFormat;
-  var chName  = chLabels[channel]  || channel  || 'Platform';
-  var fmtName = fmtLabels[format]  || format   || '';
-  if (channel === 'tiktok' || channel === 'youtube') {
-    fmtName = '';
-  }
+  var fmtName = fmtLabels[format] || format || '';
 
   var summaryEl = document.getElementById('schedPlatformSummary');
   if (summaryEl) {
-    var color = chColors[channel] || '#791ADB';
-    var icon  = chIcons[channel]  || '<i class="fa-solid fa-share-nodes" style="font-size:16px;"></i>';
-    summaryEl.innerHTML =
-      '<div style="' +
-        'background:' + color + '15;border:1.5px solid ' + color + '40;' +
-        'border-radius:10px;padding:8px 14px;' +
-        'display:flex;align-items:center;gap:8px;' +
-      '">' +
-        '<span style="display:flex;align-items:center;color:' + color + ';">' + icon + '</span>' +
-        '<span style="font-size:13px;font-weight:700;color:' + color + ';">' + chName + '</span>' +
-      '</div>';
+    summaryEl.innerHTML = channelsToShow.map(function(channel) {
+      var color = chColors[channel] || '#791ADB';
+      var icon  = chIcons[channel]  || '<i class="fa-solid fa-share-nodes" style="font-size:16px;"></i>';
+      var chName = chLabels[channel] || channel || 'Platform';
+      return (
+        '<div style="' +
+          'background:' + color + '15;border:1.5px solid ' + color + '40;' +
+          'border-radius:10px;padding:8px 14px;' +
+          'display:flex;align-items:center;gap:8px;' +
+        '">' +
+          '<span style="display:flex;align-items:center;color:' + color + ';">' + icon + '</span>' +
+          '<span style="font-size:13px;font-weight:700;color:' + color + ';">' + chName + '</span>' +
+        '</div>'
+      );
+    }).join('');
   }
+
+  // Format hanya relevan untuk channel yang mendukung Post/Reel/Story (IG/FB)
+  var showFmt = channelsToShow.some(function(c) { return c === 'instagram' || c === 'meta'; });
 
   var fmtEl = document.getElementById('schedFormatSummary');
   if (fmtEl) {
-    fmtEl.innerHTML = fmtName
+    fmtEl.innerHTML = (showFmt && fmtName)
       ? '<span style="' +
           'display:inline-flex;align-items:center;gap:6px;' +
           'background:#791ADB15;color:#791ADB;' +
