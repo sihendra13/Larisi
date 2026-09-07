@@ -130,7 +130,7 @@ function showTopToast(message, type) {
  * Terima array channel supaya bisa dipakai untuk 1 platform maupun multi-platform.
  * Contoh: "✓ Story Instagram berhasil dipublish!" atau "✓ Reel Instagram, TikTok berhasil dipublish!"
  */
-function _buildPublishToastCopy(channels, format) {
+function _buildPublishToastCopy(channels, format, isScheduled) {
   var chLabels  = { instagram: 'Instagram', meta: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
   var fmtLabels = { post: 'Post', reel: 'Reel', story: 'Story' };
   var chArr = Array.isArray(channels) ? channels : [channels];
@@ -142,7 +142,7 @@ function _buildPublishToastCopy(channels, format) {
   if (chArr.length === 1 && chArr[0] === 'youtube') fmtName = 'Shorts';
 
   var label = fmtName ? fmtName + ' ' + chNames.join(', ') : chNames.join(', ');
-  if (window._scheduledPostTime) {
+  if (isScheduled) {
     return '✓ ' + label + ' berhasil dijadwalkan!';
   }
   return '✓ ' + label + ' berhasil dipublish!';
@@ -829,7 +829,12 @@ async function _doLaunch(campNameOverride) {
 
           // Toast sukses BARU muncul di sini — setelah publish benar-benar confirmed,
           // bukan sebelum tau hasilnya (dulu bisa bilang "berhasil" padahal ujungnya gagal)
-          showTopToast(_buildPublishToastCopy(activeChannels, activeFormat), 'success');
+          // Pakai `isScheduled` lokal (di-capture sebelum window._scheduledPostTime
+          // di-reset ke null tak lama setelah _doLaunch() dipanggil) — bukan baca ulang
+          // window._scheduledPostTime di sini, karena saat callback async ini jalan
+          // variabel global itu sudah keburu null sehingga toast selalu bilang
+          // "berhasil dipublish" walau sebenarnya dijadwalkan.
+          showTopToast(_buildPublishToastCopy(activeChannels, activeFormat, isScheduled), 'success');
 
           // Update chip di DOM card yang sudah dirender
           var cardEl = document.getElementById('campaign-card-' + newCamp.id);

@@ -1754,7 +1754,10 @@ async function publishViaPostForMe(canvas, campaignData) {
     }
 
     if (typeof showAnToast === 'function') {
-      showAnToast('Postingan berhasil dikirim ke ' + platNames + '!', 'success');
+      var _toastMsg = campaignData && campaignData.scheduled_at
+        ? 'Postingan berhasil dijadwalkan ke ' + platNames + '!'
+        : 'Postingan berhasil dikirim ke ' + platNames + '!';
+      showAnToast(_toastMsg, 'success');
     }
     return { success: true, postId: postId, postUrl: postUrl };
 
