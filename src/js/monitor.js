@@ -1325,7 +1325,7 @@ function buildCampaignCard(c) {
     : isStory
     ?       '<span class="cc-timestamp" style="color:#9ca3af;">' + timeDisplay + '</span>'
     :       '<span class="cc-timestamp" style="color:#9ca3af;cursor:help;" title="Link belum tersedia">' + timeDisplay + '</span>')
-    +     (isScheduled
+    +     ((isScheduled || (!viewUrl && !isStory && !isPaused && !isFailed))
     ?       '<button onclick="event.stopPropagation();openEditScheduleModal(' + JSON.stringify(c.id) + ');" '
     +         'title="Ubah Jadwal" style="background:rgba(121,26,219,0.1);border:none;cursor:pointer;'
     +         'display:inline-flex;align-items:center;justify-content:center;color:#791ADB;padding:3px;'
