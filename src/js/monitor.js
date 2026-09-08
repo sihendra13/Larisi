@@ -1789,9 +1789,12 @@ async function _loadAnalyticsForCard(campaign) {
     };
 
     // Ambil thumbnail dari media PostForMe — update jika belum ada
+    // PENTING: sama seperti _tryFeedThumb — untuk TikTok, media[0].url adalah
+    // link player embed (tiktok.com/player/v1/...), bukan gambar. Prioritaskan
+    // thumbnail_url (gambar statis asli) kalau ada.
     var mediaUrl = null;
-    if (targetPost.media && targetPost.media.length && targetPost.media[0].url) {
-      mediaUrl = targetPost.media[0].url;
+    if (targetPost.media && targetPost.media.length) {
+      mediaUrl = targetPost.media[0].thumbnail_url || targetPost.media[0].url || null;
     }
     var _sbStorageDom = RADAR_CONFIG.SUPABASE_URL + '/storage/';
     var _hasPermThumbEng = campaign.thumbUrl && (
