@@ -1490,7 +1490,10 @@ async function _tryFeedThumb(campaign) {
     for (var k = 0; k < posts.length; k++) {
       var p = posts[k];
       if (campaign.platform_post_id && p.platform_post_id === campaign.platform_post_id) {
-        var url = (p.media && p.media.length) ? p.media[0].url : null;
+        // PENTING: untuk TikTok, media[0].url dari PostForMe adalah link PLAYER
+        // EMBED (tiktok.com/player/v1/...), bukan file gambar — tidak bisa dipakai
+        // <img src>. thumbnail_url adalah gambar statis (.webp) yang benar.
+        var url = (p.media && p.media.length) ? (p.media[0].thumbnail_url || p.media[0].url) : null;
         if (url) {
           // Tampilkan dulu di UI pakai CDN URL sementara
           campaign.thumbUrl = url;
